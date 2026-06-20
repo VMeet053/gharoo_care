@@ -18,3 +18,6 @@ Thumbs.db
 
 # Build Caches
 *.log
+
+# Corrupted old git
+.git-old
