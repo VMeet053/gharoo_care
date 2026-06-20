@@ -1,0 +1,26 @@
+{
+  "name": "gharoo-care",
+  "version": "1.0.0",
+  "description": "Gharoo Care - Full Stack Repair Service Application",
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:clients": "node scripts/dev-clients.js",
+    "start:clients": "npm run build && npm run dev:clients",
+    "build": "npm run build:user && npm run build:admin && npm run build:service-man",
+    "build:user": "npm install --prefix Gharoo/Gharoo_client && npm run build --prefix Gharoo/Gharoo_client",
+    "build:admin": "npm install --prefix client && npm run build --prefix client",
+    "build:service-man": "npm install --prefix service-man-client && npm run build --prefix service-man-client",
+    "dev:user": "npm run dev --prefix Gharoo/Gharoo_client",
+    "dev:admin": "npm run dev --prefix client",
+    "dev:service": "npm run dev --prefix service-man-client",
+    "dev:all": "concurrently \"npm run dev:user\" \"npm run dev:admin\" \"npm run dev:service\" \"npm run dev:server\"",
+    "vercel-build": "npm run build",
+    "start": "cd server && node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

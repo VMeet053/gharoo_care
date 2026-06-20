@@ -1,0 +1,252 @@
+/* ── Global responsive utilities ── */
+
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 20px;
+  }
+
+  .section-title {
+    font-size: clamp(1.65rem, 4vw, 2.25rem);
+  }
+
+  .about-section,
+  .service-slider-section,
+  .services,
+  .pricing,
+  .testimonials,
+  .contact,
+  .why-choose,
+  .completed-projects-section {
+    padding-top: 72px;
+    padding-bottom: 72px;
+  }
+
+  .stats-section {
+    padding: 56px 20px;
+  }
+}
+
+/* ── Mobile (primary focus) ── */
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
+
+  .eyebrow,
+  .section-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+  }
+
+  .section-title {
+    font-size: 1.55rem;
+    margin-bottom: 14px;
+  }
+
+  .section-desc {
+    font-size: 0.92rem;
+    line-height: 1.75;
+  }
+
+  .btn {
+    padding: 12px 20px;
+    font-size: 0.88rem;
+    min-height: 44px;
+  }
+
+  /* About */
+  .about-section {
+    padding: 56px 16px;
+  }
+
+  .about-grid {
+    gap: 32px;
+  }
+
+  .image-collage {
+    min-height: 280px;
+  }
+
+  .collage-main {
+    height: 240px;
+  }
+
+  .collage-sub {
+    width: 55%;
+    height: 140px;
+    top: -10px;
+    right: -8px;
+    border-width: 3px;
+  }
+
+  .experience-badge {
+    padding: 16px 20px;
+    bottom: -10px;
+    border-radius: 16px;
+  }
+
+  .badge-content h3 {
+    font-size: 1.75rem;
+  }
+
+  .badge-content p {
+    font-size: 0.8rem;
+  }
+
+  .about-feature-item {
+    padding: 16px;
+  }
+
+  .about-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .about-actions .btn.primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .video-btn-wrapper {
+    justify-content: center;
+  }
+
+  .about-list li {
+    font-size: 0.85rem;
+    align-items: flex-start;
+  }
+
+  /* Stats */
+  .stats-section {
+    padding: 48px 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 14px;
+    gap: 10px;
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.78rem;
+  }
+
+  /* Service slider */
+  .service-slider-section {
+    padding: 56px 16px;
+  }
+
+  .slider-inner {
+    gap: 28px;
+  }
+
+  .slider-left .section-title {
+    font-size: 1.45rem;
+  }
+
+  .nav-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Pricing */
+  .pricing {
+    padding: 56px 16px;
+  }
+
+  .plan-card {
+    padding: 28px 22px;
+  }
+
+  .plan-card.featured {
+    transform: none;
+  }
+
+  .plan-price .price {
+    font-size: 2rem;
+  }
+
+  /* Testimonials */
+  .testimonials {
+    padding: 56px 16px;
+  }
+
+  .test-card {
+    padding: 28px 22px;
+  }
+
+  .test-quote {
+    font-size: 0.9rem;
+  }
+
+  /* Contact */
+  .contact {
+    padding: 56px 16px;
+  }
+
+  .contact-info,
+  .contact-form {
+    padding: 24px 20px;
+  }
+
+  /* Footer */
+  .footer-top {
+    padding: 48px 16px 32px;
+  }
+
+  .footer-logo {
+    font-size: 1.4rem;
+  }
+
+  .footer-bottom {
+    padding: 16px;
+  }
+
+  .footer-bottom-links {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* ── Extra small phones ── */
+@media (max-width: 380px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-title {
+    font-size: 1.4rem;
+  }
+
+  .choose-cards {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Touch devices — disable hover lift on cards */
+@media (hover: none) {
+  .feature-card:hover,
+  .service-card:hover,
+  .choose-card:hover,
+  .plan-card:hover,
+  .test-card:hover {
+    transform: none;
+  }
+}
