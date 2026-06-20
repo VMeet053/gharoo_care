@@ -159,12 +159,20 @@ const getDefaultSettings = () => ({
   }
 });
 
-// Connect to MongoDB
+// Connect to MongoDB function for serverless environments
 let isMongoConnected = false;
-mongoose.connect(process.env.MONGODB_URI)
-  .then(async () => {
+let inMemorySettings = null; // initialized below on fallback
+
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) {
+    isMongoConnected = true;
+    return;
+  }
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
     isMongoConnected = true;
     console.log('Connected to MongoDB successfully!');
+    
     // Initialize default panel settings if none exists
     const existingSettings = await PanelSettings.findOne();
     if (!existingSettings) {
@@ -172,13 +180,25 @@ mongoose.connect(process.env.MONGODB_URI)
       await defaultSettings.save();
       console.log('Default panel settings created!');
     }
-  })
-  .catch(err => {
+  } catch (err) {
     console.error('MongoDB connection error:', err);
-    console.log('Using in-memory storage for panel settings');
-    // Initialize in-memory settings with defaults
-    inMemorySettings = getDefaultSettings();
-  });
+    isMongoConnected = false;
+    if (!inMemorySettings) {
+      inMemorySettings = getDefaultSettings();
+    }
+  }
+};
+
+// Initiate connection immediately (root scope)
+connectDB();
+
+// Middleware to ensure DB connection is active before processing api requests
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api') && req.path !== '/api/health') {
+    await connectDB();
+  }
+  next();
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
