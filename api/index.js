@@ -357,6 +357,23 @@ app.post('/api/service-login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Hardcoded service man fallback check using admin credentials
+    if (email.toLowerCase() === 'gharoocare@gmail.com' && password === 'Gharoocare!@#$123') {
+      return res.json({
+        success: true,
+        user: {
+          _id: '1',
+          id: '1',
+          firstName: 'Service',
+          lastName: 'Man',
+          email: 'gharoocare@gmail.com',
+          role: 'Service Man',
+          team: 'Service',
+          status: 'Active'
+        }
+      });
+    }
+
     if (!isMongoConnected) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
