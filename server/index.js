@@ -49,8 +49,10 @@ app.use('/admin', express.static(path.join(__dirname, '../client/dist')));
 // Serve service man panel at /service
 app.use('/service', express.static(path.join(__dirname, '../service-man-client/dist')));
 
-// In-memory storage fallback for panel settings
+// In-memory storage fallbacks
 let inMemorySettings = null;
+let inMemoryUsers = [];
+let nextUserId = 1;
 
 // Helper function to get default settings
 const getDefaultSettings = () => ({
@@ -217,24 +219,35 @@ app.post('/api/upload-image', upload.single('image'), async (req, res) => {
   }
 });
 
-// Get all users (if MongoDB connected, else return empty array)
+// Get all users (if MongoDB connected, else use in-memory)
 app.get('/api/users', async (req, res) => {
-  if (!isMongoConnected) {
-    return res.json([]);
-  }
   try {
-    const users = await User.find();
-    const formattedUsers = users.map(user => ({
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      team: user.team,
-      status: user.status,
-      joined: user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      avatar: user.avatar
-    }));
-    res.json(formattedUsers);
+    if (isMongoConnected) {
+      const users = await User.find();
+      const formattedUsers = users.map(user => ({
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        team: user.team,
+        status: user.status,
+        joined: user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        avatar: user.avatar
+      }));
+      res.json(formattedUsers);
+    } else {
+      const formattedUsers = inMemoryUsers.map(user => ({
+        id: user.id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        role: user.role,
+        team: user.team,
+        status: user.status,
+        joined: user.joined,
+        avatar: user.avatar
+      }));
+      res.json(formattedUsers);
+    }
   } catch (err) {
     console.error('Get users error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -272,39 +285,64 @@ app.get('/api/users/role/:role', async (req, res) => {
   }
 });
 
-// Create user (only if MongoDB connected)
+// Create user
 app.post('/api/users', async (req, res) => {
-  if (!isMongoConnected) {
-    return res.status(500).json({ success: false, message: 'MongoDB not connected' });
-  }
   try {
     const { firstName, lastName, email, phone, role, team, service, notes, password } = req.body;
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: 'User with this email already exists' });
+    if (isMongoConnected) {
+      // Check if user already exists
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'User with this email already exists' });
+      }
+
+      // Hash password (use provided password or default)
+      const userPassword = password || 'password123';
+      const hashedPassword = await bcrypt.hash(userPassword, 10);
+
+      // Create new user
+      const newUser = new User({
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        phone,
+        role,
+        team,
+        service: service || '',
+        notes,
+        password: hashedPassword
+      });
+
+      await newUser.save();
+      res.json({ success: true, message: 'User created successfully!' });
+    } else {
+      // Check existing in in-memory
+      const existingUser = inMemoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'User with this email already exists' });
+      }
+
+      const newUser = {
+        id: nextUserId++,
+        _id: nextUserId - 1,
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        phone,
+        role,
+        team,
+        service: service || '',
+        notes,
+        password: password || 'password123', // No hash for in-memory, for demo only
+        status: 'Active',
+        avatar: '/assets/images/avatar/avatar-1.jpg',
+        joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        createdAt: new Date()
+      };
+      inMemoryUsers.push(newUser);
+      res.json({ success: true, message: 'User created successfully!' });
     }
-
-    // Hash password (use provided password or default)
-    const userPassword = password || 'password123';
-    const hashedPassword = await bcrypt.hash(userPassword, 10);
-
-    // Create new user
-    const newUser = new User({
-      firstName,
-      lastName,
-      email: email.toLowerCase(),
-      phone,
-      role,
-      team,
-      service: service || '',
-      notes,
-      password: hashedPassword
-    });
-
-    await newUser.save();
-    res.json({ success: true, message: 'User created successfully!' });
   } catch (err) {
     console.error('Create user error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
