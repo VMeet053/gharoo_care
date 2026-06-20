@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
 const navItems = [
   { path: '/dashboard', icon: 'bi-speedometer2', label: 'Dashboard' },
@@ -9,6 +10,7 @@ const navItems = [
 
 export default function Sidebar() {
   const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('serviceManUser');
@@ -23,18 +25,25 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className="app-sidebar d-none d-lg-flex">
+    <aside className={`app-sidebar d-none d-lg-flex ${collapsed ? 'collapsed' : ''}`}>
       <div className="app-sidebar-header">
         <div className="app-sidebar-brand" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span className="app-sidebar-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/gharoo-logo.png" alt="GharooCare Logo" style={{ height: '64px', width: 'auto' }} />
           </span>
-          <div>
-            <strong>GharooCare</strong>
-            <small>Service Man Portal</small>
-          </div>
+          {!collapsed && (
+            <div>
+              <strong>GharooCare</strong>
+              <small>Service Man Portal</small>
+            </div>
+          )}
         </div>
-        <p className="app-sidebar-user mb-0">{user.firstName} {user.lastName}</p>
+        <button className="sidebar-toggle-btn" onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          <i className={`bi ${collapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
+        </button>
+        {!collapsed && (
+          <p className="app-sidebar-user mb-0">{user.firstName} {user.lastName}</p>
+        )}
       </div>
 
       <ul className="app-sidebar-nav">
@@ -45,18 +54,20 @@ export default function Sidebar() {
               className={({ isActive }) => `app-sidebar-link${isActive ? ' active' : ''}`}
             >
               <i className={`bi ${item.icon}`} aria-hidden="true"></i>
-              <span>{item.label}</span>
+              {!collapsed && <span>{item.label}</span>}
             </NavLink>
           </li>
         ))}
       </ul>
 
-      <div className="app-sidebar-footer">
-        <button type="button" className="btn btn-outline-danger w-100" onClick={handleLogout}>
-          <i className="bi bi-box-arrow-left me-2"></i>
-          Logout
-        </button>
-      </div>
+      {!collapsed && (
+        <div className="app-sidebar-footer">
+          <button type="button" className="btn btn-outline-danger w-100" onClick={handleLogout}>
+            <i className="bi bi-box-arrow-left me-2"></i>
+            Logout
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

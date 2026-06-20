@@ -516,3 +516,37 @@ body {
   font-size: 0.72rem;
   font-weight: 600;
 }
+
+/* Collapsed sidebar */
+.app-sidebar {
+  transition: width 0.3s ease;
+}
+
+.app-sidebar.collapsed {
+  width: 90px;
+}
+
+.app-sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-toggle-btn {
+  background: rgba(79, 70, 229, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--sm-primary);
+  transition: all 0.2s;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(79, 70, 229, 0.2);
+}

@@ -52,6 +52,7 @@ const navSections = [
 export default function Sidebar() {
   const location = useLocation();
   const [openSections, setOpenSections] = useState(['Main', 'User Panel', 'Management', 'Transactions']); // Default all open
+  const [collapsed, setCollapsed] = useState(false);
 
   const toggleSection = (label) => {
     setOpenSections((prev) => 
@@ -74,30 +75,37 @@ export default function Sidebar() {
   }, [location.pathname]);
 
   return (
-    <aside className="admin-sidebar" id="adminSidebar" aria-label="Main navigation">
+    <aside className={`admin-sidebar ${collapsed ? 'collapsed' : ''}`} id="adminSidebar" aria-label="Main navigation">
       <div className="sidebar-header">
         <NavLink className="brand-mark" to="/" aria-label="GharooCare dashboard">
           <span className="brand-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <img src="/assets/images/brand/logo/gharoo-logo.png" alt="GharooCare Logo" style={{ height: '64px', width: 'auto' }} />
           </span>
-          <span className="brand-copy">
-            <span className="brand-title">GharooCare</span>
-            <span className="brand-subtitle">Admin Panel</span>
-          </span>
+          {!collapsed && (
+            <span className="brand-copy">
+              <span className="brand-title">GharooCare</span>
+              <span className="brand-subtitle">Admin Panel</span>
+            </span>
+          )}
         </NavLink>
+        <button className="sidebar-toggle-btn" onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          <i className={`bi ${collapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
+        </button>
       </div>
 
       <nav className="sidebar-nav">
         {navSections.map((section) => (
-          <div key={section.label}>
-            <div 
-              className="nav-section-label" 
-              style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-              onClick={() => toggleSection(section.label)}
-            >
-              {section.label}
-              <i className={`bi ${openSections.includes(section.label) ? 'bi-chevron-down' : 'bi-chevron-right'}`} style={{ fontSize: '12px' }}></i>
-            </div>
+          <div key={section.label} className="nav-section">
+            {!collapsed && (
+              <div 
+                className="nav-section-label" 
+                style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                onClick={() => toggleSection(section.label)}
+              >
+                {section.label}
+                <i className={`bi ${openSections.includes(section.label) ? 'bi-chevron-down' : 'bi-chevron-right'}`} style={{ fontSize: '12px' }}></i>
+              </div>
+            )}
             {openSections.includes(section.label) && (
               <>
                 {section.items.map((item) => (
@@ -108,7 +116,7 @@ export default function Sidebar() {
                     end={item.end}
                   >
                     <span className="nav-icon"><i className={`bi ${item.icon}`} aria-hidden="true"></i></span>
-                    <span className="nav-text">{item.text}</span>
+                    {!collapsed && <span className="nav-text">{item.text}</span>}
                   </NavLink>
                 ))}
               </>
@@ -117,10 +125,12 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="sidebar-footer">
-        <span className="status-dot"></span>
-        <span className="sidebar-footer-text">All systems operational</span>
-      </div>
+      {!collapsed && (
+        <div className="sidebar-footer">
+          <span className="status-dot"></span>
+          <span className="sidebar-footer-text">All systems operational</span>
+        </div>
+      )}
     </aside>
   );
 }
