@@ -256,29 +256,47 @@ app.get('/api/users', async (req, res) => {
 
 // Get users by role
 app.get('/api/users/role/:role', async (req, res) => {
-  if (!isMongoConnected) {
-    return res.json([]);
-  }
   try {
     const { role } = req.params;
-    const users = await User.find({ role });
-    const formattedUsers = users.map(user => ({
-      _id: user._id,
-      id: user._id,
-      name: `${user.firstName} ${user.lastName}`,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      team: user.team,
-      service: user.service || '',
-      status: user.status,
-      joined: user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      createdAt: user.createdAt,
-      avatar: user.avatar
-    }));
-    res.json(formattedUsers);
+    if (isMongoConnected) {
+      const users = await User.find({ role });
+      const formattedUsers = users.map(user => ({
+        _id: user._id,
+        id: user._id,
+        name: `${user.firstName} ${user.lastName}`,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        team: user.team,
+        service: user.service || '',
+        status: user.status,
+        joined: user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        createdAt: user.createdAt,
+        avatar: user.avatar
+      }));
+      res.json(formattedUsers);
+    } else {
+      const filteredUsers = inMemoryUsers.filter(user => user.role === role);
+      const formattedUsers = filteredUsers.map(user => ({
+        _id: user.id,
+        id: user.id,
+        name: `${user.firstName} ${user.lastName}`,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        team: user.team,
+        service: user.service || '',
+        status: user.status,
+        joined: user.joined,
+        createdAt: user.createdAt,
+        avatar: user.avatar
+      }));
+      res.json(formattedUsers);
+    }
   } catch (err) {
     console.error('Get users by role error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
