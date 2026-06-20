@@ -11,7 +11,7 @@ export default function ServicePrice() {
   const fetchServices = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/service-prices');
+      const response = await fetch('/api/service-prices');
       const data = await response.json();
       setServices(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -28,7 +28,7 @@ export default function ServicePrice() {
   const handleAdd = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/service-prices', {
+      const response = await fetch('/api/service-prices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(addForm)
@@ -52,7 +52,7 @@ export default function ServicePrice() {
   const handleEdit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:5000/api/service-prices/${editingId}`, {
+      const response = await fetch(`/api/service-prices/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editForm)
@@ -72,7 +72,7 @@ export default function ServicePrice() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this service?')) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/service-prices/${id}`, {
+      const response = await fetch(`/api/service-prices/${id}`, {
         method: 'DELETE'
       });
       const data = await response.json();

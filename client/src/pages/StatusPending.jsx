@@ -6,7 +6,7 @@ export default function StatusPending() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/work-orders')
+    fetch('/api/work-orders')
       .then(res => res.json())
       .then(data => {
         const items = (Array.isArray(data) ? data : []).filter(

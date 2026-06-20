@@ -8,7 +8,7 @@ export default function UserPanelNewSection() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/panel-settings');
+      const res = await fetch('/api/panel-settings');
       const data = await res.json();
       if (data.success) {
         setFeatures(data.data.newSection?.features || []);
@@ -28,13 +28,13 @@ export default function UserPanelNewSection() {
     setSaving(true);
     setMessage('');
     try {
-      const getRes = await fetch('http://localhost:5000/api/panel-settings');
+      const getRes = await fetch('/api/panel-settings');
       const getResData = await getRes.json();
       if (!getResData.success) throw new Error('Failed to get settings');
       
       const updatedSettings = { ...getResData.data, newSection: { features } };
       
-      const res = await fetch('http://localhost:5000/api/panel-settings', {
+      const res = await fetch('/api/panel-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedSettings)

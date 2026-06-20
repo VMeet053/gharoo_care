@@ -8,7 +8,7 @@ export default function UserPanelContact() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/panel-settings');
+      const res = await fetch('/api/panel-settings');
       const data = await res.json();
       if (data.success) {
         setContactData(data.data.contact);
@@ -28,13 +28,13 @@ export default function UserPanelContact() {
     setSaving(true);
     setMessage('');
     try {
-      const getRes = await fetch('http://localhost:5000/api/panel-settings');
+      const getRes = await fetch('/api/panel-settings');
       const getResData = await getRes.json();
       if (!getResData.success) throw new Error('Failed to get settings');
       
       const updatedSettings = { ...getResData.data, contact: contactData };
       
-      const res = await fetch('http://localhost:5000/api/panel-settings', {
+      const res = await fetch('/api/panel-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedSettings)

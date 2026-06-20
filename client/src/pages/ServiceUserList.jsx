@@ -8,7 +8,7 @@ export default function ServiceUserList() {
   const fetchServiceUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/users/role/Service Man');
+      const response = await fetch('/api/users/role/Service Man');
       const data = await response.json();
       setServiceUsers(data);
     } catch (err) {

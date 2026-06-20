@@ -26,14 +26,14 @@ function WorkOrders() {
   }, []);
 
   const fetchWorkOrders = async () => {
-    fetch('http://localhost:5000/api/work-orders')
+    fetch('/api/work-orders')
       .then(res => res.json())
       .then(data => setWorkOrders(data))
       .catch(err => console.error(err));
   };
 
   const fetchUsers = async () => {
-    fetch('http://localhost:5000/api/users/role/Service Man')
+    fetch('/api/users/role/Service Man')
       .then(res => res.json())
       .then(data => setUsers(data))
       .catch(err => console.error(err));
@@ -42,8 +42,8 @@ function WorkOrders() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const url = editingOrder
-      ? `http://localhost:5000/api/work-orders/${editingOrder._id}`
-      : 'http://localhost:5000/api/work-orders';
+      ? `/api/work-orders/${editingOrder._id}`
+      : '/api/work-orders';
     const method = editingOrder ? 'PUT' : 'POST';
 
     fetch(url, {
@@ -80,7 +80,7 @@ function WorkOrders() {
 
   const deleteOrder = async (id) => {
     if (window.confirm('Are you sure you want to delete this work order?')) {
-      fetch(`http://localhost:5000/api/work-orders/${id}`, { method: 'DELETE' })
+      fetch(`/api/work-orders/${id}`, { method: 'DELETE' })
         .then(res => res.json())
         .then(data => {
           if (data.success) fetchWorkOrders();

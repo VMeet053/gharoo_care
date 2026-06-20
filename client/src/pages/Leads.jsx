@@ -50,7 +50,7 @@ export default function Leads() {
 
   const fetchLeads = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/leads');
+      const response = await fetch('/api/leads');
       const data = await response.json();
       setLeads(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -63,7 +63,7 @@ export default function Leads() {
   useEffect(() => {
     const fetchServiceMen = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/users/role/Service%20Man');
+        const response = await fetch('/api/users/role/Service%20Man');
         const data = await response.json();
         setServiceMen(Array.isArray(data) ? data : []);
       } catch (err) {
@@ -97,7 +97,7 @@ export default function Leads() {
   const handleAddLead = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/leads', {
+      const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(addForm)
@@ -144,7 +144,7 @@ export default function Leads() {
 
   const saveAssign = async (leadId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/leads/${leadId}`, {
+      const response = await fetch(`/api/leads/${leadId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assigned: tempAssigned })
@@ -181,7 +181,7 @@ export default function Leads() {
 
   const bulkAssign = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/leads/bulk-assign', {
+      const response = await fetch('/api/leads/bulk-assign', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leadIds: selectedLeads, assigned: bulkAssigned })

@@ -9,7 +9,7 @@ export default function UserPanelTestimonials() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/panel-settings');
+      const res = await fetch('/api/panel-settings');
       const data = await res.json();
       if (data.success) {
         setTestimonialsData(data.data.testimonials);
@@ -34,7 +34,7 @@ export default function UserPanelTestimonials() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const res = await fetch('http://localhost:5000/api/upload-image', {
+      const res = await fetch('/api/upload-image', {
         method: 'POST',
         body: formData
       });
@@ -58,13 +58,13 @@ export default function UserPanelTestimonials() {
     setSaving(true);
     setMessage('');
     try {
-      const getRes = await fetch('http://localhost:5000/api/panel-settings');
+      const getRes = await fetch('/api/panel-settings');
       const getResData = await getRes.json();
       if (!getResData.success) throw new Error('Failed to get settings');
       
       const updatedSettings = { ...getResData.data, testimonials: testimonialsData };
       
-      const res = await fetch('http://localhost:5000/api/panel-settings', {
+      const res = await fetch('/api/panel-settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedSettings)
