@@ -217,26 +217,26 @@
       body.classList.add("sidebar-mini");
     }
 
-    sidebarToggle.addEventListener("click", toggleSidebar);
-    addCloseHandlers(closeButtons);
-    addCloseHandlers(sidebarLinks);
-    setToggleExpanded();
+    // Sidebar event listeners and breakpoint changes are commented out to let React manage sidebar state
+    // sidebarToggle.addEventListener("click", toggleSidebar);
+    // addCloseHandlers(closeButtons);
+    // addCloseHandlers(sidebarLinks);
+    // setToggleExpanded();
 
-    function handleBreakpointChange() {
-      if (isDesktop()) {
-        body.classList.remove("sidebar-open");
-        setClass(body, "sidebar-mini", getSavedMiniState(storageAvailable));
-      } else {
-        body.classList.remove("sidebar-mini");
-      }
+    // function handleBreakpointChange() {
+    //   if (isDesktop()) {
+    //     body.classList.remove("sidebar-open");
+    //     setClass(body, "sidebar-mini", getSavedMiniState(storageAvailable));
+    //   } else {
+    //     body.classList.remove("sidebar-mini");
+    //   }
+    //   setToggleExpanded();
+    // }
 
-      setToggleExpanded();
-    }
-
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener("change", handleBreakpointChange);
-    } else if (mediaQuery.addListener) {
-      mediaQuery.addListener(handleBreakpointChange);
-    }
+    // if (mediaQuery.addEventListener) {
+    //   mediaQuery.addEventListener("change", handleBreakpointChange);
+    // } else if (mediaQuery.addListener) {
+    //   mediaQuery.addListener(handleBreakpointChange);
+    // }
   });
 })();

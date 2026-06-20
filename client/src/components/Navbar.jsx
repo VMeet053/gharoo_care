@@ -17,7 +17,7 @@ const pageTitles = {
   '/create-agent': 'Create Agent',
 };
 
-export default function Navbar() {
+export default function Navbar({ isOpen, toggleSidebar }) {
   const { pathname } = useLocation();
   const pageTitle = pageTitles[pathname] || 'Dashboard';
 
@@ -25,16 +25,18 @@ export default function Navbar() {
     <nav className="navbar admin-navbar navbar-expand bg-white">
       <div className="container-fluid px-3 px-lg-4">
         <button
-          className="sidebar-toggle"
+          className="sidebar-toggle d-lg-none"
           type="button"
-          data-sidebar-toggle
+          onClick={toggleSidebar}
           aria-controls="adminSidebar"
-          aria-expanded="true"
+          aria-expanded={isOpen}
           aria-label="Toggle sidebar"
         >
-          <span></span>
-          <span></span>
-          <span></span>
+          {isOpen ? (
+            <i className="bi bi-three-dots-vertical" style={{ fontSize: '20px', lineHeight: 1 }} aria-hidden="true"></i>
+          ) : (
+            <i className="bi bi-list" style={{ fontSize: '20px', lineHeight: 1 }} aria-hidden="true"></i>
+          )}
         </button>
 
         <div className="navbar-breadcrumb d-none d-md-flex">
@@ -89,7 +91,7 @@ export default function Navbar() {
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
-              <img className="avatar-img avatar-sm" src="/assets/images/avatar/avatar.jpg" alt="Admin Hasan" />
+              <img className="avatar-img avatar-sm" src="/admin/assets/images/avatar/avatar.jpg" alt="Admin Hasan" />
               <span className="profile-name d-none d-sm-inline">Admin Hasan</span>
             </button>
             <ul className="dropdown-menu dropdown-menu-end">

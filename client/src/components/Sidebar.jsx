@@ -49,10 +49,9 @@ const navSections = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isCollapsed, setIsCollapsed, closeMobileSidebar }) {
   const location = useLocation();
   const [openSections, setOpenSections] = useState(['Main', 'User Panel', 'Management', 'Transactions']); // Default all open
-  const [collapsed, setCollapsed] = useState(false);
 
   const toggleSection = (label) => {
     setOpenSections((prev) => 
@@ -75,28 +74,32 @@ export default function Sidebar() {
   }, [location.pathname]);
 
   return (
-    <aside className={`admin-sidebar ${collapsed ? 'collapsed' : ''}`} id="adminSidebar" aria-label="Main navigation">
-      <div className="sidebar-header">
-        <NavLink className="brand-mark" to="/" aria-label="GharooCare dashboard">
-          <span className="brand-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/assets/images/brand/logo/gharoo-logo.png" alt="GharooCare Logo" style={{ height: '64px', width: 'auto' }} />
-          </span>
-          {!collapsed && (
+    <aside className={`admin-sidebar ${isCollapsed ? 'collapsed' : ''}`} id="adminSidebar" aria-label="Main navigation">
+      <div className="sidebar-header" style={{ justifyContent: isCollapsed ? 'center' : 'space-between', padding: isCollapsed ? '20px 0' : '20px' }}>
+        {!isCollapsed && (
+          <NavLink className="brand-mark" to="/" aria-label="GharooCare dashboard" onClick={closeMobileSidebar}>
+            <span className="brand-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src="/admin/assets/images/brand/logo/gharoo-logo.png" alt="GharooCare Logo" style={{ height: '64px', width: 'auto' }} />
+            </span>
             <span className="brand-copy">
               <span className="brand-title">GharooCare</span>
               <span className="brand-subtitle">Admin Panel</span>
             </span>
+          </NavLink>
+        )}
+        <button className="sidebar-toggle-btn" onClick={() => setIsCollapsed(!isCollapsed)} aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+          {isCollapsed ? (
+            <i className="bi bi-list" style={{ fontSize: '18px' }}></i>
+          ) : (
+            <i className="bi bi-three-dots-vertical" style={{ fontSize: '18px' }}></i>
           )}
-        </NavLink>
-        <button className="sidebar-toggle-btn" onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}>
-          <i className={`bi ${collapsed ? 'bi-chevron-right' : 'bi-chevron-left'}`}></i>
         </button>
       </div>
 
       <nav className="sidebar-nav">
         {navSections.map((section) => (
           <div key={section.label} className="nav-section">
-            {!collapsed && (
+            {!isCollapsed && (
               <div 
                 className="nav-section-label" 
                 style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
@@ -114,9 +117,10 @@ export default function Sidebar() {
                     className="nav-link"
                     to={item.to}
                     end={item.end}
+                    onClick={closeMobileSidebar}
                   >
                     <span className="nav-icon"><i className={`bi ${item.icon}`} aria-hidden="true"></i></span>
-                    {!collapsed && <span className="nav-text">{item.text}</span>}
+                    {!isCollapsed && <span className="nav-text">{item.text}</span>}
                   </NavLink>
                 ))}
               </>
@@ -125,7 +129,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {!collapsed && (
+      {!isCollapsed && (
         <div className="sidebar-footer">
           <span className="status-dot"></span>
           <span className="sidebar-footer-text">All systems operational</span>

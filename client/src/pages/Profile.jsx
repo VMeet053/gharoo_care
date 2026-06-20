@@ -40,7 +40,7 @@ export default function Profile() {
         <div className="col-12 col-xl-4">
           <div className="panel h-100 text-center profile-card">
             <div className="profile-cover profile-cover-gradient" aria-hidden="true"></div>
-            <img className="avatar-img avatar-xl profile-photo" src={user?.avatar || '/assets/images/avatar/avatar.jpg'} alt={fullName || 'Admin'} />
+            <img className="avatar-img avatar-xl profile-photo" src={user?.avatar || '/admin/assets/images/avatar/avatar.jpg'} alt={fullName || 'Admin'} />
             <h2 className="h5 mt-3 mb-1">{fullName || 'Admin User'}</h2>
             <p className="text-muted mb-3">{role || 'Administrator'}</p>
             <div className="d-flex justify-content-center gap-2">
