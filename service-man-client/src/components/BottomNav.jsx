@@ -7,7 +7,7 @@ const navItems = [
   { path: '/earnings', icon: 'bi-currency-rupee', label: 'Earnings' }
 ];
 
-export default function BottomNav() {
+export default function BottomNav({ unseenCount }) {
   return (
     <nav className="bottom-nav d-lg-none" aria-label="Main navigation">
       {navItems.map((item) => (
@@ -15,9 +15,15 @@ export default function BottomNav() {
           key={item.path}
           to={item.path}
           className={({ isActive }) => `bottom-nav-item${isActive ? ' active' : ''}`}
+          style={{ position: 'relative' }}
         >
           <i className={`bi ${item.icon}`} aria-hidden="true"></i>
           <span>{item.label}</span>
+          {item.path === '/leads' && unseenCount > 0 && (
+            <span className="unseen-badge-bottom">
+              {unseenCount}
+            </span>
+          )}
         </NavLink>
       ))}
     </nav>

@@ -8,7 +8,7 @@ const navItems = [
   { path: '/earnings', icon: 'bi-currency-rupee', label: 'Earnings' }
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ unseenCount }) {
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -55,6 +55,11 @@ export default function Sidebar() {
             >
               <i className={`bi ${item.icon}`} aria-hidden="true"></i>
               {!collapsed && <span>{item.label}</span>}
+              {item.path === '/leads' && unseenCount > 0 && (
+                <span className={`unseen-badge ${collapsed ? 'collapsed-badge' : ''}`}>
+                  {unseenCount}
+                </span>
+              )}
             </NavLink>
           </li>
         ))}

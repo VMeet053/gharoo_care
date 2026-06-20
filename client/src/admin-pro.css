@@ -515,3 +515,225 @@ body {
     display: none;
   }
 }
+
+/* --- Animated Login Page Custom CSS --- */
+
+/* Animated background container */
+.animated-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, #0b0f19, #020617); /* Dark premium background */
+}
+
+/* Glassmorphism auth card override */
+.auth-body {
+  position: relative;
+  min-height: 100vh;
+  z-index: 1;
+  overflow: hidden;
+  background: transparent !important;
+}
+
+.auth-page {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.auth-card {
+  background: rgba(30, 41, 59, 0.65) !important; /* Semi-transparent dark surface */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  color: #f8fafc !important;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  border-radius: var(--admin-radius, 12px) !important;
+}
+
+.auth-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important; /* Indigo glow on hover */
+}
+
+/* Blobs logic */
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.blob-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.75) 0%, rgba(124, 58, 237, 0) 70%);
+  top: -10%;
+  left: -10%;
+  animation: float-blob-1 25s infinite alternate ease-in-out;
+}
+
+.blob-2 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.75) 0%, rgba(219, 39, 119, 0) 70%);
+  bottom: -10%;
+  right: -10%;
+  animation: float-blob-2 30s infinite alternate ease-in-out;
+}
+
+.blob-3 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.75) 0%, rgba(14, 165, 233, 0) 70%);
+  top: 50%;
+  left: 60%;
+  animation: float-blob-3 20s infinite alternate ease-in-out;
+}
+
+.blob-4 {
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.65) 0%, rgba(5, 150, 105, 0) 70%);
+  bottom: 40%;
+  left: 10%;
+  animation: float-blob-4 22s infinite alternate ease-in-out;
+}
+
+@keyframes float-blob-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(120px, 80px) scale(1.1); }
+  100% { transform: translate(-50px, 150px) scale(0.95); }
+}
+
+@keyframes float-blob-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-120px, -90px) scale(0.85); }
+  100% { transform: translate(60px, -180px) scale(1.15); }
+}
+
+@keyframes float-blob-3 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-80px, 120px) scale(1.25); }
+  100% { transform: translate(120px, -60px) scale(0.9); }
+}
+
+@keyframes float-blob-4 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(150px, -100px) scale(0.8); }
+  100% { transform: translate(-100px, 80px) scale(1.1); }
+}
+
+/* Entrance animation for the login card */
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Beautiful dark theme adjustments for inputs */
+.auth-card .form-control {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f8fafc !important;
+  transition: all 0.3s ease;
+}
+
+.auth-card .form-control:focus {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25) !important;
+}
+
+.auth-card .form-control::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.6;
+}
+
+.auth-card .form-label {
+  color: #e2e8f0 !important;
+  font-weight: 500;
+}
+
+.auth-card .text-muted {
+  color: #94a3b8 !important;
+}
+
+.auth-card .form-check-label {
+  color: #e2e8f0 !important;
+}
+
+.auth-brand {
+  color: #f8fafc !important;
+}
+
+.auth-brand small {
+  color: #94a3b8 !important;
+}
+
+/* Link overrides */
+.auth-card a {
+  color: #818cf8 !important;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.auth-card a:hover {
+  color: #a5b4fc !important;
+  text-decoration: underline;
+}
+
+/* Premium Gradient Button */
+.auth-card .btn-primary {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  border: none !important;
+  padding: 0.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4) !important;
+  transition: all 0.3s ease !important;
+}
+
+.auth-card .btn-primary:hover {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5) !important;
+  transform: translateY(-2px);
+}
+
+.auth-card .btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Pulsing brand icon */
+.brand-icon {
+  animation: pulse-glow 3s infinite alternate;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  }
+  100% {
+    box-shadow: 0 4px 20px rgba(124, 58, 237, 0.6);
+  }
+}
