@@ -532,7 +532,7 @@ app.post('/api/forgot-password', async (req, res) => {
     // Generate token and expiry
     const crypto = require('crypto');
     const token = crypto.randomBytes(20).toString('hex');
-    const expires = Date.now() + 3600000; // 1 hour expiration
+    const expires = new Date(Date.now() + 3600000); // 1 hour expiration
 
     if (isMongoConnected) {
       user.resetPasswordToken = token;
@@ -545,8 +545,9 @@ app.post('/api/forgot-password', async (req, res) => {
 
     // Configure Mailer
     const nodemailer = require('nodemailer');
+    const isVercel = !!process.env.VERCEL;
     
-    // Get transporter dynamically (using SMTP env, Gmail service env, or Ethereal test accounts)
+    // Get transporter dynamically (using SMTP env, Gmail service env, or dev fallback)
     const getTransporter = async () => {
       if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
         return nodemailer.createTransport({
@@ -555,7 +556,7 @@ app.post('/api/forgot-password', async (req, res) => {
           secure: process.env.SMTP_SECURE === 'true',
           auth: {
             user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
+            pass: process.env.SMTP_PASS.replace(/\s/g, ''),
           },
         });
       }
@@ -564,50 +565,61 @@ app.post('/api/forgot-password', async (req, res) => {
           service: 'gmail',
           auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
+            pass: process.env.EMAIL_PASS.replace(/\s/g, ''),
           }
         });
       }
-      // Dev/Testing fallback using ethereal.email
-      try {
-        const testAccount = await nodemailer.createTestAccount();
-        return nodemailer.createTransport({
-          host: 'smtp.ethereal.email',
-          port: 587,
-          secure: false,
-          auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-          },
-        });
-      } catch (err) {
-        console.error('Failed to create SMTP test account:', err);
-        return {
-          sendMail: async (options) => {
-            console.log('--- SMTP SIMULATION ---');
-            console.log('To:', options.to);
-            console.log('Subject:', options.subject);
-            console.log('Body:', options.text);
-            console.log('-----------------------');
-            return { messageId: 'simulated-id' };
-          }
-        };
+      // Ethereal only for local dev — unreliable on Vercel serverless
+      if (!isVercel && process.env.NODE_ENV !== 'production') {
+        try {
+          const testAccount = await nodemailer.createTestAccount();
+          return nodemailer.createTransport({
+            host: 'smtp.ethereal.email',
+            port: 587,
+            secure: false,
+            auth: {
+              user: testAccount.user,
+              pass: testAccount.pass,
+            },
+          });
+        } catch (err) {
+          console.error('Failed to create SMTP test account:', err);
+        }
       }
+      return {
+        sendMail: async (options) => {
+          console.log('--- SMTP SIMULATION ---');
+          console.log('To:', options.to);
+          console.log('Subject:', options.subject);
+          console.log('Reset link in body');
+          console.log('-----------------------');
+          return { messageId: 'simulated-id' };
+        }
+      };
     };
 
     const transporter = await getTransporter();
     
-    // Determine the base url dynamically based on referer
-    const referer = req.headers.referer || '';
+    // Build reset link from referer/origin (dev) or APP_URL (production / mobile email)
+    const referer = req.headers.referer || req.headers.origin || '';
     const isService = referer.includes('/service');
     const pathPrefix = isService ? '/service' : '/admin';
-    const clientPort = isService ? '5175' : '5174';
-    const baseUrl = `${req.protocol}://${req.hostname === 'localhost' ? `localhost:${clientPort}` : req.headers.host}${pathPrefix}`;
+    let baseUrl;
+    try {
+      const refUrl = new URL(referer);
+      baseUrl = `${refUrl.origin}${pathPrefix}`;
+    } catch {
+      const appUrl = (process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`).replace(/\/$/, '');
+      baseUrl = `${appUrl}${pathPrefix}`;
+    }
     const resetUrl = `${baseUrl}/reset-password/${token}`;
+
+    const fromAddress = process.env.EMAIL_FROM
+      || (process.env.EMAIL_USER ? `"Gharoo Care" <${process.env.EMAIL_USER}>` : '"Gharoo Care" <no-reply@gharoocare.com>');
 
     const mailOptions = {
       to: user.email,
-      from: '"Gharoo Care" <no-reply@gharoocare.com>',
+      from: fromAddress,
       subject: 'Gharoo Care - Password Reset Request',
       text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
             `Please click on the following link, or paste this into your browser to complete the process:\n\n` +
@@ -637,9 +649,12 @@ app.post('/api/forgot-password', async (req, res) => {
       `
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions).catch((mailErr) => {
+      console.error('Failed to send reset email:', mailErr.message || mailErr);
+      return null;
+    });
     
-    // Log preview link if using Ethereal
+    const emailSent = !!(info && info.messageId && info.messageId !== 'simulated-id');
     let isTesting = false;
     let testMessageUrl = '';
     
@@ -651,20 +666,21 @@ app.post('/api/forgot-password', async (req, res) => {
       testMessageUrl = nodemailerUrl;
     } else if (info && info.messageId === 'simulated-id') {
       isTesting = true;
-    } else {
+    } else if (emailSent) {
       console.log('✉️ Reset email successfully dispatched to:', user.email);
     }
 
-    // Determine if we have actual SMTP / Gmail configurations
     const hasSmtpConfig = !!((process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) || (process.env.EMAIL_USER && process.env.EMAIL_PASS));
 
     res.json({ 
       success: true, 
-      message: hasSmtpConfig 
-        ? 'Password reset email sent successfully. Please check your inbox.' 
-        : 'Password reset link generated. (No SMTP credentials configured)',
-      resetUrl: !hasSmtpConfig ? resetUrl : undefined,
-      testMessageUrl: !hasSmtpConfig && testMessageUrl ? testMessageUrl : undefined
+      message: emailSent
+        ? 'Password reset email sent successfully. Please check your inbox.'
+        : hasSmtpConfig
+          ? 'Email could not be sent. Use the reset link below to set a new password.'
+          : 'Password reset link generated. (No SMTP credentials configured)',
+      resetUrl: !emailSent ? resetUrl : undefined,
+      testMessageUrl: !emailSent && testMessageUrl ? testMessageUrl : undefined
     });
   } catch (err) {
     console.error('Forgot password error:', err);

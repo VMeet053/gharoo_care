@@ -65,7 +65,7 @@ export default function ForgotPassword() {
               <div>{message}</div>
               {resetLink && (
                 <div className="mt-3 pt-3 border-top" style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}>
-                  <p className="small mb-2 text-white-50">Since no SMTP server is configured, here is your password reset link:</p>
+                  <p className="small mb-2 text-white-50">Use this link to reset your password:</p>
                   <a href={resetLink} className="btn btn-sm btn-light w-100 text-dark fw-semibold" style={{ textTransform: 'none' }}>
                     Reset Password Directly
                   </a>
