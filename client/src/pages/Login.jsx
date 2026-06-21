@@ -49,12 +49,6 @@ export default function Login() {
 
   return (
     <div className="auth-body">
-      <div className="animated-bg">
-        <div className="bg-blob blob-1"></div>
-        <div className="bg-blob blob-2"></div>
-        <div className="bg-blob blob-3"></div>
-        <div className="bg-blob blob-4"></div>
-      </div>
       <main className="auth-page">
         <section className="auth-card animate-fade-in-up">
           <Link className="auth-brand" to="/">
@@ -62,14 +56,14 @@ export default function Login() {
             <span><strong>Gharoo Admin</strong><small>Sign in to your admin workspace.</small></span>
           </Link>
           {error && (
-            <div className="alert alert-danger" role="alert" style={{ background: 'rgba(220, 38, 38, 0.2)', borderColor: 'rgba(220, 38, 38, 0.4)', color: '#fca5a5' }}>
+            <div className="alert alert-danger" role="alert">
               {error}
             </div>
           )}
           <form className="needs-validation" noValidate onSubmit={handleSubmit}>
             <div className="mb-4">
               <p className="eyebrow mb-1">Secure Access</p>
-              <h1 className="h3 mb-1 text-white">Login</h1>
+              <h1 className="mb-1">Login</h1>
               <p className="text-muted mb-0">Sign in to your admin workspace.</p>
             </div>
             <div className="mb-3">
@@ -88,11 +82,11 @@ export default function Login() {
             <div className="mb-3">
               <div className="d-flex justify-content-between">
                 <label className="form-label" htmlFor="loginPassword">Password</label>
-                <Link className="small fw-semibold" to="/forgot-password">Forgot?</Link>
+                <Link className="fw-semibold" to="/forgot-password">Forgot?</Link>
               </div>
               <div className="position-relative">
                 <input 
-                  className="form-control pe-5" 
+                  className="form-control" 
                   id="loginPassword" 
                   type={showPassword ? "text" : "password"} 
                   minLength="6" 
@@ -100,14 +94,21 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  style={{ paddingRight: '3.5rem' }}
                 />
                 <button
                   type="button"
-                  className="btn btn-link position-absolute end-0 top-50 translate-middle-y text-decoration-none pe-3 text-muted"
-                  style={{ zIndex: 10, border: 'none', background: 'none' }}
+                  className="btn btn-link position-absolute end-0 top-50 translate-middle-y text-decoration-none"
+                  style={{ 
+                    zIndex: 10, 
+                    border: 'none', 
+                    background: 'none',
+                    color: 'var(--admin-muted)',
+                    padding: '0.875rem 1rem'
+                  }}
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                  <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} style={{ fontSize: '1.125rem' }}></i>
                 </button>
               </div>
               <div className="invalid-feedback">Password must be at least 6 characters.</div>
@@ -122,7 +123,7 @@ export default function Login() {
               />
               <label className="form-check-label" htmlFor="rememberMe">Remember me</label>
             </div>
-            <button className="btn btn-primary w-100 text-white" type="submit" disabled={loading}>
+            <button className="btn btn-primary w-100" type="submit" disabled={loading}>
               {loading ? (
                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
               ) : (

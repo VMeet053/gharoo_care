@@ -1,11 +1,24 @@
 .contact {
   padding: 100px 24px;
   background: linear-gradient(180deg, #f2fbff 0%, #ffffff 100%);
+  overflow-x: hidden;
+  width: 100%;
 }
 
 .contact-inner {
   max-width: 1080px;
+  width: 100%;
   margin: 0 auto;
+}
+
+.contact-info,
+.contact-form {
+  width: 100%;
+  overflow-wrap: break-word;
+}
+
+.contact-item strong {
+  word-break: break-word;
 }
 
 .contact-header {
