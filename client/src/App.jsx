@@ -22,6 +22,7 @@ import CreateAgent from './pages/CreateAgent';
 import UserDetails from './pages/UserDetails';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import NotFound from './pages/NotFound';
 import ServerError from './pages/ServerError';
 import UserPanelHero from './pages/UserPanelHero';
@@ -47,6 +48,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="login" replace /> },
       { path: 'login', element: <Login /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
+      { path: 'reset-password/:token', element: <ResetPassword /> },
       { path: '500', element: <ServerError /> },
       {
         element: <Layout />,

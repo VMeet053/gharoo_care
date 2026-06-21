@@ -8,6 +8,7 @@ const PanelSettings = require('./models/PanelSettings');
 const WorkOrder = require('./models/WorkOrder');
 const Lead = require('./models/Lead');
 const ServicePrice = require('./models/ServicePrice');
+const PremiumUser = require('./models/PremiumUser');
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const path = require('path');
@@ -52,6 +53,7 @@ app.use('/service', express.static(path.join(__dirname, '../service-man-client/d
 // In-memory storage fallbacks
 let inMemorySettings = null;
 let inMemoryUsers = [];
+let inMemoryPremiumUsers = [];
 let nextUserId = 1;
 
 // Helper function to get default settings
@@ -480,6 +482,225 @@ app.post('/api/service-login', async (req, res) => {
   }
 });
 
+// Forgot Password Endpoint
+app.post('/api/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email address is required' });
+    }
+
+    let user = null;
+    if (isMongoConnected) {
+      user = await User.findOne({ email: email.toLowerCase() });
+      // Self-healing: if admin email doesn't exist in DB, create/seed it dynamically
+      if (!user && email.toLowerCase() === 'gharoocare@gmail.com') {
+        const hashedPassword = await bcrypt.hash('Gharoocare!@#$123', 10);
+        user = new User({
+          firstName: 'Admin',
+          lastName: 'User',
+          email: 'gharoocare@gmail.com',
+          phone: '9974389486',
+          role: 'admin',
+          team: 'Management',
+          status: 'Active',
+          password: hashedPassword
+        });
+        await user.save();
+      }
+    } else {
+      user = inMemoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (!user && email.toLowerCase() === 'gharoocare@gmail.com') {
+        user = {
+          id: '1',
+          firstName: 'Admin',
+          lastName: 'User',
+          email: 'gharoocare@gmail.com',
+          role: 'admin',
+          team: 'Management',
+          status: 'Active',
+          password: 'password123'
+        };
+        inMemoryUsers.push(user);
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No account registered with this email address.' });
+    }
+
+    // Generate token and expiry
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(20).toString('hex');
+    const expires = Date.now() + 3600000; // 1 hour expiration
+
+    if (isMongoConnected) {
+      user.resetPasswordToken = token;
+      user.resetPasswordExpires = expires;
+      await user.save();
+    } else {
+      user.resetPasswordToken = token;
+      user.resetPasswordExpires = expires;
+    }
+
+    // Configure Mailer
+    const nodemailer = require('nodemailer');
+    
+    // Get transporter dynamically (using SMTP env, Gmail service env, or Ethereal test accounts)
+    const getTransporter = async () => {
+      if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        return nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT) || 587,
+          secure: process.env.SMTP_SECURE === 'true',
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          },
+        });
+      }
+      if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        return nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
+      }
+      // Dev/Testing fallback using ethereal.email
+      try {
+        const testAccount = await nodemailer.createTestAccount();
+        return nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          secure: false,
+          auth: {
+            user: testAccount.user,
+            pass: testAccount.pass,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to create SMTP test account:', err);
+        return {
+          sendMail: async (options) => {
+            console.log('--- SMTP SIMULATION ---');
+            console.log('To:', options.to);
+            console.log('Subject:', options.subject);
+            console.log('Body:', options.text);
+            console.log('-----------------------');
+            return { messageId: 'simulated-id' };
+          }
+        };
+      }
+    };
+
+    const transporter = await getTransporter();
+    
+    // Determine the base url dynamically based on referer
+    const referer = req.headers.referer || '';
+    const isService = referer.includes('/service');
+    const pathPrefix = isService ? '/service' : '/admin';
+    const clientPort = isService ? '5175' : '5174';
+    const baseUrl = `${req.protocol}://${req.hostname === 'localhost' ? `localhost:${clientPort}` : req.headers.host}${pathPrefix}`;
+    const resetUrl = `${baseUrl}/reset-password/${token}`;
+
+    const mailOptions = {
+      to: user.email,
+      from: '"Gharoo Care" <no-reply@gharoocare.com>',
+      subject: 'Gharoo Care - Password Reset Request',
+      text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
+            `Please click on the following link, or paste this into your browser to complete the process:\n\n` +
+            `${resetUrl}\n\n` +
+            `If you did not request this, please ignore this email and your password will remain unchanged.\n`,
+      html: `
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; background-color: #f1f5f9; padding: 40px; color: #0f172a;">
+          <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(15, 23, 42, 0.05); overflow: hidden; border: 1px solid #e2e8f0;">
+            <div style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); padding: 30px; text-align: center; color: white;">
+              <h2 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.02em;">Gharoo Care</h2>
+              <p style="margin: 5px 0 0 0; color: rgba(255, 255, 255, 0.85); font-size: 14px;">Admin & Provider Password Reset</p>
+            </div>
+            <div style="padding: 45px 35px; line-height: 1.6;">
+              <h3 style="margin-top: 0; color: #0f172a; font-size: 18px; font-weight: 600;">Hello ${user.firstName || 'User'},</h3>
+              <p style="color: #475569; font-size: 15px;">You are receiving this email because you (or someone else) requested a password reset for your account on Gharoo Care.</p>
+              <p style="color: #475569; font-size: 15px; margin-bottom: 30px;">Please click the button below to complete the password reset process. This link will expire in 1 hour.</p>
+              <div style="text-align: center; margin-bottom: 35px;">
+                <a href="${resetUrl}" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);">Reset Password</a>
+              </div>
+              <p style="color: #64748b; font-size: 13px;">If you did not request this reset, please ignore this email and your password will remain unchanged.</p>
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+              <p style="color: #94a3b8; font-size: 12px; line-height: 1.4;">If you're having trouble clicking the button, copy and paste this URL into your browser:<br>
+              <a href="${resetUrl}" style="color: #4f46e5; text-decoration: underline;">${resetUrl}</a></p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    
+    // Log preview link if using Ethereal
+    if (info && info.messageId && transporter.options && transporter.options.host === 'smtp.ethereal.email') {
+      const nodemailerUrl = nodemailer.getTestMessageUrl(info);
+      console.log('✉️ Reset email sent to Ethereal. Review message here:', nodemailerUrl);
+      console.log('✉️ Password Reset Link:', resetUrl);
+    } else {
+      console.log('✉️ Reset email successfully dispatched to:', user.email);
+    }
+
+    res.json({ success: true, message: 'Password reset email sent successfully. Please check your inbox.' });
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ success: false, message: 'Failed to send password reset email. Please try again later.' });
+  }
+});
+
+// Reset Password Endpoint
+app.post('/api/reset-password', async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ success: false, message: 'Token and password are required' });
+    }
+
+    let user = null;
+    if (isMongoConnected) {
+      user = await User.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpires: { $gt: Date.now() }
+      });
+    } else {
+      user = inMemoryUsers.find(u => 
+        u.resetPasswordToken === token && 
+        u.resetPasswordExpires > Date.now()
+      );
+    }
+
+    if (!user) {
+      return res.status(400).json({ success: false, message: 'Password reset token is invalid or has expired.' });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (isMongoConnected) {
+      user.password = hashedPassword;
+      user.resetPasswordToken = '';
+      user.resetPasswordExpires = undefined;
+      await user.save();
+    } else {
+      user.password = hashedPassword; // in-memory store
+      user.resetPasswordToken = '';
+      user.resetPasswordExpires = undefined;
+    }
+
+    res.json({ success: true, message: 'Your password has been successfully reset! You can now log in.' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ success: false, message: 'An error occurred during password reset. Please try again.' });
+  }
+});
+
 // Panel Settings API
 // Get panel settings
 app.get('/api/panel-settings', async (req, res) => {
@@ -790,6 +1011,66 @@ app.delete('/api/service-prices/:id', async (req, res) => {
     res.json({ success: true, message: 'Service price deleted successfully!' });
   } catch (err) {
     console.error('Delete service price error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Premium User Endpoints
+app.get('/api/premium-users', async (req, res) => {
+  try {
+    if (isMongoConnected) {
+      const users = await PremiumUser.find().sort({ createdAt: -1 });
+      res.json({ success: true, data: users });
+    } else {
+      res.json({ success: true, data: inMemoryPremiumUsers });
+    }
+  } catch (err) {
+    console.error('Get premium users error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+app.post('/api/premium-users', async (req, res) => {
+  try {
+    const { name, email, phone, plan, price, city, address } = req.body;
+    
+    // Default expiryDate to 1 year from now
+    const expiryDate = new Date();
+    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+    if (isMongoConnected) {
+      const newUser = new PremiumUser({
+        name,
+        email,
+        phone,
+        plan: plan || 'Premium',
+        price: price || '$0',
+        city: city || '',
+        address: address || '',
+        expiryDate,
+        status: 'Active'
+      });
+      await newUser.save();
+      res.json({ success: true, message: 'Premium user registered successfully!', data: newUser });
+    } else {
+      const newUser = {
+        id: (inMemoryPremiumUsers.length + 1).toString(),
+        name,
+        email,
+        phone,
+        plan: plan || 'Premium',
+        price: price || '$0',
+        city: city || '',
+        address: address || '',
+        expiryDate: expiryDate.toISOString(),
+        status: 'Active',
+        createdAt: new Date().toISOString()
+      };
+      inMemoryPremiumUsers.push(newUser);
+      res.json({ success: true, message: 'Premium user registered successfully!', data: newUser });
+    }
+  } catch (err) {
+    console.error('Create premium user error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });

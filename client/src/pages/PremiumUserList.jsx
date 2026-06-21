@@ -1,16 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function PremiumUserList() {
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  useEffect(() => {
+    const fetchPremiumUsers = async () => {
+      try {
+        const res = await fetch('/api/premium-users');
+        const data = await res.json();
+        if (data.success) {
+          setUsers(data.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch premium users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPremiumUsers();
+  }, []);
+
+  const totalPremium = users.length;
+  const activePremium = users.filter(u => u.status === 'Active').length;
+  const expiringPremium = users.filter(u => u.status === 'Expiring Soon').length;
+  const expiredPremium = users.filter(u => u.status === 'Expired').length;
+
   // Filter users
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.phone.includes(searchTerm)
+    (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.phone || '').includes(searchTerm)
   );
 
   const getStatusBadgeClass = (status) => {
@@ -61,7 +84,7 @@ export default function PremiumUserList() {
               <span className="metric-label">Total Premium</span>
               <span className="metric-icon"><i className="bi bi-award" aria-hidden="true"></i></span>
             </div>
-            <div className="metric-value">0</div>
+            <div className="metric-value">{totalPremium}</div>
             <div className="metric-meta">
               <span className="text-muted">-</span>
               <span>this month</span>
@@ -75,7 +98,7 @@ export default function PremiumUserList() {
               <span className="metric-label">Active</span>
               <span className="metric-icon"><i className="bi bi-check2-circle" aria-hidden="true"></i></span>
             </div>
-            <div className="metric-value">0</div>
+            <div className="metric-value">{activePremium}</div>
             <div className="metric-meta">
               <span className="text-muted">-</span>
               <span>active subscriptions</span>
@@ -89,7 +112,7 @@ export default function PremiumUserList() {
               <span className="metric-label">Expiring Soon</span>
               <span className="metric-icon"><i className="bi bi-hourglass-split" aria-hidden="true"></i></span>
             </div>
-            <div className="metric-value">0</div>
+            <div className="metric-value">{expiringPremium}</div>
             <div className="metric-meta">
               <span className="text-muted">-</span>
               <span>next 7 days</span>
@@ -103,7 +126,7 @@ export default function PremiumUserList() {
               <span className="metric-label">Expired</span>
               <span className="metric-icon"><i className="bi bi-slash-circle" aria-hidden="true"></i></span>
             </div>
-            <div className="metric-value">0</div>
+            <div className="metric-value">{expiredPremium}</div>
             <div className="metric-meta">
               <span className="text-muted">-</span>
               <span>this week</span>
@@ -143,7 +166,15 @@ export default function PremiumUserList() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="text-center py-5">
                     <div className="blank-icon mx-auto mb-3">
@@ -159,7 +190,7 @@ export default function PremiumUserList() {
                     <td>
                       <div className="d-flex align-items-center gap-2">
                         <div className="avatar-img avatar-sm bg-primary text-white d-flex align-items-center justify-content-center">
-                          {user.name.charAt(0)}
+                          {(user.name || '').charAt(0)}
                         </div>
                         <div>
                           <p className="fw-semibold mb-0">{user.name}</p>
@@ -169,7 +200,7 @@ export default function PremiumUserList() {
                     </td>
                     <td><span className={`badge ${getPlanBadgeClass(user.plan)}`}>{user.plan}</span></td>
                     <td>{user.city}</td>
-                    <td>{user.expiryDate}</td>
+                    <td>{user.expiryDate ? new Date(user.expiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</td>
                     <td><span className={`badge ${getStatusBadgeClass(user.status)}`}>{user.status}</span></td>
                     <td className="text-end">
                       <button className="btn btn-light btn-sm">View</button>

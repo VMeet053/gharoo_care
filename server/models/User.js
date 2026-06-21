@@ -46,6 +46,13 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     default: '/assets/images/avatar/avatar-1.jpg'
+  },
+  resetPasswordToken: {
+    type: String,
+    default: ''
+  },
+  resetPasswordExpires: {
+    type: Date
   }
 }, { timestamps: true });
 

@@ -107,9 +107,9 @@ const pricingSchema = new mongoose.Schema({
 const contactSchema = new mongoose.Schema({
   title: { type: String, default: 'Get In Touch' },
   description: { type: String, default: 'Have questions? We are here to help!' },
-  phone: { type: String, default: '+91 1234567890' },
-  email: { type: String, default: 'contact@gharoocare.com' },
-  address: { type: String, default: '123 Main St, City, State' }
+  phone: { type: String, default: '+91  99743 89486' },
+  email: { type: String, default: 'gharoocare@gmail.com' },
+  address: { type: String, default: '244 avadh viceroy sarthana jakat naka surat 395006' }
 });
 
 const statsItemSchema = new mongoose.Schema({

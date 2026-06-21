@@ -83,7 +83,10 @@ export default function Login() {
               <div className="invalid-feedback">Enter a valid email.</div>
             </div>
             <div className="mb-3">
-              <label className="form-label" htmlFor="loginPassword">Password</label>
+              <div className="d-flex justify-content-between">
+                <label className="form-label" htmlFor="loginPassword">Password</label>
+                <Link className="small fw-semibold" to="/forgot-password">Forgot?</Link>
+              </div>
               <div className="position-relative">
                 <input
                   className="form-control pe-5"

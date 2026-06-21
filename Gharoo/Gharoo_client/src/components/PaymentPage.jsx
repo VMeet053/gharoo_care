@@ -38,8 +38,30 @@ export default function PaymentPage() {
 
       const data = await res.json()
       if (data.success) {
+        // Also register as a premium user
+        try {
+          const selectedPlan = JSON.parse(localStorage.getItem('selectedPlan')) || { name: 'Premium', price: '$19.99' };
+          const premiumUserData = {
+            name: `${userFormData.firstName} ${userFormData.lastName}`,
+            email: userFormData.email,
+            phone: userFormData.contactNumber,
+            plan: selectedPlan.name,
+            price: selectedPlan.price,
+            city: userFormData.fullAddress,
+            address: userFormData.fullAddress
+          };
+          await fetch('/api/premium-users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(premiumUserData)
+          });
+        } catch (premiumErr) {
+          console.error('Failed to register premium user:', premiumErr);
+        }
+
         alert('Booking confirmed! We will contact you soon!')
         localStorage.removeItem('userFormData')
+        localStorage.removeItem('selectedPlan')
         navigate('/')
       } else {
         alert('Something went wrong! Please try again!')

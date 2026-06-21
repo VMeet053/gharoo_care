@@ -1,37 +1,52 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 
-export default function Login() {
-  const [email, setEmail] = useState('');
+export default function ResetPassword() {
+  const { token } = useParams();
+  const navigate = useNavigate();
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setMessage('');
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      setLoading(false);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch('/api/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ token, password })
       });
       const data = await response.json();
 
       if (data.success) {
-        const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem('adminUser', JSON.stringify(data.user));
-        navigate('/dashboard');
+        setMessage(data.message || 'Password reset successfully! Redirecting to login page...');
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
       } else {
-        setError(data.message || 'Invalid credentials');
+        setError(data.message || 'Failed to reset password. The link may have expired.');
       }
     } catch (err) {
-      setError('Failed to connect to server');
+      setError('Failed to connect to server. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -47,43 +62,36 @@ export default function Login() {
       </div>
       <main className="auth-page">
         <section className="auth-card animate-fade-in-up">
-          <Link className="auth-brand" to="/">
-            <span className="brand-icon"><i className="bi bi-grid-1x2-fill" aria-hidden="true"></i></span>
-            <span><strong>Gharoo Admin</strong><small>Sign in to your admin workspace.</small></span>
+          <Link className="auth-brand" to="/login">
+            <span className="brand-icon"><i className="bi bi-person-workspace" aria-hidden="true"></i></span>
+            <span><strong>GharooCare Service</strong><small>Set a new password for your account.</small></span>
           </Link>
+          
           {error && (
             <div className="alert alert-danger" role="alert" style={{ background: 'rgba(220, 38, 38, 0.2)', borderColor: 'rgba(220, 38, 38, 0.4)', color: '#fca5a5' }}>
               {error}
             </div>
           )}
+
+          {message && (
+            <div className="alert alert-success" role="alert" style={{ background: 'rgba(16, 185, 129, 0.2)', borderColor: 'rgba(16, 185, 129, 0.4)', color: '#a7f3d0' }}>
+              {message}
+            </div>
+          )}
+
           <form className="needs-validation" noValidate onSubmit={handleSubmit}>
             <div className="mb-4">
               <p className="eyebrow mb-1">Secure Access</p>
-              <h1 className="h3 mb-1 text-white">Login</h1>
-              <p className="text-muted mb-0">Sign in to your admin workspace.</p>
+              <h1 className="h3 mb-1 text-white">Reset Password</h1>
+              <p className="text-muted mb-0">Enter a secure new password for your account.</p>
             </div>
+            
             <div className="mb-3">
-              <label className="form-label" htmlFor="loginEmail">Email address</label>
-              <input 
-                className="form-control" 
-                id="loginEmail" 
-                type="email" 
-                required 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
-              />
-              <div className="invalid-feedback">Enter a valid email.</div>
-            </div>
-            <div className="mb-3">
-              <div className="d-flex justify-content-between">
-                <label className="form-label" htmlFor="loginPassword">Password</label>
-                <Link className="small fw-semibold" to="/forgot-password">Forgot?</Link>
-              </div>
+              <label className="form-label" htmlFor="newPassword">New Password</label>
               <div className="position-relative">
                 <input 
                   className="form-control pe-5" 
-                  id="loginPassword" 
+                  id="newPassword" 
                   type={showPassword ? "text" : "password"} 
                   minLength="6" 
                   required 
@@ -100,27 +108,33 @@ export default function Login() {
                   <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
                 </button>
               </div>
-              <div className="invalid-feedback">Password must be at least 6 characters.</div>
             </div>
-            <div className="form-check mb-4">
+
+            <div className="mb-4">
+              <label className="form-label" htmlFor="confirmPassword">Confirm New Password</label>
               <input 
-                className="form-check-input" 
-                type="checkbox" 
-                id="rememberMe" 
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                className="form-control" 
+                id="confirmPassword" 
+                type={showPassword ? "text" : "password"} 
+                minLength="6" 
+                required 
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
               />
-              <label className="form-check-label" htmlFor="rememberMe">Remember me</label>
             </div>
-            <button className="btn btn-primary w-100 text-white" type="submit" disabled={loading}>
+
+            <button className="btn btn-primary w-100 text-white" type="submit" disabled={loading || !!message}>
               {loading ? (
                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
               ) : (
-                <i className="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>
+                <i className="bi bi-shield-check me-2" aria-hidden="true"></i>
               )}
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Setting password...' : 'Set Password'}
             </button>
           </form>
+          
+          <div className="auth-footer">Remembered it? <Link to="/login">Back to login</Link></div>
         </section>
       </main>
     </div>

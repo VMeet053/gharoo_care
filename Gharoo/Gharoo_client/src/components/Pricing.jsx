@@ -34,7 +34,15 @@ export default function Pricing({ settings }) {
                     <li key={j}><IconCheck size={16} /> {f}</li>
                   ))}
                 </ul>
-                <button onClick={() => navigate('/booking')} className="btn plan-btn">Get Started</button>
+                <button 
+                  onClick={() => {
+                    localStorage.setItem('selectedPlan', JSON.stringify({ name: plan.name, price: plan.price }));
+                    navigate('/booking');
+                  }} 
+                  className="btn plan-btn"
+                >
+                  Get Started
+                </button>
               </div>
             </Reveal>
           ))}

@@ -44,9 +44,9 @@ export default function ForgotPassword() {
       </div>
       <main className="auth-page">
         <section className="auth-card animate-fade-in-up">
-          <Link className="auth-brand" to="/">
-            <span className="brand-icon"><i className="bi bi-grid-1x2-fill" aria-hidden="true"></i></span>
-            <span><strong>Gharoo Admin</strong><small>Get a reset link for your account.</small></span>
+          <Link className="auth-brand" to="/login">
+            <span className="brand-icon"><i className="bi bi-person-workspace" aria-hidden="true"></i></span>
+            <span><strong>GharooCare Service</strong><small>Get a reset link for your account.</small></span>
           </Link>
           
           {error && (
@@ -65,7 +65,7 @@ export default function ForgotPassword() {
             <div className="mb-4">
               <p className="eyebrow mb-1">Secure Access</p>
               <h1 className="h3 mb-1 text-white">Forgot Password</h1>
-              <p className="text-muted mb-0">Get a reset link for your account.</p>
+              <p className="text-muted mb-0">Get a reset link for your provider account.</p>
             </div>
             <div className="mb-4">
               <label className="form-label" htmlFor="forgotEmail">Email address</label>
@@ -76,7 +76,7 @@ export default function ForgotPassword() {
                 required 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
+                placeholder="name@example.com"
               />
               <div className="invalid-feedback">Enter a valid email.</div>
             </div>
@@ -96,4 +96,3 @@ export default function ForgotPassword() {
     </div>
   );
 }
-
