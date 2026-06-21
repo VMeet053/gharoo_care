@@ -388,44 +388,37 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-// Login route (if MongoDB connected, else use hardcoded admin)
+// Login route
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
-    // Hardcoded admin for fallback
-    if (email.toLowerCase() === 'gharoocare@gmail.com' && password === 'Gharoocare!@#$123') {
-      return res.json({
-        success: true,
-        user: {
-          _id: '1',
-          firstName: 'Admin',
-          lastName: 'User',
-          email: 'gharoocare@gmail.com',
-          role: 'admin',
-          team: 'Management',
-          status: 'active'
-        }
-      });
-    }
+    const normalizedEmail = email.toLowerCase();
 
     if (!isMongoConnected) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      const user = inMemoryUsers.find(u => u.email.toLowerCase() === normalizedEmail);
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+      const isPasswordValid = user.password.startsWith('$2')
+        ? await bcrypt.compare(password, user.password)
+        : password === user.password;
+      if (!isPasswordValid) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+      const { password: _, ...userWithoutPassword } = user;
+      return res.json({ success: true, user: userWithoutPassword });
     }
 
-    // Find user by email
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Compare password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    // Return user without password
     const { password: _, ...userWithoutPassword } = user.toObject();
     res.json({ success: true, user: userWithoutPassword });
   } catch (err) {
@@ -438,29 +431,26 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/service-login', async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Hardcoded service man fallback check using admin credentials
-    if (email.toLowerCase() === 'gharoocare@gmail.com' && password === 'Gharoocare!@#$123') {
-      return res.json({
-        success: true,
-        user: {
-          _id: '1',
-          id: '1',
-          firstName: 'Service',
-          lastName: 'Man',
-          email: 'gharoocare@gmail.com',
-          role: 'Service Man',
-          team: 'Service',
-          status: 'Active'
-        }
-      });
-    }
+    const normalizedEmail = email.toLowerCase();
 
     if (!isMongoConnected) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      const user = inMemoryUsers.find(
+        u => u.email.toLowerCase() === normalizedEmail && u.role === 'Service Man'
+      );
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+      const isPasswordValid = user.password.startsWith('$2')
+        ? await bcrypt.compare(password, user.password)
+        : password === user.password;
+      if (!isPasswordValid) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+      const { password: _, ...userWithoutPassword } = user;
+      return res.json({ success: true, user: userWithoutPassword });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase(), role: 'Service Man' });
+    const user = await User.findOne({ email: normalizedEmail, role: 'Service Man' });
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }

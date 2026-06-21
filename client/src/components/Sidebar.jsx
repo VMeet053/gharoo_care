@@ -1,5 +1,5 @@
-import { NavLink, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { NavLink } from 'react-router-dom';
+import { useState } from 'react';
 
 const navSections = [
   {
@@ -50,28 +50,13 @@ const navSections = [
 ];
 
 export default function Sidebar({ isCollapsed, setIsCollapsed, closeMobileSidebar }) {
-  const location = useLocation();
-  const [openSections, setOpenSections] = useState(['Main', 'User Panel', 'Management', 'Transactions']); // Default all open
+  const [openSections, setOpenSections] = useState([]);
 
   const toggleSection = (label) => {
     setOpenSections((prev) => 
       prev.includes(label) ? prev.filter((item) => item !== label) : [...prev, label]
     );
   };
-
-  // Auto-open section when navigating to one of its items
-  useEffect(() => {
-    for (const section of navSections) {
-      for (const item of section.items) {
-        if (location.pathname.startsWith(item.to) || location.pathname === item.to) {
-          setOpenSections((prev) => 
-            prev.includes(section.label) ? prev : [...prev, section.label]
-          );
-          return;
-        }
-      }
-    }
-  }, [location.pathname]);
 
   return (
     <aside className={`admin-sidebar ${isCollapsed ? 'collapsed' : ''}`} id="adminSidebar" aria-label="Main navigation">

@@ -330,24 +330,23 @@ app.post('/api/users', async (req, res) => {
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    
-    // Hardcoded admin for fallback
-    if (email.toLowerCase() === 'gharoocare@gmail.com' && password === 'Gharoocare!@#$123') {
-      return res.json({
-        success: true,
-        user: {
-          _id: '1',
-          firstName: 'Admin',
-          lastName: 'User',
-          email: 'gharoocare@gmail.com',
-          role: 'admin',
-          team: 'Management',
-          status: 'active'
-        }
-      });
-    }
 
     if (!isMongoConnected) {
+      // Hardcoded admin fallback only when database is unavailable
+      if (email.toLowerCase() === 'gharoocare@gmail.com' && password === 'Gharoocare!@#$123') {
+        return res.json({
+          success: true,
+          user: {
+            _id: '1',
+            firstName: 'Admin',
+            lastName: 'User',
+            email: 'gharoocare@gmail.com',
+            role: 'admin',
+            team: 'Management',
+            status: 'active'
+          }
+        });
+      }
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
@@ -377,24 +376,23 @@ app.post('/api/service-login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Hardcoded service man fallback check using admin credentials
-    if (email.toLowerCase() === 'gharoocare@gmail.com' && password === 'Gharoocare!@#$123') {
-      return res.json({
-        success: true,
-        user: {
-          _id: '1',
-          id: '1',
-          firstName: 'Service',
-          lastName: 'Man',
-          email: 'gharoocare@gmail.com',
-          role: 'Service Man',
-          team: 'Service',
-          status: 'Active'
-        }
-      });
-    }
-
     if (!isMongoConnected) {
+      // Hardcoded fallback only when database is unavailable
+      if (email.toLowerCase() === 'gharoocare@gmail.com' && password === 'Gharoocare!@#$123') {
+        return res.json({
+          success: true,
+          user: {
+            _id: '1',
+            id: '1',
+            firstName: 'Service',
+            lastName: 'Man',
+            email: 'gharoocare@gmail.com',
+            role: 'Service Man',
+            team: 'Service',
+            status: 'Active'
+          }
+        });
+      }
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
