@@ -640,15 +640,32 @@ app.post('/api/forgot-password', async (req, res) => {
     const info = await transporter.sendMail(mailOptions);
     
     // Log preview link if using Ethereal
+    let isTesting = false;
+    let testMessageUrl = '';
+    
     if (info && info.messageId && transporter.options && transporter.options.host === 'smtp.ethereal.email') {
       const nodemailerUrl = nodemailer.getTestMessageUrl(info);
       console.log('✉️ Reset email sent to Ethereal. Review message here:', nodemailerUrl);
       console.log('✉️ Password Reset Link:', resetUrl);
+      isTesting = true;
+      testMessageUrl = nodemailerUrl;
+    } else if (info && info.messageId === 'simulated-id') {
+      isTesting = true;
     } else {
       console.log('✉️ Reset email successfully dispatched to:', user.email);
     }
 
-    res.json({ success: true, message: 'Password reset email sent successfully. Please check your inbox.' });
+    // Determine if we have actual SMTP / Gmail configurations
+    const hasSmtpConfig = !!((process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) || (process.env.EMAIL_USER && process.env.EMAIL_PASS));
+
+    res.json({ 
+      success: true, 
+      message: hasSmtpConfig 
+        ? 'Password reset email sent successfully. Please check your inbox.' 
+        : 'Password reset link generated. (No SMTP credentials configured)',
+      resetUrl: !hasSmtpConfig ? resetUrl : undefined,
+      testMessageUrl: !hasSmtpConfig && testMessageUrl ? testMessageUrl : undefined
+    });
   } catch (err) {
     console.error('Forgot password error:', err);
     res.status(500).json({ success: false, message: 'Failed to send password reset email. Please try again later.' });

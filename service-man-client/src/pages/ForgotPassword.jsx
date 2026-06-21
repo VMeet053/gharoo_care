@@ -6,12 +6,14 @@ export default function ForgotPassword() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetLink, setResetLink] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     setMessage('');
+    setResetLink('');
 
     try {
       const response = await fetch('/api/forgot-password', {
@@ -23,6 +25,9 @@ export default function ForgotPassword() {
 
       if (data.success) {
         setMessage(data.message || 'Password reset email sent successfully! Please check your inbox.');
+        if (data.resetUrl) {
+          setResetLink(data.resetUrl);
+        }
         setEmail('');
       } else {
         setError(data.message || 'Email address not found.');
@@ -57,7 +62,15 @@ export default function ForgotPassword() {
 
           {message && (
             <div className="alert alert-success" role="alert" style={{ background: 'rgba(16, 185, 129, 0.2)', borderColor: 'rgba(16, 185, 129, 0.4)', color: '#a7f3d0' }}>
-              {message}
+              <div>{message}</div>
+              {resetLink && (
+                <div className="mt-3 pt-3 border-top" style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}>
+                  <p className="small mb-2 text-white-50">Since no SMTP server is configured, here is your password reset link:</p>
+                  <a href={resetLink} className="btn btn-sm btn-light w-100 text-dark fw-semibold" style={{ textTransform: 'none' }}>
+                    Reset Password Directly
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
