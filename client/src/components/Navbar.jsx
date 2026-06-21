@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const pageTitles = {
   '/': 'Dashboard',
@@ -19,7 +19,15 @@ const pageTitles = {
 
 export default function Navbar({ isOpen, toggleSidebar }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const pageTitle = pageTitles[pathname] || 'Dashboard';
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    localStorage.removeItem('adminUser');
+    sessionStorage.removeItem('adminUser');
+    navigate('/login');
+  };
 
   return (
     <nav className="navbar admin-navbar navbar-expand bg-white">
@@ -98,7 +106,7 @@ export default function Navbar({ isOpen, toggleSidebar }) {
               <li><Link className="dropdown-item" to="/profile"><i className="bi bi-person me-2"></i>Profile</Link></li>
               <li><Link className="dropdown-item" to="/settings"><i className="bi bi-gear me-2"></i>Settings</Link></li>
               <li><hr className="dropdown-divider" /></li>
-              <li><Link className="dropdown-item" to="/login"><i className="bi bi-box-arrow-right me-2"></i>Sign out</Link></li>
+              <li><button className="dropdown-item" onClick={handleLogout}><i className="bi bi-box-arrow-right me-2"></i>Sign out</button></li>
             </ul>
           </div>
         </div>

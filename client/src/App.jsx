@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import PremiumUserList from './pages/PremiumUserList';
@@ -51,7 +52,7 @@ const router = createBrowserRouter([
       { path: 'reset-password/:token', element: <ResetPassword /> },
       { path: '500', element: <ServerError /> },
       {
-        element: <Layout />,
+        element: <ProtectedRoute><Layout /></ProtectedRoute>,
         children: [
           { path: 'dashboard', element: <Dashboard /> },
           { path: 'users', element: <Users /> },
