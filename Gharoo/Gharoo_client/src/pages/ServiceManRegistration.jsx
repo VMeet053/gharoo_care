@@ -315,46 +315,72 @@ export default function ServiceManRegistration() {
           </div>
 
           {/* Front ID Proof Image */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-              Front Side of ID Proof
+          <div style={{ border: '2px dashed #e2e8f0', padding: '1rem', borderRadius: '8px', background: '#f8fafc' }}>
+            <label style={{ display: 'block', marginBottom: '0.75rem', color: '#1e293b', fontWeight: '700', fontSize: '1.05rem' }}>
+              📸 Front Side of ID Proof
             </label>
             <input
               type="file"
               accept="image/*"
               onChange={handleFrontImageChange}
-              style={{ width: '100%', padding: '0.5rem' }}
+              style={{ 
+                width: '100%', 
+                padding: '0.75rem', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '6px', 
+                background: 'white',
+                cursor: 'pointer'
+              }}
             />
             {frontImagePreview && (
-              <div style={{ marginTop: '0.5rem' }}>
+              <div style={{ marginTop: '1rem' }}>
                 <img
                   src={frontImagePreview}
                   alt="Front ID Proof Preview"
                   style={{
-                    maxWidth: '200px', borderRadius: '8px', border: '2px solid #e2e8f0' }}
+                    maxWidth: '100%', 
+                    maxHeight: '250px',
+                    borderRadius: '8px', 
+                    border: '2px solid #24b57a',
+                    display: 'block',
+                    margin: '0 auto'
+                  }}
                 />
               </div>
             )}
           </div>
 
           {/* Back ID Proof Image */}
-          <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-              Back Side of ID Proof
+          <div style={{ border: '2px dashed #e2e8f0', padding: '1rem', borderRadius: '8px', background: '#f8fafc' }}>
+            <label style={{ display: 'block', marginBottom: '0.75rem', color: '#1e293b', fontWeight: '700', fontSize: '1.05rem' }}>
+              📸 Back Side of ID Proof
             </label>
             <input
               type="file"
               accept="image/*"
               onChange={handleBackImageChange}
-              style={{ width: '100%', padding: '0.5rem' }}
+              style={{ 
+                width: '100%', 
+                padding: '0.75rem', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '6px', 
+                background: 'white',
+                cursor: 'pointer'
+              }}
             />
             {backImagePreview && (
-              <div style={{ marginTop: '0.5rem' }}>
+              <div style={{ marginTop: '1rem' }}>
                 <img
                   src={backImagePreview}
                   alt="Back ID Proof Preview"
                   style={{
-                    maxWidth: '200px', borderRadius: '8px', border: '2px solid #e2e8f0' }}
+                    maxWidth: '100%', 
+                    maxHeight: '250px',
+                    borderRadius: '8px', 
+                    border: '2px solid #24b57a',
+                    display: 'block',
+                    margin: '0 auto'
+                  }}
                 />
               </div>
             )}
