@@ -13,7 +13,9 @@ export default function CreateAgent() {
     team: 'Operations',
     service: '',
     notes: '',
-    password: ''
+    password: '',
+    idProofType: '',
+    idProofNumber: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -176,6 +178,32 @@ export default function CreateAgent() {
                   <option>Technical</option>
                 </select>
                 <div className="invalid-feedback">Choose a team.</div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="idProofType">ID Proof Type</label>
+                <select
+                  className="form-select"
+                  id="idProofType"
+                  value={formData.idProofType}
+                  onChange={handleChange}
+                >
+                  <option value="">Choose ID Proof</option>
+                  <option value="Pan Card">Pan Card</option>
+                  <option value="Aadhaar Card">Aadhaar Card</option>
+                  <option value="Driving License">Driving License</option>
+                  <option value="Election Card">Election Card</option>
+                </select>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="idProofNumber">ID Proof Number</label>
+                <input 
+                  className="form-control" 
+                  id="idProofNumber" 
+                  type="text" 
+                  placeholder="e.g., ABCDE1234F"
+                  value={formData.idProofNumber}
+                  onChange={handleChange}
+                />
               </div>
               <div className="col-12">
                 <label className="form-label" htmlFor="notes">Additional Notes</label>

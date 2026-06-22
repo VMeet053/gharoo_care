@@ -90,6 +90,12 @@ export default function Header({ settings }) {
               <div className="call-number">+91 9974389486</div>
             </div>
           </div>
+          <Link to="/service-man/register" className="get-quote hide-mobile-sm" onClick={closeMenu} style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
+            Service Register
+          </Link>
+          <a href="http://localhost:5175/service/login" target="_blank" rel="noopener noreferrer" className="get-quote hide-mobile-sm" onClick={closeMenu} style={{ background: 'white', color: '#24b57a', border: '2px solid #24b57a', boxShadow: 'none' }}>
+            Service Login
+          </a>
           <Link to="/contact" className="get-quote hide-mobile-sm" onClick={closeMenu}>Get A Quote ➜</Link>
           <a href="tel:+91 9974389486" className="mobile-call-btn hide-desktop" aria-label="Call us">
             <IconPhone size={20} color="white" />

@@ -1,0 +1,83 @@
+/* User Home Page Styles */
+
+.home-hero {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  padding: 60px 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f4ff 100%);
+}
+
+.home-hero-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.home-hero-subtitle {
+  font-size: 1.25rem;
+  color: #64748b;
+  margin-top: 16px;
+}
+
+.home-hero-cta {
+  margin-top: 32px;
+}
+
+.home-hero-btn-primary {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  border: none;
+  border-radius: 16px;
+  padding: 14px 28px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+}
+
+.home-services-section {
+  padding: 80px 0;
+}
+
+.home-section-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.home-section-subtitle {
+  color: #64748b;
+  margin-bottom: 48px;
+}
+
+.home-service-card {
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  transition: all 0.3s;
+  overflow: hidden;
+}
+
+.home-service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.home-service-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: #4f46e5;
+}
+
+@media (max-width: 767.98px) {
+  .home-hero-title {
+    font-size: 2.5rem;
+  }
+}

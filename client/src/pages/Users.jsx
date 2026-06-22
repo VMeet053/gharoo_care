@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import '../styles/users.css';
 
 export default function Users() {
   const [users, setUsers] = useState([]);

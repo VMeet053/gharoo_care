@@ -1,0 +1,59 @@
+/* Leads Page Styles */
+
+.lead-assign-dropdown-wrapper {
+  position: fixed;
+  z-index: 99999;
+  width: 220px;
+}
+
+.lead-assign-dropdown {
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.lead-assign-select {
+  height: 44px;
+  font-size: 0.95rem;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.lead-assign-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.lead-assign-btn {
+  flex: 1;
+  border-radius: 14px;
+  padding: 10px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  color: white;
+}
+
+.lead-assign-btn-success {
+  background-color: #10b981;
+}
+
+.lead-assign-btn-danger {
+  background-color: #ef4444;
+}
+
+.lead-assign-btn-icon {
+  font-size: 1.4rem;
+}
+
+.lead-assign-trigger {
+  border-radius: 16px;
+  padding: 8px 20px;
+  font-size: 1rem;
+  border-width: 2px;
+}

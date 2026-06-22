@@ -1,0 +1,52 @@
+/* Service Man Dashboard Styles */
+
+.sm-dashboard-page-header {
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.sm-dashboard-metric-card {
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+}
+
+.sm-dashboard-metric-value {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sm-dashboard-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
+  padding: 12px 0;
+  z-index: 1000;
+}
+
+.sm-dashboard-bottom-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.sm-dashboard-bottom-nav-link.active {
+  color: #10b981;
+}
+
+.sm-dashboard-bottom-nav-link-icon {
+  font-size: 1.3rem;
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import '../styles/work-orders.css';
 
 function WorkOrders() {
   const [workOrders, setWorkOrders] = useState([]);

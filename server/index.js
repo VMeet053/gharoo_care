@@ -253,7 +253,11 @@ app.get('/api/users', async (req, res) => {
         team: user.team,
         status: user.status,
         joined: user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        avatar: user.avatar
+        avatar: user.avatar,
+        idProofType: user.idProofType,
+        idProofNumber: user.idProofNumber,
+        frontIdProofImage: user.frontIdProofImage,
+        backIdProofImage: user.backIdProofImage
       }));
       res.json(formattedUsers);
     } else {
@@ -265,7 +269,11 @@ app.get('/api/users', async (req, res) => {
         team: user.team,
         status: user.status,
         joined: user.joined,
-        avatar: user.avatar
+        avatar: user.avatar,
+        idProofType: user.idProofType,
+        idProofNumber: user.idProofNumber,
+        frontIdProofImage: user.frontIdProofImage,
+        backIdProofImage: user.backIdProofImage
       }));
       res.json(formattedUsers);
     }
@@ -295,7 +303,11 @@ app.get('/api/users/role/:role', async (req, res) => {
         status: user.status,
         joined: user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         createdAt: user.createdAt,
-        avatar: user.avatar
+        avatar: user.avatar,
+        idProofType: user.idProofType,
+        idProofNumber: user.idProofNumber,
+        frontIdProofImage: user.frontIdProofImage,
+        backIdProofImage: user.backIdProofImage
       }));
       res.json(formattedUsers);
     } else {
@@ -314,7 +326,11 @@ app.get('/api/users/role/:role', async (req, res) => {
         status: user.status,
         joined: user.joined,
         createdAt: user.createdAt,
-        avatar: user.avatar
+        avatar: user.avatar,
+        idProofType: user.idProofType,
+        idProofNumber: user.idProofNumber,
+        frontIdProofImage: user.frontIdProofImage,
+        backIdProofImage: user.backIdProofImage
       }));
       res.json(formattedUsers);
     }
@@ -327,7 +343,7 @@ app.get('/api/users/role/:role', async (req, res) => {
 // Create user
 app.post('/api/users', async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, role, team, service, notes, password } = req.body;
+    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, frontIdProofImage, backIdProofImage } = req.body;
 
     if (isMongoConnected) {
       // Check if user already exists
@@ -350,7 +366,11 @@ app.post('/api/users', async (req, res) => {
         team,
         service: service || '',
         notes,
-        password: hashedPassword
+        password: hashedPassword,
+        idProofType: idProofType || null,
+        idProofNumber: idProofNumber || null,
+        frontIdProofImage: frontIdProofImage || null,
+        backIdProofImage: backIdProofImage || null
       });
 
       await newUser.save();
@@ -377,13 +397,191 @@ app.post('/api/users', async (req, res) => {
         status: 'Active',
         avatar: '/assets/images/avatar/avatar-1.jpg',
         joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        createdAt: new Date()
+        createdAt: new Date(),
+        idProofType: idProofType || null,
+        idProofNumber: idProofNumber || null,
+        frontIdProofImage: frontIdProofImage || null,
+        backIdProofImage: backIdProofImage || null
       };
       inMemoryUsers.push(newUser);
       res.json({ success: true, message: 'User created successfully!' });
     }
   } catch (err) {
     console.error('Create user error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Service Man Registration
+app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }, { name: 'backIdProofImage', maxCount: 1 }]), async (req, res) => {
+  try {
+    const { 
+      firstName, 
+      lastName, 
+      email, 
+      phone, 
+      password, 
+      confirmPassword, 
+      idProofType, 
+      idProofNumber 
+    } = req.body;
+
+    // Validation
+    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType || !idProofNumber) {
+      return res.status(400).json({ success: false, message: 'All fields are mandatory!' });
+    }
+    if (password !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Passwords do not match!' });
+    }
+    const validIdProofTypes = ['Pan Card', 'Aadhaar Card', 'Driving License', 'Election Card'];
+    if (!validIdProofTypes.includes(idProofType)) {
+      return res.status(400).json({ success: false, message: 'Invalid ID proof type!' });
+    }
+
+    // Function to upload image to Cloudinary
+    const uploadToCloudinary = async (file) => {
+      if (!file) return null;
+      const b64 = Buffer.from(file.buffer).toString('base64');
+      const dataURI = `data:${file.mimetype};base64,${b64}`;
+      const result = await cloudinary.uploader.upload(dataURI, { folder: 'gharoocare/id-proofs' });
+      return result.secure_url;
+    };
+
+    let frontIdProofImageUrl = null;
+    let backIdProofImageUrl = null;
+
+    if (req.files?.frontIdProofImage?.[0]) {
+      frontIdProofImageUrl = await uploadToCloudinary(req.files.frontIdProofImage[0]);
+    }
+    if (req.files?.backIdProofImage?.[0]) {
+      backIdProofImageUrl = await uploadToCloudinary(req.files.backIdProofImage[0]);
+    }
+
+    if (isMongoConnected) {
+      // Check if user already exists
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'User with this email already exists' });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const newUser = new User({
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        phone,
+        password: hashedPassword,
+        role: 'Service Man',
+        team: 'Technical',
+        service: '',
+        notes: '',
+        status: 'Active',
+        idProofType,
+        idProofNumber,
+        frontIdProofImage: frontIdProofImageUrl,
+        backIdProofImage: backIdProofImageUrl
+      });
+
+      await newUser.save();
+      return res.json({ success: true, message: 'Service man registered successfully! Please login.' });
+    } else {
+      const existingUser = inMemoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (existingUser) {
+        return res.status(400).json({ success: false, message: 'User with this email already exists' });
+      }
+      const newUser = {
+        id: nextUserId++,
+        _id: nextUserId - 1,
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        phone,
+        password,
+        role: 'Service Man',
+        team: 'Technical',
+        service: '',
+        notes: '',
+        status: 'Active',
+        avatar: '/assets/images/avatar/avatar-1.jpg',
+        joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        createdAt: new Date(),
+        idProofType,
+        idProofNumber,
+        frontIdProofImage: frontIdProofImageUrl,
+        backIdProofImage: backIdProofImageUrl
+      };
+      inMemoryUsers.push(newUser);
+      return res.json({ success: true, message: 'Service man registered successfully! Please login.' });
+    }
+  } catch (err) {
+    console.error('Service man register error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Get single user by ID
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (isMongoConnected) {
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      const { password: _, ...userWithoutPassword } = user.toObject();
+      res.json({ success: true, user: userWithoutPassword });
+    } else {
+      const user = inMemoryUsers.find(u => u.id == id || u._id == id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      const { password: _, ...userWithoutPassword } = user;
+      res.json({ success: true, user: userWithoutPassword });
+    }
+  } catch (err) {
+    console.error('Get user error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Update user status
+app.put('/api/users/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (isMongoConnected) {
+      const user = await User.findByIdAndUpdate(id, { status }, { new: true });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      res.json({ success: true, message: 'User status updated successfully!' });
+    } else {
+      const user = inMemoryUsers.find(u => u.id == id || u._id == id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      user.status = status;
+      res.json({ success: true, message: 'User status updated successfully!' });
+    }
+  } catch (err) {
+    console.error('Update user status error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Delete user
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (isMongoConnected) {
+      await User.findByIdAndDelete(id);
+      res.json({ success: true, message: 'User deleted successfully!' });
+    } else {
+      inMemoryUsers = inMemoryUsers.filter(u => u.id != id && u._id != id);
+      res.json({ success: true, message: 'User deleted successfully!' });
+    }
+  } catch (err) {
+    console.error('Delete user error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -399,6 +597,9 @@ app.post('/api/login', async (req, res) => {
       if (!user) {
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
       }
+      if (user.status && user.status.toLowerCase() === 'inactive') {
+        return res.status(403).json({ success: false, message: 'Your account is inactive. Contact admin.' });
+      }
       const isPasswordValid = user.password.startsWith('$2')
         ? await bcrypt.compare(password, user.password)
         : password === user.password;
@@ -412,6 +613,10 @@ app.post('/api/login', async (req, res) => {
     const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    if (user.status && user.status.toLowerCase() === 'inactive') {
+      return res.status(403).json({ success: false, message: 'Your account is inactive. Contact admin.' });
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);

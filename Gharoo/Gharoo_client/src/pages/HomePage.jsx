@@ -13,6 +13,7 @@ import Contact from '../components/Contact'
 import CompletedProjects from '../components/CompletedProjects'
 import BrandMarquee from '../components/BrandMarquee'
 import Footer from '../components/Footer'
+import '../styles/home.css'
 
 export default function HomePage({ settings, loading }) {
   if (loading) {

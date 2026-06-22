@@ -10,6 +10,7 @@ import PricingPage from './pages/PricingPage'
 import PrivacyPage from './pages/PrivacyPage'
 import UserForm from './components/UserForm'
 import PaymentPage from './components/PaymentPage'
+import ServiceManRegistration from './pages/ServiceManRegistration'
 
 export default function App() {
   const [settings, setSettings] = useState(null)
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/privacy" element={<PrivacyPage settings={settings} />} />
         <Route path="/booking" element={<UserForm />} />
         <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/service-man/register" element={<ServiceManRegistration />} />
       </Routes>
     </Router>
   )

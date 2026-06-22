@@ -26,9 +26,10 @@ export default function Layout() {
   
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
-      return localStorage.getItem('adminHMD.sidebarMini') === 'true';
+      const saved = localStorage.getItem('adminHMD.sidebarMini');
+      return saved !== null ? saved === 'true' : true; // Default to collapsed
     } catch {
-      return false;
+      return true;
     }
   });
   

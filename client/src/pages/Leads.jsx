@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { electronicsServices } from '../constants/services';
+import '../styles/leads.css';
 
 // Define city and area mappings
 const cities = ['All', 'Surat', 'Navsari', 'Ankleshwar'];
@@ -36,6 +37,8 @@ export default function Leads() {
   const [bulkAssigned, setBulkAssigned] = useState('Unassigned');
   const [currentPage, setCurrentPage] = useState(1);
   const [serviceMen, setServiceMen] = useState([]);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const itemsPerPage = 10;
 
   const assignOptions = [
@@ -74,6 +77,25 @@ export default function Leads() {
     fetchLeads();
     fetchServiceMen();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdownId) {
+        // Don't close if clicking inside the dropdown or the assign button
+        if (
+          !event.target.closest('[style*="position: fixed"]') && 
+          !event.target.closest('.btn-outline-primary')
+        ) {
+          setOpenDropdownId(null);
+          setEditingId(null);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdownId]);
 
   const getStatusStyle = (status) => {
     switch (status) {
@@ -137,9 +159,21 @@ export default function Leads() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentLeads = filteredLeads.slice(startIndex, startIndex + itemsPerPage);
 
-  const startAssign = (lead) => {
-    setEditingId(lead.id);
-    setTempAssigned(assignOptions.includes(lead.assigned) ? lead.assigned : 'Unassigned');
+  const startAssign = (lead, event) => {
+    if (editingId === lead.id) {
+      setEditingId(null);
+      setOpenDropdownId(null);
+    } else {
+      setEditingId(lead.id);
+      setTempAssigned(assignOptions.includes(lead.assigned) ? lead.assigned : 'Unassigned');
+      
+      const rect = event.currentTarget.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 8,
+        left: rect.right - 220
+      });
+      setOpenDropdownId(lead.id);
+    }
   };
 
   const saveAssign = async (leadId) => {
@@ -155,10 +189,16 @@ export default function Leads() {
           lead.id === leadId ? data.lead : lead
         ));
         setEditingId(null);
+        setOpenDropdownId(null);
       }
     } catch (err) {
       console.error('Failed to save assignment:', err);
     }
+  };
+
+  const cancelAssign = () => {
+    setEditingId(null);
+    setOpenDropdownId(null);
   };
 
   const toggleSelectLead = (leadId) => {
@@ -486,7 +526,7 @@ export default function Leads() {
                   </tr>
                 ) : (
                   currentLeads.map((lead, index) => (
-                    <tr key={lead.id} className="animate-fade-in" style={{ animationDelay: `${0.25 + (index * 0.05)}s` }}>
+                    <tr key={lead.id} className="animate-fade-in" style={{ animationDelay: `${0.25 + (index * 0.05)}s`, height: '60px' }}>
                       <td>
                         <input
                           type="checkbox"
@@ -513,42 +553,15 @@ export default function Leads() {
                       <td>{lead.city}</td>
                       <td>{lead.area}</td>
                       <td className="text-end">
-                        {editingId === lead.id ? (
-                          <div className="d-flex gap-2 justify-content-end">
-                            <select
-                              className="form-select form-select-sm"
-                              style={{ maxWidth: '150px' }}
-                              value={tempAssigned}
-                              onChange={(e) => setTempAssigned(e.target.value)}
-                            >
-                              {singleAssignOptions.map((user) => (
-                                <option key={user} value={user}>{user}</option>
-                              ))}
-                            </select>
-                            <button
-                              className="btn btn-success btn-sm"
-                              onClick={() => saveAssign(lead.id)}
-                              title="Save"
-                            >
-                              <i className="bi bi-check"></i>
-                            </button>
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => setEditingId(null)}
-                              title="Cancel"
-                            >
-                              <i className="bi bi-x"></i>
-                            </button>
-                          </div>
-                        ) : (
+                        <div className="d-inline-block">
                           <button
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() => startAssign(lead)}
+                            className="btn btn-outline-primary btn-sm lead-assign-trigger"
+                            onClick={(event) => startAssign(lead, event)}
                           >
-                            <i className="bi bi-person-plus me-1"></i>
+                            <i className="bi bi-person-plus me-2"></i>
                             {lead.assigned}
                           </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -593,6 +606,43 @@ export default function Leads() {
               </li>
             </ul>
           </nav>
+        </div>
+      )}
+
+      {/* Fixed Assign Dropdown */}
+      {openDropdownId && (
+        <div 
+          className="lead-assign-dropdown-wrapper"
+          style={{
+            top: dropdownPos.top,
+            left: dropdownPos.left
+          }}
+        >
+          <div className="lead-assign-dropdown">
+            <select
+              className="form-select lead-assign-select"
+              value={tempAssigned}
+              onChange={(e) => setTempAssigned(e.target.value)}
+            >
+              {singleAssignOptions.map((user) => (
+                <option key={user} value={user}>{user}</option>
+              ))}
+            </select>
+            <div className="lead-assign-buttons">
+              <button
+                className="lead-assign-btn lead-assign-btn-success"
+                onClick={() => saveAssign(openDropdownId)}
+              >
+                <i className="bi bi-check2 lead-assign-btn-icon"></i>
+              </button>
+              <button
+                className="lead-assign-btn lead-assign-btn-danger"
+                onClick={cancelAssign}
+              >
+                <i className="bi bi-x lead-assign-btn-icon"></i>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

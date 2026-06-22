@@ -53,6 +53,23 @@ const userSchema = new mongoose.Schema({
   },
   resetPasswordExpires: {
     type: Date
+  },
+  idProofType: {
+    type: String,
+    enum: ['Pan Card', 'Aadhaar Card', 'Driving License', 'Election Card'],
+    default: null
+  },
+  idProofNumber: {
+    type: String,
+    default: null
+  },
+  frontIdProofImage: {
+    type: String,
+    default: null
+  },
+  backIdProofImage: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

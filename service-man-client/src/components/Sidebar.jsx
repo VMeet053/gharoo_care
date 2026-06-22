@@ -10,7 +10,7 @@ const navItems = [
 
 export default function Sidebar({ unseenCount }) {
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true); // Default to collapsed
 
   const handleLogout = () => {
     localStorage.removeItem('serviceManUser');
@@ -52,6 +52,7 @@ export default function Sidebar({ unseenCount }) {
             <NavLink
               to={item.path}
               className={({ isActive }) => `app-sidebar-link${isActive ? ' active' : ''}`}
+              title={collapsed ? item.label : undefined}
             >
               <i className={`bi ${item.icon}`} aria-hidden="true"></i>
               {!collapsed && <span>{item.label}</span>}

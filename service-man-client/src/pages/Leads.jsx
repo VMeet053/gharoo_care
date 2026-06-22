@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import '../styles/leads.css';
 
 const statusBadges = {
   New: 'bg-primary',

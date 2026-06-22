@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import '../styles/dashboard.css';
 
 export default function Dashboard() {
   const [data, setData] = useState({

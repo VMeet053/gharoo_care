@@ -1,0 +1,21 @@
+/* Admin Users Styles */
+
+.users-filter-panel {
+  margin-top: 16px;
+}
+
+.users-table-wrapper {
+  margin-top: 12px;
+}
+
+.users-avatar-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  color: #4f46e5;
+  font-weight: 700;
+}
