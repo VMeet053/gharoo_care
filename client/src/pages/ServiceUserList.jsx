@@ -328,6 +328,28 @@ export default function ServiceUserList() {
                     <label className="form-label fw-semibold">ID Proof Number</label>
                     <p className="mb-0">{selectedUser.idProofNumber || '-'}</p>
                   </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-semibold">Front Side ID Proof</label>
+                    {selectedUser.frontIdProofImage ? (
+                      <img 
+                        src={selectedUser.frontIdProofImage} 
+                        alt="Front ID Proof" 
+                        className="img-thumbnail" 
+                        style={{ maxWidth: '100%', maxHeight: '200px' }}
+                      />
+                    ) : <p className="mb-0">-</p>}
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label className="form-label fw-semibold">Back Side ID Proof</label>
+                    {selectedUser.backIdProofImage ? (
+                      <img 
+                        src={selectedUser.backIdProofImage} 
+                        alt="Back ID Proof" 
+                        className="img-thumbnail" 
+                        style={{ maxWidth: '100%', maxHeight: '200px' }}
+                      />
+                    ) : <p className="mb-0">-</p>}
+                  </div>
                   <div className="col-md-12 mb-3">
                     <label className="form-label fw-semibold">Notes</label>
                     <p className="mb-0">{selectedUser.notes || '-'}</p>
