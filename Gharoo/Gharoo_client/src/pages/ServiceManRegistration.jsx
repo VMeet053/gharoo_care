@@ -68,7 +68,7 @@ export default function ServiceManRegistration() {
         formDataToSend.append('backIdProofImage', backImage)
       }
 
-      const res = await fetch('http://localhost:5000/api/service-man/register', {
+      const res = await fetch('/api/service-man/register', {
         method: 'POST',
         body: formDataToSend
       })
