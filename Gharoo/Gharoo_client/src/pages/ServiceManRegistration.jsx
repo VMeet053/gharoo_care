@@ -383,7 +383,7 @@ export default function ServiceManRegistration() {
           <p style={{ color: '#475569' }}>
             Already registered?{' '}
             <Link
-              to="http://localhost:5175/service/login"
+              to="/service/login"
               style={{ color: '#4f46e5', fontWeight: '600', textDecoration: 'underline' }}
             >
               Login Here
