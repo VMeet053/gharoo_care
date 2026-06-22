@@ -341,9 +341,28 @@ app.get('/api/users/role/:role', async (req, res) => {
 });
 
 // Create user
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }, { name: 'backIdProofImage', maxCount: 1 }]), async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, frontIdProofImage, backIdProofImage } = req.body;
+    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber } = req.body;
+
+    // Function to upload image to Cloudinary
+    const uploadToCloudinary = async (file) => {
+      if (!file) return null;
+      const b64 = Buffer.from(file.buffer).toString('base64');
+      const dataURI = `data:${file.mimetype};base64,${b64}`;
+      const result = await cloudinary.uploader.upload(dataURI, { folder: 'gharoocare/id-proofs' });
+      return result.secure_url;
+    };
+
+    let frontIdProofImageUrl = null;
+    let backIdProofImageUrl = null;
+
+    if (req.files?.frontIdProofImage?.[0]) {
+      frontIdProofImageUrl = await uploadToCloudinary(req.files.frontIdProofImage[0]);
+    }
+    if (req.files?.backIdProofImage?.[0]) {
+      backIdProofImageUrl = await uploadToCloudinary(req.files.backIdProofImage[0]);
+    }
 
     if (isMongoConnected) {
       // Check if user already exists
@@ -369,8 +388,8 @@ app.post('/api/users', async (req, res) => {
         password: hashedPassword,
         idProofType: idProofType || null,
         idProofNumber: idProofNumber || null,
-        frontIdProofImage: frontIdProofImage || null,
-        backIdProofImage: backIdProofImage || null
+        frontIdProofImage: frontIdProofImageUrl || null,
+        backIdProofImage: backIdProofImageUrl || null
       });
 
       await newUser.save();
@@ -400,8 +419,8 @@ app.post('/api/users', async (req, res) => {
         createdAt: new Date(),
         idProofType: idProofType || null,
         idProofNumber: idProofNumber || null,
-        frontIdProofImage: frontIdProofImage || null,
-        backIdProofImage: backIdProofImage || null
+        frontIdProofImage: frontIdProofImageUrl || null,
+        backIdProofImage: backIdProofImageUrl || null
       };
       inMemoryUsers.push(newUser);
       res.json({ success: true, message: 'User created successfully!' });

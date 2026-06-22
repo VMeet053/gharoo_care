@@ -17,6 +17,10 @@ export default function CreateAgent() {
     idProofType: '',
     idProofNumber: ''
   });
+  const [frontImage, setFrontImage] = useState(null);
+  const [backImage, setBackImage] = useState(null);
+  const [frontImagePreview, setFrontImagePreview] = useState(null);
+  const [backImagePreview, setBackImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -27,16 +31,50 @@ export default function CreateAgent() {
     });
   };
 
+  const handleFrontImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFrontImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFrontImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBackImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBackImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBackImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
+      const formDataToSend = new FormData();
+      Object.keys(formData).forEach(key => {
+        formDataToSend.append(key, formData[key]);
+      });
+      if (frontImage) {
+        formDataToSend.append('frontIdProofImage', frontImage);
+      }
+      if (backImage) {
+        formDataToSend.append('backIdProofImage', backImage);
+      }
+
       const response = await fetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: formDataToSend
       });
       const data = await response.json();
       
@@ -204,6 +242,40 @@ export default function CreateAgent() {
                   value={formData.idProofNumber}
                   onChange={handleChange}
                 />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Front Side ID Proof</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="form-control" 
+                  onChange={handleFrontImageChange}
+                />
+                {frontImagePreview && (
+                  <img 
+                    src={frontImagePreview} 
+                    alt="Front ID Proof Preview" 
+                    className="img-thumbnail mt-2" 
+                    style={{ maxHeight: '150px' }}
+                  />
+                )}
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Back Side ID Proof</label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="form-control" 
+                  onChange={handleBackImageChange}
+                />
+                {backImagePreview && (
+                  <img 
+                    src={backImagePreview} 
+                    alt="Back ID Proof Preview" 
+                    className="img-thumbnail mt-2" 
+                    style={{ maxHeight: '150px' }}
+                  />
+                )}
               </div>
               <div className="col-12">
                 <label className="form-label" htmlFor="notes">Additional Notes</label>
