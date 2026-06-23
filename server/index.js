@@ -441,17 +441,36 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       phone, 
       password, 
       confirmPassword, 
-      idProofType, 
-      idProofNumber 
+      idProofType
     } = req.body;
 
     // Validation
-    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType || !idProofNumber) {
+    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType) {
       return res.status(400).json({ success: false, message: 'All fields are mandatory!' });
     }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: 'Invalid email format!' });
+    }
+
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ success: false, message: 'Phone number must be exactly 10 digits!' });
+    }
+
     if (password !== confirmPassword) {
       return res.status(400).json({ success: false, message: 'Passwords do not match!' });
     }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long!' });
+    }
+
+    if (!/\d/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one number and one special character!' });
+    }
+
     const validIdProofTypes = ['Pan Card', 'Aadhaar Card', 'Driving License', 'Election Card'];
     if (!validIdProofTypes.includes(idProofType)) {
       return res.status(400).json({ success: false, message: 'Invalid ID proof type!' });
@@ -477,10 +496,16 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
     }
 
     if (isMongoConnected) {
-      // Check if user already exists
-      const existingUser = await User.findOne({ email: email.toLowerCase() });
-      if (existingUser) {
-        return res.status(400).json({ success: false, message: 'User with this email already exists' });
+      // Check if email already exists
+      const existingUserEmail = await User.findOne({ email: email.toLowerCase() });
+      if (existingUserEmail) {
+        return res.status(400).json({ success: false, message: 'User with this email already exists!' });
+      }
+
+      // Check if phone already exists
+      const existingUserPhone = await User.findOne({ phone });
+      if (existingUserPhone) {
+        return res.status(400).json({ success: false, message: 'User with this phone number already exists!' });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -496,7 +521,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
         notes: '',
         status: 'Active',
         idProofType,
-        idProofNumber,
+        idProofNumber: null,
         frontIdProofImage: frontIdProofImageUrl,
         backIdProofImage: backIdProofImageUrl
       });
@@ -504,10 +529,16 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       await newUser.save();
       return res.json({ success: true, message: 'Service man registered successfully! Please login.' });
     } else {
-      const existingUser = inMemoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (existingUser) {
-        return res.status(400).json({ success: false, message: 'User with this email already exists' });
+      // In-memory unique checks
+      const existingUserEmail = inMemoryUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (existingUserEmail) {
+        return res.status(400).json({ success: false, message: 'User with this email already exists!' });
       }
+      const existingUserPhone = inMemoryUsers.find(u => u.phone === phone);
+      if (existingUserPhone) {
+        return res.status(400).json({ success: false, message: 'User with this phone number already exists!' });
+      }
+
       const newUser = {
         id: nextUserId++,
         _id: nextUserId - 1,
@@ -525,7 +556,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
         joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         createdAt: new Date(),
         idProofType,
-        idProofNumber,
+        idProofNumber: null,
         frontIdProofImage: frontIdProofImageUrl,
         backIdProofImage: backIdProofImageUrl
       };

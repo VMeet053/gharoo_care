@@ -6,6 +6,7 @@ export default defineConfig({
   base: '/',
   server: {
     port: 5173,
+    strictPort: true,
     proxy: {
       '/api': 'http://localhost:5000',
       '/admin': {
@@ -16,6 +17,10 @@ export default defineConfig({
         target: 'http://localhost:5174',
         changeOrigin: true,
         rewrite: () => '/admin/login',
+      },
+      '^/service(?:/|$)': {
+        target: 'http://localhost:5175',
+        changeOrigin: true,
       },
     },
   },

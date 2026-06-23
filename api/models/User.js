@@ -46,6 +46,23 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     default: '/assets/images/avatar/avatar-1.jpg'
+  },
+  idProofType: {
+    type: String,
+    enum: ['Pan Card', 'Aadhaar Card', 'Driving License', 'Election Card'],
+    default: null
+  },
+  idProofNumber: {
+    type: String,
+    default: null
+  },
+  frontIdProofImage: {
+    type: String,
+    default: null
+  },
+  backIdProofImage: {
+    type: String,
+    default: null
   }
 }, { timestamps: true });
 

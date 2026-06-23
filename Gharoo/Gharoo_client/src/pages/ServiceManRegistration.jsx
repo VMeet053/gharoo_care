@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
+import './ServiceManRegistration.css'
 
 export default function ServiceManRegistration() {
   const [formData, setFormData] = useState({
@@ -9,8 +10,7 @@ export default function ServiceManRegistration() {
     phone: '',
     password: '',
     confirmPassword: '',
-    idProofType: '',
-    idProofNumber: ''
+    idProofType: ''
   })
   const [frontImage, setFrontImage] = useState(null)
   const [backImage, setBackImage] = useState(null)
@@ -23,7 +23,12 @@ export default function ServiceManRegistration() {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    if (name === 'phone') {
+      const cleanValue = value.replace(/\D/g, '').slice(0, 10)
+      setFormData(prev => ({ ...prev, [name]: cleanValue }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
   }
 
   const handleFrontImageChange = (e) => {
@@ -54,6 +59,34 @@ export default function ServiceManRegistration() {
     e.preventDefault()
     setError('')
     setMessage('')
+
+    // Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address!')
+      return
+    }
+
+    if (formData.phone.length !== 10) {
+      setError('Phone number must be exactly 10 digits!')
+      return
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match!')
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long!')
+      return
+    }
+
+    if (!/\d/.test(formData.password) || !/[!@#$%^&*(),.?":{}|<>]/.test(formData.password)) {
+      setError('Password must contain at least one number and one special character!')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -74,7 +107,7 @@ export default function ServiceManRegistration() {
       })
       const data = await res.json()
       if (data.success) {
-        setMessage(data.message)
+        setMessage("Service man registered successfully! Redirecting to login screen...")
         // Reset form
         setFormData({
           firstName: '',
@@ -83,13 +116,15 @@ export default function ServiceManRegistration() {
           phone: '',
           password: '',
           confirmPassword: '',
-          idProofType: '',
-          idProofNumber: ''
+          idProofType: ''
         })
         setFrontImage(null)
         setBackImage(null)
         setFrontImagePreview(null)
         setBackImagePreview(null)
+        setTimeout(() => {
+          window.location.href = '/service/login'
+        }, 1500)
       } else {
         setError(data.message)
       }
@@ -102,324 +137,176 @@ export default function ServiceManRegistration() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      padding: '2rem',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)'
-    }}>
-      <div style={{
-        background: 'white',
-        padding: '2rem',
-        borderRadius: '16px',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-        maxWidth: '600px',
-        width: '100%'
-      }}>
-        <h1 style={{ color: '#1e293b', marginBottom: '1.5rem', textAlign: 'center' }}>
+    <div className="register-body">
+      <div className="register-card">
+        <h1 className="register-title">
           Service Man Registration
         </h1>
 
         {message && (
-          <div style={{
-            background: '#d1fae5',
-            color: '#065f46',
-            padding: '1rem',
-            borderRadius: '8px',
-            marginBottom: '1rem'
-          }}>
+          <div className="alert-message success">
             {message}
           </div>
         )}
         {error && (
-          <div style={{
-            background: '#fee2e2',
-            color: '#991b1b',
-            padding: '1rem',
-            borderRadius: '8px',
-            marginBottom: '1rem'
-          }}>
+          <div className="alert-message error">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-                First Name
-              </label>
+        <form onSubmit={handleSubmit} className="register-form">
+          <div className="form-grid">
+            <div>
+              <label>First Name</label>
               <input
                 type="text"
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
                 required
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  borderRadius: '8px',
-                  border: '2px solid #e2e8f0',
-                  fontSize: '1rem'
-                }}
               />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-                Last Name
-              </label>
+            <div>
+              <label>Last Name</label>
               <input
                 type="text"
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
                 required
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  borderRadius: '8px',
-                  border: '2px solid #e2e8f0',
-                  fontSize: '1rem'
-                }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-              Email
-            </label>
+            <label>Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               required
-              style={{
-                width: '100%',
-                padding: '0.875rem',
-                borderRadius: '8px',
-                border: '2px solid #e2e8f0',
-                fontSize: '1rem'
-              }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-              Phone Number
-            </label>
+            <label>Phone Number</label>
             <input
               type="tel"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
               required
-              style={{
-                width: '100%',
-                padding: '0.875rem',
-                borderRadius: '8px',
-                border: '2px solid #e2e8f0',
-                fontSize: '1rem'
-              }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-                Password
-              </label>
+          <div className="form-grid">
+            <div>
+              <label>Password</label>
               <input
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  borderRadius: '8px',
-                  border: '2px solid #e2e8f0',
-                  fontSize: '1rem'
-                }}
               />
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-                Confirm Password
-              </label>
+            <div>
+              <label>Confirm Password</label>
               <input
                 type="password"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  borderRadius: '8px',
-                  border: '2px solid #e2e8f0',
-                  fontSize: '1rem'
-                }}
               />
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-                ID Proof Type
-              </label>
-              <select
-                name="idProofType"
-                value={formData.idProofType}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  borderRadius: '8px',
-                  border: '2px solid #e2e8f0',
-                  fontSize: '1rem'
-                }}
-              >
-                <option value="">Select ID Proof</option>
-                <option value="Pan Card">Pan Card</option>
-                <option value="Aadhaar Card">Aadhaar Card</option>
-                <option value="Driving License">Driving License</option>
-                <option value="Election Card">Election Card</option>
-              </select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#334155', fontWeight: '600' }}>
-                ID Proof Number
-              </label>
-              <input
-                type="text"
-                name="idProofNumber"
-                value={formData.idProofNumber}
-                onChange={handleChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.875rem',
-                  borderRadius: '8px',
-                  border: '2px solid #e2e8f0',
-                  fontSize: '1rem'
-                }}
-              />
-            </div>
+          <div>
+            <label>ID Proof Type</label>
+            <select
+              name="idProofType"
+              value={formData.idProofType}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select ID Proof</option>
+              <option value="Pan Card">Pan Card</option>
+              <option value="Aadhaar Card">Aadhaar Card</option>
+              <option value="Driving License">Driving License</option>
+              <option value="Election Card">Election Card</option>
+            </select>
           </div>
 
-          {/* Front ID Proof Image */}
-          <div style={{ border: '2px dashed #e2e8f0', padding: '1rem', borderRadius: '8px', background: '#f8fafc' }}>
-            <label style={{ display: 'block', marginBottom: '0.75rem', color: '#1e293b', fontWeight: '700', fontSize: '1.05rem' }}>
-              📸 Front Side of ID Proof
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFrontImageChange}
-              style={{ 
-                width: '100%', 
-                padding: '0.75rem', 
-                border: '1px solid #e2e8f0', 
-                borderRadius: '6px', 
-                background: 'white',
-                cursor: 'pointer'
-              }}
-            />
-            {frontImagePreview && (
-              <div style={{ marginTop: '1rem' }}>
-                <img
-                  src={frontImagePreview}
-                  alt="Front ID Proof Preview"
-                  style={{
-                    maxWidth: '100%', 
-                    maxHeight: '250px',
-                    borderRadius: '8px', 
-                    border: '2px solid #24b57a',
-                    display: 'block',
-                    margin: '0 auto'
-                  }}
+          {formData.idProofType && (
+            <>
+              {/* Front ID Proof Image */}
+              <div className="upload-box">
+                <label className="upload-label">
+                  📸 Front Side of ID Proof
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFrontImageChange}
+                  required
+                  className="file-input"
                 />
+                {frontImagePreview && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <img
+                      src={frontImagePreview}
+                      alt="Front ID Proof Preview"
+                      className="preview-image"
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          {/* Back ID Proof Image */}
-          <div style={{ border: '2px dashed #e2e8f0', padding: '1rem', borderRadius: '8px', background: '#f8fafc' }}>
-            <label style={{ display: 'block', marginBottom: '0.75rem', color: '#1e293b', fontWeight: '700', fontSize: '1.05rem' }}>
-              📸 Back Side of ID Proof
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleBackImageChange}
-              style={{ 
-                width: '100%', 
-                padding: '0.75rem', 
-                border: '1px solid #e2e8f0', 
-                borderRadius: '6px', 
-                background: 'white',
-                cursor: 'pointer'
-              }}
-            />
-            {backImagePreview && (
-              <div style={{ marginTop: '1rem' }}>
-                <img
-                  src={backImagePreview}
-                  alt="Back ID Proof Preview"
-                  style={{
-                    maxWidth: '100%', 
-                    maxHeight: '250px',
-                    borderRadius: '8px', 
-                    border: '2px solid #24b57a',
-                    display: 'block',
-                    margin: '0 auto'
-                  }}
+              {/* Back ID Proof Image */}
+              <div className="upload-box">
+                <label className="upload-label">
+                  📸 Back Side of ID Proof
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBackImageChange}
+                  required
+                  className="file-input"
                 />
+                {backImagePreview && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <img
+                      src={backImagePreview}
+                      alt="Back ID Proof Preview"
+                      className="preview-image"
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            style={{
-              background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-              color: 'white',
-              border: 'none',
-              padding: '1rem',
-              borderRadius: '8px',
-              fontSize: '1rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              marginTop: '0.5rem'
-            }}
+            className="btn-submit"
           >
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-          <p style={{ color: '#475569' }}>
+        <div className="register-footer">
+          <p>
             Already registered?{' '}
-            <Link
-              to="/service/login"
-              style={{ color: '#4f46e5', fontWeight: '600', textDecoration: 'underline' }}
-            >
+            <a href="/service/login">
               Login Here
-            </Link>
+            </a>
           </p>
-          <p style={{ color: '#475569', marginTop: '0.5rem' }}>
-            <Link
-              to="/"
-              style={{ color: '#334155' }}
-            >
+          <p>
+            <Link to="/">
               Back to Home
             </Link>
           </p>

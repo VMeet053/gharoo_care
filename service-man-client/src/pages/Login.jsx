@@ -57,6 +57,12 @@ export default function Login() {
 
   return (
     <div className="auth-body">
+      <div className="animated-bg">
+        <div className="bg-blob blob-1"></div>
+        <div className="bg-blob blob-2"></div>
+        <div className="bg-blob blob-3"></div>
+        <div className="bg-blob blob-4"></div>
+      </div>
       <main className="auth-page">
         <section className="auth-card animate-fade-in-up">
           <Link className="auth-brand" to="/login">

@@ -7,6 +7,7 @@ export default defineConfig({
   base: '/service/',
   server: {
     port: 5175,
+    strictPort: true,
     proxy: {
       '/api': 'http://localhost:5000',
     },

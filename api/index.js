@@ -161,7 +161,6 @@ const getDefaultSettings = () => ({
 
 // Connect to MongoDB function for serverless environments
 let isMongoConnected = false;
-let inMemorySettings = null; // initialized below on fallback
 
 const connectDB = async () => {
   if (mongoose.connection.readyState >= 1) {
@@ -247,7 +246,11 @@ app.get('/api/users', async (req, res) => {
       team: user.team,
       status: user.status,
       joined: user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      avatar: user.avatar
+      avatar: user.avatar,
+      idProofType: user.idProofType,
+ // idProofNumber: user.idProofNumber,
+      frontIdProofImage: user.frontIdProofImage,
+      backIdProofImage: user.backIdProofImage
     }));
     res.json(formattedUsers);
   } catch (err) {
@@ -278,7 +281,11 @@ app.get('/api/users/role/:role', async (req, res) => {
       status: user.status,
       joined: user.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       createdAt: user.createdAt,
-      avatar: user.avatar
+      avatar: user.avatar,
+      idProofType: user.idProofType,
+      idProofNumber: user.idProofNumber,
+      frontIdProofImage: user.frontIdProofImage,
+      backIdProofImage: user.backIdProofImage
     }));
     res.json(formattedUsers);
   } catch (err) {
@@ -288,12 +295,12 @@ app.get('/api/users/role/:role', async (req, res) => {
 });
 
 // Create user (only if MongoDB connected)
-app.post('/api/users', async (req, res) => {
+app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }, { name: 'backIdProofImage', maxCount: 1 }]), async (req, res) => {
   if (!isMongoConnected) {
     return res.status(500).json({ success: false, message: 'MongoDB not connected' });
   }
   try {
-    const { firstName, lastName, email, phone, role, team, service, notes, password } = req.body;
+    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -305,6 +312,25 @@ app.post('/api/users', async (req, res) => {
     const userPassword = password || 'password123';
     const hashedPassword = await bcrypt.hash(userPassword, 10);
 
+    // Function to upload image to Cloudinary
+    const uploadToCloudinary = async (file) => {
+      if (!file) return null;
+      const b64 = Buffer.from(file.buffer).toString('base64');
+      const dataURI = `data:${file.mimetype};base64,${b64}`;
+      const result = await cloudinary.uploader.upload(dataURI, { folder: 'gharoocare/id-proofs' });
+      return result.secure_url;
+    };
+
+    let frontIdProofImageUrl = null;
+    let backIdProofImageUrl = null;
+
+    if (req.files?.frontIdProofImage?.[0]) {
+      frontIdProofImageUrl = await uploadToCloudinary(req.files.frontIdProofImage[0]);
+    }
+    if (req.files?.backIdProofImage?.[0]) {
+      backIdProofImageUrl = await uploadToCloudinary(req.files.backIdProofImage[0]);
+    }
+
     // Create new user
     const newUser = new User({
       firstName,
@@ -315,13 +341,123 @@ app.post('/api/users', async (req, res) => {
       team,
       service: service || '',
       notes,
-      password: hashedPassword
+      password: hashedPassword,
+      idProofType: idProofType || null,
+      idProofNumber: idProofNumber || null,
+      frontIdProofImage: frontIdProofImageUrl || null,
+      backIdProofImage: backIdProofImageUrl || null
     });
 
     await newUser.save();
     res.json({ success: true, message: 'User created successfully!' });
   } catch (err) {
     console.error('Create user error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Service Man Registration
+app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }, { name: 'backIdProofImage', maxCount: 1 }]), async (req, res) => {
+  try {
+    const { 
+      firstName, 
+      lastName, 
+      email, 
+      phone, 
+      password, 
+      confirmPassword, 
+      idProofType
+    } = req.body;
+
+    // Validation
+    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType) {
+      return res.status(400).json({ success: false, message: 'All fields are mandatory!' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ success: false, message: 'Invalid email format!' });
+    }
+
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({ success: false, message: 'Phone number must be exactly 10 digits!' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Passwords do not match!' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters long!' });
+    }
+
+    if (!/\d/.test(password) || !/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least one number and one special character!' });
+    }
+
+    const validIdProofTypes = ['Pan Card', 'Aadhaar Card', 'Driving License', 'Election Card'];
+    if (!validIdProofTypes.includes(idProofType)) {
+      return res.status(400).json({ success: false, message: 'Invalid ID proof type!' });
+    }
+
+    if (!isMongoConnected) {
+      return res.status(500).json({ success: false, message: 'MongoDB not connected' });
+    }
+
+    // Function to upload image to Cloudinary
+    const uploadToCloudinary = async (file) => {
+      if (!file) return null;
+      const b64 = Buffer.from(file.buffer).toString('base64');
+      const dataURI = `data:${file.mimetype};base64,${b64}`;
+      const result = await cloudinary.uploader.upload(dataURI, { folder: 'gharoocare/id-proofs' });
+      return result.secure_url;
+    };
+
+    let frontIdProofImageUrl = null;
+    let backIdProofImageUrl = null;
+
+    if (req.files?.frontIdProofImage?.[0]) {
+      frontIdProofImageUrl = await uploadToCloudinary(req.files.frontIdProofImage[0]);
+    }
+    if (req.files?.backIdProofImage?.[0]) {
+      backIdProofImageUrl = await uploadToCloudinary(req.files.backIdProofImage[0]);
+    }
+
+    // Check if email already exists
+    const existingUserEmail = await User.findOne({ email: email.toLowerCase() });
+    if (existingUserEmail) {
+      return res.status(400).json({ success: false, message: 'User with this email already exists!' });
+    }
+
+    // Check if phone already exists
+    const existingUserPhone = await User.findOne({ phone });
+    if (existingUserPhone) {
+      return res.status(400).json({ success: false, message: 'User with this phone number already exists!' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      firstName,
+      lastName,
+      email: email.toLowerCase(),
+      phone,
+      password: hashedPassword,
+      role: 'Service Man',
+      team: 'Technical',
+      service: '',
+      notes: '',
+      status: 'Active',
+      idProofType,
+      idProofNumber: null,
+      frontIdProofImage: frontIdProofImageUrl,
+      backIdProofImage: backIdProofImageUrl
+    });
+
+    await newUser.save();
+    return res.json({ success: true, message: 'Service man registered successfully! Please login.' });
+  } catch (err) {
+    console.error('Service man register error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });

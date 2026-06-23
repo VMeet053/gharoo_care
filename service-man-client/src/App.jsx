@@ -14,7 +14,7 @@ const router = createBrowserRouter([
   {
     path: '/',
     children: [
-      { index: true, element: <Navigate to="login" replace /> },
+      { index: true, element: <Navigate to="/login" replace /> },
       { path: 'login', element: <Login /> },
       { path: 'forgot-password', element: <ForgotPassword /> },
       { path: 'reset-password/:token', element: <ResetPassword /> },
@@ -32,7 +32,7 @@ const router = createBrowserRouter([
           { path: 'earnings', element: <Earnings /> },
         ],
       },
-      { path: '*', element: <Navigate to="login" replace /> },
+      { path: '*', element: <Navigate to="/login" replace /> },
     ],
   },
 ], {

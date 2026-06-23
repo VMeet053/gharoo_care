@@ -76,6 +76,19 @@ export default function Header({ settings }) {
           {navLinks.map(link => (
             <Link key={link.text} to={link.link} onClick={closeMenu}>{link.text}</Link>
           ))}
+          
+          <div className="mobile-drawer-actions">
+            <a href="/service/login" className="get-quote mobile-action-btn btn-outline-gray" onClick={closeMenu}>
+              Service Login
+            </a>
+            <Link to="/service-man/register" className="get-quote mobile-action-btn btn-light-indigo" onClick={closeMenu}>
+              Service Register
+            </Link>
+            <Link to="/contact" className="get-quote mobile-action-btn" onClick={closeMenu} style={{ border: '1px solid transparent' }}>
+              Get A Quote ➜
+            </Link>
+          </div>
+
           <a href="tel:+91 9974389486" className="mobile-nav-call" onClick={closeMenu}>
             <IconPhone size={18} color="#24b57a" />
             Call +91 9974389486
@@ -83,20 +96,13 @@ export default function Header({ settings }) {
         </nav>
 
         <div className="header-actions">
-          <div className="call-box hide-tablet">
-            <div className="call-icon"><IconPhone size={20} color="#24b57a" /></div>
-            <div className="call-text">
-              <small>Call Anytime</small>
-              <div className="call-number">+91 9974389486</div>
-            </div>
-badha page ma           </div>
-          <Link to="/service-man/register" className="get-quote hide-mobile-sm" onClick={closeMenu} style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}>
+          <a href="/service/login" className="get-quote btn-outline-gray hide-mobile-sm" onClick={closeMenu}>
+            Service Login
+          </a>
+          <Link to="/service-man/register" className="get-quote btn-light-indigo hide-mobile-sm" onClick={closeMenu}>
             Service Register
           </Link>
-          <Link to="/service/login" className="get-quote hide-mobile-sm" onClick={closeMenu} style={{ background: 'white', color: '#24b57a', border: '2px solid #24b57a', boxShadow: 'none' }}>
-            Service Login
-          </Link>
-          <Link to="/contact" className="get-quote hide-mobile-sm" onClick={closeMenu}>Get A Quote ➜</Link>
+          <Link to="/contact" className="get-quote hide-mobile-sm" onClick={closeMenu} style={{ border: '1px solid transparent' }}>Get A Quote ➜</Link>
           <a href="tel:+91 9974389486" className="mobile-call-btn hide-desktop" aria-label="Call us">
             <IconPhone size={20} color="white" />
           </a>

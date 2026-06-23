@@ -239,6 +239,29 @@
   transform: translateY(-2px);
 }
 
+.btn-outline-gray {
+  background: white !important;
+  color: #4f46e5 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+.btn-outline-gray:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  transform: translateY(-2px) !important;
+}
+
+.btn-light-indigo {
+  background: #eef2ff !important;
+  color: #4f46e5 !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+.btn-light-indigo:hover {
+  background: #e0e7ff !important;
+  transform: translateY(-2px) !important;
+}
+
 /* Mobile call button */
 .mobile-call-btn {
   display: none;
@@ -297,10 +320,15 @@
 .hide-mobile-sm { display: inline-flex; }
 .hide-desktop { display: none; }
 
+/* Mobile action buttons inside drawer */
+.mobile-drawer-actions {
+  display: none;
+}
+
 /* ── Tablet ── */
-@media (max-width: 1100px) {
+@media (max-width: 1250px) {
   .call-box {
-    display: none;
+    display: none !important;
   }
 }
 
@@ -311,7 +339,7 @@
 }
 
 /* ── Mobile nav ── */
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
   .nav {
     position: fixed;
     top: 0;
@@ -340,6 +368,20 @@
     font-size: 1rem;
     border-radius: 10px;
     border-bottom: 1px solid #f3f4f6;
+  }
+
+  .mobile-drawer-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  .mobile-action-btn {
+    width: 100% !important;
+    margin: 4px 0 !important;
+    display: flex !important;
   }
 
   .mobile-nav-call {
@@ -379,6 +421,17 @@
 
   .logo {
     font-size: 1.25rem;
+  }
+}
+
+/* ── Tablet Button Scaling ── */
+@media (max-width: 800px) {
+  .header-actions {
+    gap: 8px;
+  }
+  .get-quote {
+    padding: 8px 12px;
+    font-size: 0.8rem;
   }
 }
 
