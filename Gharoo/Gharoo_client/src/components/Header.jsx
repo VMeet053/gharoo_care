@@ -102,7 +102,7 @@ export default function Header({ settings }) {
           <Link to="/service-man/register" className="get-quote btn-light-indigo hide-mobile-sm" onClick={closeMenu}>
             Service Register
           </Link>
-          <Link to="/contact" className="get-quote hide-mobile-sm" onClick={closeMenu} style={{ border: '1px solid transparent' }}>Get A Quote ➜</Link>
+          {/* <Link to="/contact" className="get-quote hide-mobile-sm" onClick={closeMenu} style={{ border: '1px solid transparent' }}>Get A Quote ➜</Link> */}
           <a href="tel:+91 9974389486" className="mobile-call-btn hide-desktop" aria-label="Call us">
             <IconPhone size={20} color="white" />
           </a>
