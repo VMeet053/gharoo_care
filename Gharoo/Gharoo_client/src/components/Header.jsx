@@ -84,15 +84,15 @@ export default function Header({ settings }) {
             <Link to="/service-man/register" className="get-quote mobile-action-btn btn-light-indigo" onClick={closeMenu}>
               Service Register
             </Link>
-            <Link to="/contact" className="get-quote mobile-action-btn" onClick={closeMenu} style={{ border: '1px solid transparent' }}>
+            {/* <Link to="/contact" className="get-quote mobile-action-btn" onClick={closeMenu} style={{ border: '1px solid transparent' }}>
               Get A Quote ➜
-            </Link>
+            </Link> */}
           </div>
 
-          <a href="tel:+91 9974389486" className="mobile-nav-call" onClick={closeMenu}>
+          {/* <a href="tel:+91 9974389486" className="mobile-nav-call" onClick={closeMenu}>
             <IconPhone size={18} color="#24b57a" />
             Call +91 9974389486
-          </a>
+          </a> */}
         </nav>
 
         <div className="header-actions">
