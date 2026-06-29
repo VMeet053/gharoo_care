@@ -9,6 +9,7 @@ import Leads from './pages/Leads';
 import WorkOrders from './pages/WorkOrders';
 import WorkOrderDetail from './pages/WorkOrderDetail';
 import Earnings from './pages/Earnings';
+import Profile from './pages/Profile';
 
 const router = createBrowserRouter([
   {
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
           { path: 'work-orders', element: <WorkOrders /> },
           { path: 'work-orders/:id', element: <WorkOrderDetail /> },
           { path: 'earnings', element: <Earnings /> },
+          { path: 'profile', element: <Profile /> },
         ],
       },
       { path: '*', element: <Navigate to="/login" replace /> },

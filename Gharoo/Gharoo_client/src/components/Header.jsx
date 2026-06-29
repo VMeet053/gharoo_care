@@ -78,15 +78,6 @@ export default function Header({ settings }) {
           ))}
           
           <div className="mobile-drawer-actions">
-            <a href="/service/login" className="get-quote mobile-action-btn btn-outline-gray" onClick={closeMenu}>
-              Service Login
-            </a>
-            <Link to="/service-man/register" className="get-quote mobile-action-btn btn-light-indigo" onClick={closeMenu}>
-              Service Register
-            </Link>
-            {/* <Link to="/contact" className="get-quote mobile-action-btn" onClick={closeMenu} style={{ border: '1px solid transparent' }}>
-              Get A Quote ➜
-            </Link> */}
           </div>
 
           {/* <a href="tel:+91 9974389486" className="mobile-nav-call" onClick={closeMenu}>
@@ -96,13 +87,13 @@ export default function Header({ settings }) {
         </nav>
 
         <div className="header-actions">
+
           <a href="/service/login" className="get-quote btn-outline-gray hide-mobile-sm" onClick={closeMenu}>
             Service Login
           </a>
           <Link to="/service-man/register" className="get-quote btn-light-indigo hide-mobile-sm" onClick={closeMenu}>
             Service Register
           </Link>
-          {/* <Link to="/contact" className="get-quote hide-mobile-sm" onClick={closeMenu} style={{ border: '1px solid transparent' }}>Get A Quote ➜</Link> */}
           <a href="tel:+91 9974389486" className="mobile-call-btn hide-desktop" aria-label="Call us">
             <IconPhone size={20} color="white" />
           </a>

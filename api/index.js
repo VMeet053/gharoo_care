@@ -356,6 +356,31 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
   }
 });
 
+// Helper: Generate unique Employee ID
+// Format: GRC-[SERVICE_CODE]-[YYMM][SEQ3]  e.g. GRC-AC-2505001
+const generateEmployeeId = async (service) => {
+  const serviceCodeMap = {
+    'AC Service': 'AC',
+    'Washing Machine': 'WM',
+    'Refrigerator': 'RF',
+    'Television': 'TV',
+    'Microwave': 'MW',
+    'Water Purifier': 'WP',
+    'Geyser': 'GY',
+    'Chimney': 'CH',
+    'General': 'GN'
+  };
+  const code = serviceCodeMap[service] || 'GN';
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(2);
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const prefix = `GRC-${code}-${yy}${mm}`;
+  // Count existing users with this prefix to get sequence
+  const count = await User.countDocuments({ employeeId: { $regex: `^${prefix}` } });
+  const seq = String(count + 1).padStart(3, '0');
+  return `${prefix}${seq}`;
+};
+
 // Service Man Registration
 app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }, { name: 'backIdProofImage', maxCount: 1 }]), async (req, res) => {
   try {
@@ -437,6 +462,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const employeeId = await generateEmployeeId('');
     const newUser = new User({
       firstName,
       lastName,
@@ -451,7 +477,10 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       idProofType,
       idProofNumber: null,
       frontIdProofImage: frontIdProofImageUrl,
-      backIdProofImage: backIdProofImageUrl
+      backIdProofImage: backIdProofImageUrl,
+      employeeId,
+      authorizationStatus: 'pending',
+      designation: 'Service Technician'
     });
 
     await newUser.save();
@@ -550,6 +579,45 @@ app.post('/api/service-login', async (req, res) => {
     res.json({ success: true, user: userWithoutPassword });
   } catch (err) {
     console.error('Service login error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Get service man profile by ID
+app.get('/api/service-man/profile/:id', async (req, res) => {
+  try {
+    if (!isMongoConnected) return res.status(500).json({ success: false, message: 'DB not connected' });
+    const user = await User.findById(req.params.id).select('-password -resetPasswordToken -resetPasswordExpires');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error('Get profile error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Upload service man profile picture
+app.put('/api/service-man/profile-pic', upload.single('profilePic'), async (req, res) => {
+  try {
+    if (!isMongoConnected) return res.status(500).json({ success: false, message: 'DB not connected' });
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ success: false, message: 'userId required' });
+    if (!req.file) return res.status(400).json({ success: false, message: 'No image provided' });
+
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+    const result = await cloudinary.uploader.upload(dataURI, { folder: 'gharoocare/profile-pics' });
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { profilePic: result.secure_url },
+      { new: true }
+    ).select('-password');
+
+    if (!updatedUser) return res.status(404).json({ success: false, message: 'User not found' });
+    res.json({ success: true, profilePic: result.secure_url, user: updatedUser.toObject() });
+  } catch (err) {
+    console.error('Profile pic upload error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });

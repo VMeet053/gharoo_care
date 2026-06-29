@@ -70,6 +70,25 @@ const userSchema = new mongoose.Schema({
   backIdProofImage: {
     type: String,
     default: null
+  },
+  employeeId: {
+    type: String,
+    default: null,
+    unique: true,
+    sparse: true
+  },
+  profilePic: {
+    type: String,
+    default: null
+  },
+  authorizationStatus: {
+    type: String,
+    enum: ['pending', 'authorized'],
+    default: 'pending'
+  },
+  designation: {
+    type: String,
+    default: 'Service Technician'
   }
 }, { timestamps: true });
 

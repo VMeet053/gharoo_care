@@ -4,7 +4,8 @@ const navItems = [
   { path: '/dashboard', icon: 'bi-speedometer2', label: 'Home' },
   { path: '/leads', icon: 'bi-person-lines-fill', label: 'Leads' },
   { path: '/work-orders', icon: 'bi-list-check', label: 'Orders' },
-  { path: '/earnings', icon: 'bi-currency-rupee', label: 'Earnings' }
+  { path: '/earnings', icon: 'bi-currency-rupee', label: 'Earnings' },
+  { path: '/profile', icon: 'bi-person-badge-fill', label: 'Profile' }
 ];
 
 export default function BottomNav({ unseenCount }) {
