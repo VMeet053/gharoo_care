@@ -1,6 +1,8 @@
 .site-footer {
-  background: #0b1120;
-  color: rgba(255, 255, 255, 0.75);
+  background:
+    radial-gradient(circle at top left, rgba(36, 181, 122, 0.16), transparent 34%),
+    linear-gradient(135deg, #f3fbf7 0%, #eef7ff 56%, #ffffff 100%);
+  color: #334155;
 }
 
 .footer-top {
@@ -9,21 +11,39 @@
 
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1.2fr;
+  grid-template-columns: 1.35fr 0.75fr 1fr;
   gap: 40px;
 }
 
+.footer-logo-link {
+  display: inline-block;
+  text-decoration: none;
+}
+
 .footer-logo {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #24b57a;
-  margin: 0 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 20px;
+  padding: 0;
+  background: transparent;
+}
+
+.footer-logo-img {
+  display: block;
+  width: min(260px, 66vw);
+  height: auto;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.72))
+    drop-shadow(0 14px 28px rgba(0, 0, 0, 0.34));
 }
 
 .footer-brand p {
   line-height: 1.8;
   margin: 0 0 24px;
   font-size: 0.95rem;
+  color: #334155;
 }
 
 .footer-socials {
@@ -35,10 +55,10 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(36, 181, 122, 0.24);
   display: grid;
   place-items: center;
-  color: white;
+  color: #0f5132;
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 700;
@@ -48,11 +68,12 @@
 .footer-socials a:hover {
   background: #24b57a;
   border-color: #24b57a;
+  color: white;
 }
 
 .footer-links h4,
 .footer-contact h4 {
-  color: white;
+  color: #0f172a;
   margin: 0 0 20px;
   font-size: 1.05rem;
 }
@@ -66,7 +87,7 @@
 }
 
 .footer-links a {
-  color: rgba(255, 255, 255, 0.65);
+  color: #475569;
   text-decoration: none;
   font-size: 0.95rem;
   transition: color 0.2s;
@@ -83,10 +104,21 @@
   margin-bottom: 16px;
   font-size: 0.95rem;
   line-height: 1.5;
+  color: #475569;
+}
+
+.footer-contact-item a {
+  color: #475569;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-contact-item a:hover {
+  color: #24b57a;
 }
 
 .footer-bottom {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
   padding: 20px 24px;
 }
 
@@ -103,7 +135,7 @@
 }
 
 .footer-bottom-links a {
-  color: rgba(255, 255, 255, 0.55);
+  color: #475569;
   text-decoration: none;
   transition: color 0.2s;
 }

@@ -171,7 +171,17 @@
     padding: 56px 16px;
   }
 
+  .pricing-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 18px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
   .plan-card {
+    min-width: 300px;
+    max-width: 360px;
     padding: 28px 22px;
   }
 
@@ -248,5 +258,112 @@
   .plan-card:hover,
   .test-card:hover {
     transform: none;
+  }
+}
+
+/* Full-device responsive guardrails */
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+.container {
+  width: min(100%, 1200px);
+}
+
+@media (max-width: 1199.98px) {
+  .container {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .hero-plans-strip,
+  .pricing-grid,
+  .services-grid,
+  .testimonials-grid,
+  .new-section-grid,
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hero-plans-strip,
+  .pricing-grid,
+  .services-grid,
+  .testimonials-grid,
+  .new-section-grid,
+  .stats-grid,
+  .about-grid,
+  .why-grid,
+  .contact-grid,
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .hero-inner,
+  .section-head,
+  .pricing-head,
+  .contact-head {
+    text-align: center;
+  }
+
+  .cta-row,
+  .about-actions,
+  .contact-actions {
+    justify-content: center;
+  }
+
+  .btn,
+  .hero .btn.primary,
+  .plan-btn,
+  .hero-mini-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-title,
+  .section-title,
+  .pricing h2 {
+    overflow-wrap: anywhere;
+  }
+
+  .image-collage {
+    min-height: auto;
+  }
+
+  .collage-sub,
+  .experience-badge {
+    position: relative;
+    inset: auto;
+    width: 100%;
+    margin-top: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .section-title {
+    font-size: 1.45rem;
+  }
+
+  .hero-title {
+    font-size: 1.48rem;
+  }
+
+  .hero-desc,
+  .section-desc {
+    font-size: 0.88rem;
   }
 }

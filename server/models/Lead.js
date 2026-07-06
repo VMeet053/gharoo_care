@@ -38,6 +38,18 @@ const leadSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: null
+  },
+  isPremium: {
+    type: Boolean,
+    default: false
+  },
+  premiumPlan: {
+    type: String,
+    default: ''
+  },
+  premiumPrice: {
+    type: String,
+    default: ''
   }
 }, { timestamps: true });
 

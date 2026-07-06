@@ -6,7 +6,16 @@ import Footer from './Footer';
 
 const pageTitles = {
   '/': 'Dashboard',
+  '/dashboard': 'Dashboard',
   '/users': 'Users',
+  '/work-orders': 'Work Orders',
+  '/premium-user-list': 'Premium User List',
+  '/service-user-list': 'Service User List',
+  '/service-price': 'Service Price',
+  '/leads': 'Leads',
+  '/status/pending': 'Pending Orders',
+  '/status/completed': 'Completed Orders',
+  '/payment': 'Payments',
   '/add-user': 'Add User',
   '/profile': 'Profile',
   '/charts': 'Charts',
@@ -19,6 +28,20 @@ const pageTitles = {
   '/blank': 'Getting Started',
   '/user-details': 'User Details',
   '/create-agent': 'Create Agent',
+  '/user-panel/header': 'Header',
+  '/user-panel/hero': 'Hero Section',
+  '/user-panel/services': 'Services',
+  '/user-panel/service-slider': 'Service Slider',
+  '/user-panel/pricing': 'Pricing',
+  '/user-panel/about': 'About',
+  '/user-panel/why-choose': 'Why Choose',
+  '/user-panel/stats': 'Stats',
+  '/user-panel/testimonials': 'Testimonials',
+  '/user-panel/completed-projects': 'Completed Projects',
+  '/user-panel/contact': 'Contact',
+  '/user-panel/brand-marquee': 'Brand Marquee',
+  '/user-panel/new-section': 'New Section',
+  '/user-panel/footer': 'Footer',
 };
 
 export default function Layout() {
@@ -27,9 +50,9 @@ export default function Layout() {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem('adminHMD.sidebarMini');
-      return saved !== null ? saved === 'true' : true; // Default to collapsed
+      return saved !== null ? saved === 'true' : false;
     } catch {
-      return true;
+      return false;
     }
   });
   

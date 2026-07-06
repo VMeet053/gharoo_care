@@ -7,6 +7,19 @@ function getStoredUser() {
   return raw ? JSON.parse(raw) : null;
 }
 
+function getUserId(user) {
+  return user?._id || user?.id;
+}
+
+function money(value) {
+  return `\u20b9${Number(value || 0).toLocaleString('en-IN')}`;
+}
+
+function getOrderEarning(order) {
+  const finalCost = Number(order.finalCost || 0);
+  return finalCost > 0 ? Math.round(finalCost * 0.2) : Number(order.earnings || 0);
+}
+
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [workOrders, setWorkOrders] = useState([]);
@@ -21,8 +34,8 @@ export default function Dashboard() {
       return;
     }
     setUser(storedUser);
-    fetchWorkOrders(storedUser._id);
-    fetchLeads(storedUser._id);
+    fetchWorkOrders(getUserId(storedUser));
+    fetchLeads(getUserId(storedUser));
   }, [navigate]);
 
   const fetchLeads = async (userId) => {
@@ -46,27 +59,23 @@ export default function Dashboard() {
       });
   };
 
-  const updateStatus = async (id, status) => {
-    fetch(`/api/work-orders/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && user) {
-          fetchWorkOrders(user._id);
-        }
-      });
-  };
-
   if (!user) return null;
+
+  const completedOrders = workOrders.filter((w) => w.status === 'completed');
+  const cashOrders = completedOrders.filter((w) => w.paymentMethod === 'cash');
+  const onlineOrders = completedOrders.filter((w) => w.paymentMethod && w.paymentMethod !== 'cash');
+  const cashTotal = cashOrders.reduce((sum, order) => sum + Number(order.finalCost || order.earnings || 0), 0);
+  const onlineTotal = onlineOrders.reduce((sum, order) => sum + Number(order.finalCost || order.earnings || 0), 0);
+  const totalEarnings = completedOrders.reduce((sum, order) => sum + getOrderEarning(order), 0);
 
   const stats = [
     { label: 'Assigned Leads', value: leads.length, icon: 'bi-person-lines-fill', color: 'primary' },
     { label: 'Total Orders', value: workOrders.length, icon: 'bi-list-check', color: 'primary' },
     { label: 'Pending', value: workOrders.filter((w) => w.status === 'pending' || w.status === 'assigned').length, icon: 'bi-clock-history', color: 'warning' },
-    { label: 'Completed', value: workOrders.filter((w) => w.status === 'completed').length, icon: 'bi-check-circle', color: 'success' }
+    { label: 'Completed', value: completedOrders.length, icon: 'bi-check-circle', color: 'success' },
+    { label: 'My Earnings', value: money(totalEarnings), caption: '20% service share', icon: 'bi-currency-rupee', color: 'info', to: '/earnings' },
+    { label: 'Cash Collection', value: money(cashTotal), caption: `${cashOrders.length} cash entries`, icon: 'bi-cash-stack', color: 'success' },
+    { label: 'Online Collection', value: money(onlineTotal), caption: `${onlineOrders.length} online entries`, icon: 'bi-phone', color: 'primary' }
   ];
 
   return (
@@ -80,7 +89,7 @@ export default function Dashboard() {
         <button
           type="button"
           className="btn btn-outline-primary btn-sm"
-          onClick={() => fetchWorkOrders(user._id)}
+          onClick={() => fetchWorkOrders(getUserId(user))}
         >
           <i className="bi bi-arrow-clockwise"></i>
         </button>
@@ -88,17 +97,23 @@ export default function Dashboard() {
 
       <div className="sm-stat-grid">
         {stats.map((stat) => (
-          <div key={stat.label} className="sm-stat-card">
+          <button
+            key={stat.label}
+            type="button"
+            className={`sm-stat-card ${stat.to ? 'sm-stat-card-clickable' : ''}`}
+            onClick={() => stat.to && navigate(stat.to)}
+          >
             <div className="d-flex align-items-center justify-content-between">
               <div>
                 <p>{stat.label}</p>
                 <h3 className={`text-${stat.color}`}>{stat.value}</h3>
+                {stat.caption && <span className="stat-caption">{stat.caption}</span>}
               </div>
               <span className={`sm-stat-icon bg-${stat.color} bg-opacity-10 text-${stat.color}`}>
                 <i className={`bi ${stat.icon}`}></i>
               </span>
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -155,20 +170,20 @@ export default function Dashboard() {
                   <button
                     type="button"
                     className="btn btn-info text-dark"
-                    onClick={() => updateStatus(order._id, 'in-progress')}
+                    onClick={() => navigate(`/work-orders/${order._id}`)}
                   >
-                    <i className="bi bi-play-circle me-2"></i>
-                    Start Work
+                    <i className="bi bi-camera me-2"></i>
+                    Start With Photo
                   </button>
                 )}
                 {order.status === 'in-progress' && (
                   <button
                     type="button"
                     className="btn btn-success"
-                    onClick={() => updateStatus(order._id, 'completed')}
+                    onClick={() => navigate(`/work-orders/${order._id}`)}
                   >
                     <i className="bi bi-check-circle me-2"></i>
-                    Complete
+                    Finish Work
                   </button>
                 )}
               </div>

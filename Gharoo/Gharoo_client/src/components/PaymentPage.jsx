@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './PaymentPage.css'
+import { useToast } from './ToastProvider'
 
 export default function PaymentPage() {
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const userFormData = JSON.parse(localStorage.getItem('userFormData'))
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('')
@@ -15,19 +17,23 @@ export default function PaymentPage() {
 
   const handlePayment = async () => {
     if (!selectedPaymentMethod) {
-      alert('Please select a payment method!')
+      showToast('Please select a payment method.', 'warning', 'Payment method required')
       return
     }
     setIsSubmitting(true)
     try {
+      const selectedPlan = JSON.parse(localStorage.getItem('selectedPlan')) || null
       const leadData = {
         name: `${userFormData.firstName} ${userFormData.lastName}`,
         phone: userFormData.contactNumber,
         email: userFormData.email,
-        city: userFormData.fullAddress,
-        area: userFormData.fullAddress,
+        city: userFormData.city,
+        area: userFormData.area,
         service: 'Home Repair',
-        status: 'New'
+        status: 'New',
+        isPremium: Boolean(selectedPlan),
+        premiumPlan: selectedPlan?.name || '',
+        premiumPrice: selectedPlan?.price || ''
       }
 
       const res = await fetch('/api/leads', {
@@ -40,13 +46,13 @@ export default function PaymentPage() {
       if (data.success) {
         // Also register as a premium user
         try {
-          const selectedPlan = JSON.parse(localStorage.getItem('selectedPlan')) || { name: 'Premium', price: '$19.99' };
+          const premiumPlan = selectedPlan || { name: 'Premium', price: '$19.99' };
           const premiumUserData = {
             name: `${userFormData.firstName} ${userFormData.lastName}`,
             email: userFormData.email,
             phone: userFormData.contactNumber,
-            plan: selectedPlan.name,
-            price: selectedPlan.price,
+            plan: premiumPlan.name,
+            price: premiumPlan.price,
             city: userFormData.fullAddress,
             address: userFormData.fullAddress
           };
@@ -59,16 +65,16 @@ export default function PaymentPage() {
           console.error('Failed to register premium user:', premiumErr);
         }
 
-        alert('Booking confirmed! We will contact you soon!')
+        showToast('Booking confirmed. We will contact you soon.', 'success', 'Booking confirmed')
         localStorage.removeItem('userFormData')
         localStorage.removeItem('selectedPlan')
-        navigate('/')
+        setTimeout(() => navigate('/'), 900)
       } else {
-        alert('Something went wrong! Please try again!')
+        showToast('Something went wrong. Please try again.', 'error', 'Payment failed')
       }
     } catch (err) {
       console.error(err)
-      alert('Something went wrong! Please try again!')
+      showToast('Something went wrong. Please try again.', 'error', 'Payment failed')
     } finally {
       setIsSubmitting(false)
     }

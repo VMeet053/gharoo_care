@@ -1,8 +1,27 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Hero.css'
-import { IconPlay, IconArrow } from './Icons'
+import { IconCheck } from './Icons'
 import { heroSlides as defaultHeroImages } from '../constants/images'
+
+const fallbackHeroPlans = [
+  {
+    name: 'Basic Care',
+    price: '₹499',
+    features: ['Quick diagnosis', 'Pickup support', 'Service updates']
+  },
+  {
+    name: 'Standard Care',
+    price: '₹999',
+    popular: true,
+    features: ['Priority repair', 'Warranty support', 'Free pickup']
+  },
+  {
+    name: 'Premium Care',
+    price: '₹1499',
+    features: ['Express repair', 'Extended support', 'Doorstep service']
+  }
+]
 
 const defaultSlides = [
   {
@@ -55,6 +74,14 @@ export default function Hero({ settings }) {
     return stopAuto
   }, [index, slides.length])
 
+  useEffect(() => {
+    const next = slides[(index + 1) % slides.length]
+    ;[slides[index]?.bg, slides[index]?.side, next?.bg].filter(Boolean).forEach(src => {
+      const img = new Image()
+      img.src = src
+    })
+  }, [index, slides])
+
   function startAuto() {
     stopAuto()
     intervalRef.current = setInterval(() => {
@@ -77,6 +104,12 @@ export default function Hero({ settings }) {
   }
 
   const s = slides[index]
+  const heroPlans = (settings?.pricing?.plans?.length ? settings.pricing.plans : fallbackHeroPlans).slice(0, 3)
+
+  function selectPlan(plan) {
+    localStorage.setItem('selectedPlan', JSON.stringify({ name: plan.name, price: plan.price }))
+    navigate('/booking')
+  }
 
   return (
     <section className="hero" onMouseEnter={stopAuto} onMouseLeave={startAuto}>
@@ -89,7 +122,7 @@ export default function Hero({ settings }) {
           >
             <div
               className="hero-bg-inner"
-              style={{ backgroundImage: `url(${slide.bg})` }}
+              style={{ backgroundImage: i === index ? `url(${slide.bg})` : undefined }}
             />
             <div className="slide-overlay" />
           </div>
@@ -101,30 +134,61 @@ export default function Hero({ settings }) {
               <span className="muted">{s.titleTop}</span>
               <span className="highlight">{s.titleHighlight}</span>
             </h1>
-            <p className="hero-desc hero-anim hero-anim-2">{s.text}</p>
-            <div className="cta-row hero-anim hero-anim-3">
-              <button onClick={() => navigate('/booking')} className="btn primary btn-shine">
-                Get Started <IconArrow size={16} color="white" />
-              </button>
-              <div className="play-btn-wrap">
-                <span className="play-ring" />
-                <span className="play-ring play-ring-2" />
-                <button className="btn play-btn" aria-label="Watch video">
-                  <IconPlay size={18} color="#24b57a" />
-                </button>
-              </div>
+            <div className="hero-plans-strip hero-anim hero-anim-3">
+              {heroPlans.map((plan, planIndex) => (
+                <article
+                  className={`hero-mini-plan ${plan.popular ? 'featured' : ''}`}
+                  key={`${plan.name}-${planIndex}`}
+                >
+                  {plan.popular && <span className="hero-mini-badge">Popular</span>}
+                  <div className="hero-mini-plan-top">
+                    <h4>{plan.name}</h4>
+                    <div className="hero-mini-price">{plan.price}</div>
+                  </div>
+                  <ul>
+                    {(plan.features || []).slice(0, 3).map((feature, featureIndex) => (
+                      <li key={featureIndex}>
+                        <IconCheck size={14} />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button onClick={() => selectPlan(plan)} className="btn primary hero-mini-btn">
+                    Get Started
+                  </button>
+                </article>
+              ))}
             </div>
           </div>
           <div className="hero-media" key={`img-${animKey}`}>
             <div className="hero-image-card floating-card">
-              <img src={s.side} alt="Repair service" className="hero-side-img" />
+              <img src={s.side} alt="Repair service" className="hero-side-img" loading="eager" decoding="async" fetchpriority="high" />
               <div className="hero-image-badge">
                 <span className="badge-dot" />
                 Expert Technicians
               </div>
             </div>
+            <div className="hero-plan-card">
+              <div className={`plan-card ${s.popular ? 'featured' : ''}`}>
+                {s.popular && <div className="plan-badge">Most Popular</div>}
+                <div className="hero-plan-header">
+                  <h4>{s.planName || 'Premium Repair Plan'}</h4>
+                  <div className="plan-price">
+                    <span className="price">{s.planPrice || '₹999'}</span>
+                  </div>
+                </div>
+                <ul className="plan-features">
+                  {(s.planFeatures || ['Fast repair', 'Warranty support', 'Free pickup']).slice(0, 3).map((feature, index) => (
+                    <li key={index}>{feature}</li>
+                  ))}
+                </ul>
+                <button onClick={() => navigate('/booking')} className="btn primary hero-plan-btn">
+                  Get Started
+                </button>
+              </div>
+            </div>
             <div className="hero-float-card hero-float-1">
-              <img src={slides[(index + 1) % slides.length].side} alt="" />
+              <img src={slides[(index + 1) % slides.length].side} alt="" loading="lazy" decoding="async" />
             </div>
             <div className="hero-float-card hero-float-2">
               <span>✓</span> 24/7 Support

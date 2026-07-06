@@ -259,6 +259,7 @@ export default function ServiceManRegistration() {
                       src={frontImagePreview}
                       alt="Front ID Proof Preview"
                       className="preview-image"
+                      decoding="async"
                     />
                   </div>
                 )}
@@ -282,6 +283,7 @@ export default function ServiceManRegistration() {
                       src={backImagePreview}
                       alt="Back ID Proof Preview"
                       className="preview-image"
+                      decoding="async"
                     />
                   </div>
                 )}

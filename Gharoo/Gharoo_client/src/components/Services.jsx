@@ -25,7 +25,7 @@ export default function Services({ settings }) {
             <Reveal key={i} delay={i * 120} direction="up">
               <div className="service-card">
                 <div className="service-card-img img-zoom-wrap">
-                  <img src={serviceImages[i % serviceImages.length].image} alt={s.title} />
+                  <img src={serviceImages[i % serviceImages.length].image} alt={s.title} loading="lazy" decoding="async" />
                   <div className="service-card-overlay">
                     <span>{s.icon}</span>
                   </div>

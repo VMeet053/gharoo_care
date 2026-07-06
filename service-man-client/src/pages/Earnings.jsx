@@ -5,14 +5,28 @@ function getStoredUser() {
   return raw ? JSON.parse(raw) : null;
 }
 
+function getUserId(user) {
+  return user?._id || user?.id;
+}
+
+function money(value) {
+  return `\u20b9${Number(value || 0).toLocaleString('en-IN')}`;
+}
+
+function getOrderEarning(order) {
+  const finalCost = Number(order.finalCost || 0);
+  return finalCost > 0 ? Math.round(finalCost * 0.2) : Number(order.earnings || 0);
+}
+
 export default function Earnings() {
   const [user, setUser] = useState(getStoredUser);
   const [workOrders, setWorkOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?._id) {
-      fetchWorkOrders(user._id);
+    const userId = getUserId(user);
+    if (userId) {
+      fetchWorkOrders(userId);
     }
   }, [user]);
 
@@ -31,14 +45,15 @@ export default function Earnings() {
   };
 
   const completedOrders = workOrders.filter((w) => w.status === 'completed');
-  const totalEarnings = completedOrders.reduce((sum, order) => sum + (order.earnings || 0), 0);
+  const totalCollection = completedOrders.reduce((sum, order) => sum + Number(order.finalCost || 0), 0);
+  const totalEarnings = completedOrders.reduce((sum, order) => sum + getOrderEarning(order), 0);
   const thisMonthEarnings = completedOrders
     .filter((order) => {
       const orderDate = new Date(order.completedAt || order.updatedAt);
       const now = new Date();
       return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
     })
-    .reduce((sum, order) => sum + (order.earnings || 0), 0);
+    .reduce((sum, order) => sum + getOrderEarning(order), 0);
 
   return (
     <div className="page-wrap">
@@ -50,14 +65,21 @@ export default function Earnings() {
         </div>
       </div>
 
-      <div className="sm-stat-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+      <div className="sm-stat-grid earnings-stat-grid">
+        <div className="sm-stat-card">
+          <p>Total Collection</p>
+          <h3 className="text-success">{money(totalCollection)}</h3>
+          <span className="stat-caption">Full customer payments</span>
+        </div>
         <div className="sm-stat-card">
           <p>Total Earnings</p>
-          <h3 className="text-primary">₹{totalEarnings}</h3>
+          <h3 className="text-primary">{money(totalEarnings)}</h3>
+          <span className="stat-caption">20% service share</span>
         </div>
         <div className="sm-stat-card">
           <p>This Month</p>
-          <h3 className="text-success">₹{thisMonthEarnings}</h3>
+          <h3 className="text-success">{money(thisMonthEarnings)}</h3>
+          <span className="stat-caption">20% service share</span>
         </div>
       </div>
 
@@ -87,10 +109,14 @@ export default function Earnings() {
                   <p className="item-card-subtitle">{order.customerName}</p>
                 </div>
                 <span className="badge bg-success rounded-pill px-3 py-2">
-                  ₹{order.earnings || 0}
+                  {money(getOrderEarning(order))}
                 </span>
               </div>
               <div className="item-card-section">
+                <div className="detail-row">
+                  <i className="bi bi-receipt"></i>
+                  <span>Collection: {money(order.finalCost || 0)} | Earning: {money(getOrderEarning(order))}</span>
+                </div>
                 <div className="detail-row">
                   <i className="bi bi-calendar-check"></i>
                   <span>

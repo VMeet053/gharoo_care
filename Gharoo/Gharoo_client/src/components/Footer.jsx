@@ -22,9 +22,9 @@ export default function Footer({ settings }) {
       <div className="footer-top">
         <div className="container footer-grid">
           <div className="footer-brand">
-            <Link to="/">
+            <Link to="/" className="footer-logo-link">
               <h3 className="footer-logo">
-                <img src="/gharoo-logo.png" alt="Gharoo Care Logo" style={{ height: '60px', display: 'block' }} />
+                <img src="/gharoo-logo.png" alt="Gharoo Care Logo" className="footer-logo-img" loading="lazy" decoding="async" />
               </h3>
             </Link>
             <p>{footer.description}</p>
@@ -61,11 +61,11 @@ export default function Footer({ settings }) {
             <h4>Contact Info</h4>
             <div className="footer-contact-item">
               <IconPhone size={18} color="#24b57a" />
-              <a href="tel:+91 9974389486" style={{ color: '#9ca3af', textDecoration: 'none' }}>+91 9974389486</a>
+              <a href="tel:+91 9974389486">+91 9974389486</a>
             </div>
             <div className="footer-contact-item">
               <IconMail size={18} color="#24b57a" />
-              <a href="mailto:gharoocare@gmail.com" style={{ color: '#9ca3af', textDecoration: 'none' }}>gharoocare@gmail.com</a>
+              <a href="mailto:gharoocare@gmail.com">gharoocare@gmail.com</a>
             </div>
             <div className="footer-contact-item">
               <IconMapPin size={18} color="#24b57a" />

@@ -7,17 +7,18 @@ import WhyChooseUs from '../components/WhyChooseUs'
 import ServiceSlider from '../components/ServiceSlider'
 import StatsSection from '../components/StatsSection'
 import Services from '../components/Services'
-import Pricing from '../components/Pricing'
 import Testimonials from '../components/Testimonials'
 import Contact from '../components/Contact'
 import CompletedProjects from '../components/CompletedProjects'
 import BrandMarquee from '../components/BrandMarquee'
 import Footer from '../components/Footer'
+import WhatsAppFloating from '../components/WhatsAppFloating'
+import PageLoader from '../components/PageLoader'
 import '../styles/home.css'
 
 export default function HomePage({ settings, loading }) {
   if (loading) {
-    return <div className="d-flex justify-content-center align-items-center vh-100">Loading...</div>
+    return <PageLoader label="Preparing your repair service" />
   }
 
   return (
@@ -32,10 +33,10 @@ export default function HomePage({ settings, loading }) {
       <ServiceSlider settings={settings} />
       <StatsSection settings={settings} />
       <Services settings={settings} />
-      <Pricing settings={settings} />
       <Testimonials settings={settings} />
       <Contact settings={settings} />
       <Footer settings={settings} />
+      <WhatsAppFloating settings={settings} />
     </div>
   )
 }

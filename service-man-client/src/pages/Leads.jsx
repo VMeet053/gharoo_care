@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import '../styles/leads.css';
+import { useToast } from '../components/ToastProvider';
 
 const statusBadges = {
   New: 'bg-primary',
@@ -14,6 +15,10 @@ function getStoredUser() {
   return raw ? JSON.parse(raw) : null;
 }
 
+function getUserId(user) {
+  return user?._id || user?.id;
+}
+
 function LeadCard({ lead, acceptingId, onAccept }) {
   const leadId = lead.id || lead._id;
 
@@ -23,6 +28,12 @@ function LeadCard({ lead, acceptingId, onAccept }) {
         <div>
           <h2 className="item-card-title">{lead.name}</h2>
           <p className="item-card-subtitle">{lead.service}</p>
+          {lead.isPremium && (
+            <span className="badge text-bg-warning rounded-pill">
+              <i className="bi bi-stars me-1"></i>
+              Premium User{lead.premiumPlan ? ` - ${lead.premiumPlan}` : ''}
+            </span>
+          )}
         </div>
         <span className={`badge ${statusBadges[lead.status] || 'bg-secondary'} rounded-pill px-3 py-2`}>
           {lead.status}
@@ -80,6 +91,7 @@ function LeadCard({ lead, acceptingId, onAccept }) {
 }
 
 export default function Leads() {
+  const { showToast } = useToast();
   const [user] = useState(getStoredUser);
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,8 +114,9 @@ export default function Leads() {
   };
 
   useEffect(() => {
-    if (user?._id) {
-      fetchLeads(user._id);
+    const userId = getUserId(user);
+    if (userId) {
+      fetchLeads(userId);
     }
   }, [user]);
 
@@ -123,13 +136,14 @@ export default function Leads() {
   });
 
   const handleAccept = async (leadId) => {
-    if (!user?._id) return;
+    const userId = getUserId(user);
+    if (!userId) return;
     setAcceptingId(leadId);
     try {
       const response = await fetch(`/api/leads/${leadId}/accept`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id })
+        body: JSON.stringify({ userId })
       });
       const data = await response.json();
       if (data.success) {
@@ -138,12 +152,12 @@ export default function Leads() {
             (lead.id || lead._id) === leadId ? { ...lead, status: 'Accepted' } : lead
           )
         );
-        alert('Lead accepted! Check Work Orders for full details.');
+        showToast('Lead accepted. Check Work Orders for full details.', 'success', 'Lead accepted');
       } else {
-        alert(data.message || 'Failed to accept lead');
+        showToast(data.message || 'Failed to accept lead', 'error', 'Accept failed');
       }
     } catch {
-      alert('Failed to accept lead. Please try again.');
+      showToast('Failed to accept lead. Please try again.', 'error', 'Network error');
     } finally {
       setAcceptingId(null);
     }
@@ -160,7 +174,7 @@ export default function Leads() {
         <button
           type="button"
           className="btn btn-outline-primary btn-sm"
-          onClick={() => user && fetchLeads(user._id)}
+          onClick={() => getUserId(user) && fetchLeads(getUserId(user))}
         >
           <i className="bi bi-arrow-clockwise"></i>
           <span className="d-none d-sm-inline ms-1">Refresh</span>
@@ -245,7 +259,15 @@ export default function Leads() {
                 <tbody>
                   {filteredLeads.map((lead) => (
                     <tr key={lead.id || lead._id}>
-                      <td className="fw-medium">{lead.name}</td>
+                      <td className="fw-medium">
+                        <div>{lead.name}</div>
+                        {lead.isPremium && (
+                          <span className="badge text-bg-warning rounded-pill mt-1">
+                            <i className="bi bi-stars me-1"></i>
+                            Premium{lead.premiumPlan ? ` - ${lead.premiumPlan}` : ''}
+                          </span>
+                        )}
+                      </td>
                       <td>
                         <div>{lead.email}</div>
                         <div className="text-muted small">{lead.phone}</div>

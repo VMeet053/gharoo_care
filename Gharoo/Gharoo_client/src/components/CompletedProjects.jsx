@@ -26,7 +26,7 @@ export default function CompletedProjects({ settings }) {
         <div className="completed-projects-track">
           {[...projects, ...projects].map((project, index) => (
             <div key={index} className="completed-project-card">
-              <img src={project.image} alt={project.title} loading="lazy" />
+              <img src={project.image} alt={project.title} loading="lazy" decoding="async" />
               <div className="project-overlay">
                 <h4>{project.title}</h4>
                 <p>{project.subtitle}</p>

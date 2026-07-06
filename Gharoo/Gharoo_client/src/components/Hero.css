@@ -16,7 +16,7 @@
 
 .slides {
   position: relative;
-  height: 620px;
+  min-height: 760px;
 }
 
 .slide {
@@ -57,13 +57,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 40px;
-  height: 620px;
-  padding-top: 40px;
-  padding-bottom: 80px;
+  min-height: 760px;
+  padding-top: 72px;
+  padding-bottom: 96px;
 }
 
 .hero-copy {
-  max-width: 560px;
+  max-width: 940px;
   flex: 1;
 }
 
@@ -87,7 +87,7 @@
 .hero-title {
   font-size: clamp(2rem, 4.5vw, 3.75rem);
   line-height: 1.1;
-  margin: 0 0 16px;
+  margin: 0;
   font-weight: 800;
 }
 
@@ -101,19 +101,112 @@
   color: #24b57a;
 }
 
-.hero-desc {
-  color: rgba(255, 255, 255, 0.82);
-  max-width: 520px;
-  margin: 0 0 28px;
-  line-height: 1.75;
-  font-size: 1.05rem;
+.hero-plans-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 34px;
+  max-width: 920px;
 }
 
-.cta-row {
+.hero-mini-plan {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  min-height: 230px;
+  padding: 22px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+  border: 1px solid rgba(226, 232, 240, 0.82);
+  color: #111827;
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.24);
+  overflow: hidden;
+  transition: transform 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.hero-mini-plan::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, #24b57a, #14b8a6);
+}
+
+.hero-mini-plan:hover {
+  transform: translateY(-6px);
+  border-color: rgba(36, 181, 122, 0.56);
+  box-shadow: 0 26px 68px rgba(0, 0, 0, 0.28);
+}
+
+.hero-mini-plan.featured {
+  background: linear-gradient(180deg, #ffffff, #f0fdf4);
+  border-color: rgba(36, 181, 122, 0.9);
+  box-shadow: 0 24px 70px rgba(36, 181, 122, 0.28);
+}
+
+.hero-mini-badge {
+  position: absolute;
+  top: -10px;
+  right: 12px;
+  border-radius: 999px;
+  background: #24b57a;
+  color: white;
+  padding: 5px 10px;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.hero-mini-plan-top {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.hero-mini-plan h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.hero-mini-price {
+  color: #24b57a;
+  font-size: 1.55rem;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.hero-mini-plan ul {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.hero-mini-plan li {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: #475569;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.hero-mini-plan li svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: #24b57a;
+}
+
+.hero-mini-btn {
+  width: 100%;
+  justify-content: center;
+  min-height: 42px;
+  margin-top: auto;
+  padding: 10px 12px;
+  font-size: 0.84rem;
 }
 
 .hero .btn.primary {
@@ -138,44 +231,8 @@
   box-shadow: 0 12px 32px rgba(36, 181, 122, 0.4);
 }
 
-.play-btn-wrap {
-  position: relative;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-
-.play-ring {
-  position: absolute;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: 2px solid rgba(36, 181, 122, 0.5);
-  animation: pulseRing 2s ease-out infinite;
-}
-
-.play-ring-2 {
-  animation-delay: 0.6s;
-}
-
-.hero .btn.play-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(6px);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, transform 0.2s;
-  z-index: 1;
-}
-
 .hero-media {
-  position: relative;
-  flex: 0 0 380px;
-  animation: heroImageIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  display: none;
 }
 
 .hero-image-card {
@@ -186,13 +243,81 @@
   border: 3px solid rgba(255, 255, 255, 0.15);
 }
 
+.hero-plan-card {
+  display: none;
+}
+
+.hero-plan-card .plan-card {
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: #111827;
+}
+
+.hero-plan-card .plan-card.featured {
+  border: 1px solid rgba(36, 181, 122, 0.25);
+}
+
+.hero-plan-card .plan-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #24b57a;
+  color: white;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.hero-plan-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hero-plan-card .plan-price .price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.hero-plan-card .plan-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.hero-plan-card .plan-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.hero-plan-btn {
+  margin-top: 8px;
+  padding: 14px 20px;
+  width: 100%;
+  justify-content: center;
+}
+
 .floating-card {
   animation: floatY 5s ease-in-out infinite;
 }
 
 .hero-side-img {
   width: 100%;
-  height: 420px;
+  height: 360px;
   object-fit: cover;
   display: block;
 }
@@ -296,16 +421,35 @@
 /* Tablet */
 @media (max-width: 1024px) {
   .hero-media {
-    display: none;
+    display: block;
+    max-width: 420px;
+    margin: 0 auto;
   }
 
   .slides {
-    height: 540px;
+    height: auto;
+    min-height: 0;
   }
 
   .hero-inner {
-    height: 540px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-height: 0;
+    padding-top: 56px;
     padding-bottom: 70px;
+  }
+
+  .hero-copy {
+    max-width: 100%;
+  }
+
+  .hero-plans-strip {
+    max-width: 100%;
+  }
+
+  .hero-media {
+    display: none;
   }
 }
 
@@ -343,6 +487,23 @@
     max-width: 100%;
   }
 
+  .hero-plans-strip {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .hero-mini-plan {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .hero-mini-plan ul {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
   .hero .eyebrow {
     font-size: 0.78rem;
     margin-bottom: 12px;
@@ -350,17 +511,7 @@
 
   .hero-title {
     font-size: 1.75rem;
-    margin-bottom: 12px;
-  }
-
-  .hero-desc {
-    font-size: 0.9rem;
-    margin-bottom: 24px;
-    line-height: 1.7;
-  }
-
-  .cta-row {
-    gap: 12px;
+    margin-bottom: 0;
   }
 
   .hero .btn.primary {

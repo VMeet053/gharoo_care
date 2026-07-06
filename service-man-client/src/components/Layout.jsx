@@ -13,13 +13,14 @@ export default function Layout() {
     sessionStorage.getItem('serviceManUser') ||
     '{}'
   );
+  const userId = user?._id || user?.id;
 
   useEffect(() => {
-    if (!user?._id) return;
+    if (!userId) return;
 
     const fetchLeadsAndCalculate = async () => {
       try {
-        const response = await fetch(`/api/leads/assigned/${user._id}`);
+        const response = await fetch(`/api/leads/assigned/${userId}`);
         const data = await response.json();
         if (Array.isArray(data)) {
           // Filter leads with status 'New'
@@ -55,7 +56,7 @@ export default function Layout() {
     // Poll every 10 seconds to automatically fetch new leads
     const interval = setInterval(fetchLeadsAndCalculate, 10000);
     return () => clearInterval(interval);
-  }, [location.pathname, user?._id]);
+  }, [location.pathname, userId]);
 
   return (
     <div className="app-shell">

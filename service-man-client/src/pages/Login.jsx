@@ -145,6 +145,12 @@ export default function Login() {
               )}
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
+            <div className="auth-footer">
+              New service partner? <Link to="/register">Create account</Link>
+            </div>
+            <div className="auth-footer compact">
+              <a href="/">Back to website</a>
+            </div>
           </form>
         </section>
       </main>

@@ -140,7 +140,7 @@ export default function ServiceSlider({ settings }) {
                     style={{ width: cardWidth > 0 ? `${cardWidth}px` : '100%', flexShrink: 0 }}
                   >
                     <div className="slide-card-img img-zoom-wrap">
-                      <img src={s.image || sliderImages[i % sliderImages.length].image} alt={s.title} />
+                      <img src={s.image || sliderImages[i % sliderImages.length].image} alt={s.title} loading="lazy" decoding="async" />
                     </div>
                     <div className="slide-card-icon">{s.icon}</div>
                     <h4>{s.title}</h4>

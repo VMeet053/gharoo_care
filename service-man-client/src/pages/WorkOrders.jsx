@@ -6,6 +6,10 @@ function getStoredUser() {
   return raw ? JSON.parse(raw) : null;
 }
 
+function getUserId(user) {
+  return user?._id || user?.id;
+}
+
 function getStatusBadge(status) {
   const badges = {
     pending: 'bg-warning text-dark',
@@ -21,13 +25,19 @@ function getStatusBadge(status) {
   );
 }
 
-function WorkOrderCard({ order, onUpdateStatus, onViewDetails }) {
+function WorkOrderCard({ order, onViewDetails }) {
   return (
     <article className="item-card">
       <div className="item-card-header">
         <div>
           <h2 className="item-card-title">{order.serviceType || order.title}</h2>
           <p className="item-card-subtitle">Work Order</p>
+          {order.isPremium && (
+            <span className="badge text-bg-warning rounded-pill">
+              <i className="bi bi-stars me-1"></i>
+              Premium User{order.premiumPlan ? ` - ${order.premiumPlan}` : ''}
+            </span>
+          )}
         </div>
         {getStatusBadge(order.status)}
       </div>
@@ -66,23 +76,15 @@ function WorkOrderCard({ order, onUpdateStatus, onViewDetails }) {
           View Details
         </button>
         {order.status === 'assigned' && (
-          <button
-            type="button"
-            className="btn btn-info text-dark"
-            onClick={() => onUpdateStatus(order._id, 'in-progress')}
-          >
-            <i className="bi bi-play-circle me-2"></i>
-            Start Work
+          <button type="button" className="btn btn-info text-dark" onClick={() => onViewDetails(order._id)}>
+            <i className="bi bi-camera me-2"></i>
+            Start With Photo
           </button>
         )}
         {order.status === 'in-progress' && (
-          <button
-            type="button"
-            className="btn btn-success"
-            onClick={() => onUpdateStatus(order._id, 'completed')}
-          >
+          <button type="button" className="btn btn-success" onClick={() => onViewDetails(order._id)}>
             <i className="bi bi-check-circle me-2"></i>
-            Mark Complete
+            Finish Work
           </button>
         )}
         {order.status === 'completed' && (
@@ -103,8 +105,9 @@ export default function WorkOrders() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?._id) {
-      fetchWorkOrders(user._id);
+    const userId = getUserId(user);
+    if (userId) {
+      fetchWorkOrders(userId);
     }
   }, [user]);
 
@@ -119,18 +122,6 @@ export default function WorkOrders() {
       setWorkOrders([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const updateStatus = async (id, status) => {
-    const res = await fetch(`/api/work-orders/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    const data = await res.json();
-    if (data.success && user) {
-      fetchWorkOrders(user._id);
     }
   };
 
@@ -149,7 +140,7 @@ export default function WorkOrders() {
         <button
           type="button"
           className="btn btn-outline-primary btn-sm"
-          onClick={() => user && fetchWorkOrders(user._id)}
+          onClick={() => getUserId(user) && fetchWorkOrders(getUserId(user))}
         >
           <i className="bi bi-arrow-clockwise"></i>
           <span className="d-none d-sm-inline ms-1">Refresh</span>
@@ -178,7 +169,6 @@ export default function WorkOrders() {
             <WorkOrderCard 
               key={order._id} 
               order={order} 
-              onUpdateStatus={updateStatus}
               onViewDetails={handleViewDetails}
             />
           ))}

@@ -90,6 +90,18 @@ const workOrderSchema = new mongoose.Schema({
   startedAt: {
     type: Date,
     default: null
+  },
+  isPremium: {
+    type: Boolean,
+    default: false
+  },
+  premiumPlan: {
+    type: String,
+    default: ''
+  },
+  premiumPrice: {
+    type: String,
+    default: ''
   }
 }, { timestamps: true });
 

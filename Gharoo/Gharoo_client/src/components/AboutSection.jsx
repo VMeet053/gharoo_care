@@ -20,10 +20,10 @@ export default function AboutSection({ settings }) {
           <div className="about-left">
             <div className="image-collage">
               <div className="collage-main img-zoom-wrap">
-                <img src={mainImage} alt="Technician repairing electronics" />
+                <img src={mainImage} alt="Technician repairing electronics" loading="lazy" decoding="async" />
               </div>
               <div className="collage-sub img-zoom-wrap">
-                <img src={subImage} alt="Circuit board repair work" />
+                <img src={subImage} alt="Circuit board repair work" loading="lazy" decoding="async" />
               </div>
               <div className="experience-badge pulse-badge">
                 <div className="badge-content">

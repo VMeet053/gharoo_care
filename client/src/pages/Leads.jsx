@@ -22,6 +22,49 @@ const emptyLeadForm = {
   area: ''
 };
 
+const toTitleCase = (value) => value
+  .toLowerCase()
+  .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const cleanAddressParts = (value = '') => String(value)
+  .replace(/\b\d{5,6}\b/g, '')
+  .replace(/\bgujarat\b/ig, '')
+  .replace(/\bindia\b/ig, '')
+  .replace(/\s*-\s*$/g, '')
+  .split(',')
+  .map((part) => part.trim().replace(/\s+/g, ' '))
+  .filter(Boolean);
+
+const getDisplayCity = (lead) => {
+  const source = `${lead.city || ''}, ${lead.area || ''}`;
+  const matchedCity = leadCities.find((city) => new RegExp(`\\b${city}\\b`, 'i').test(source));
+  return matchedCity || cleanAddressParts(lead.city)[0] || '-';
+};
+
+const getDisplayArea = (lead) => {
+  const rawArea = String(lead.area || '').trim();
+  const rawCity = String(lead.city || '').trim();
+  const displayCity = getDisplayCity(lead);
+
+  if (
+    rawArea &&
+    rawArea.length <= 45 &&
+    !leadCities.some((city) => new RegExp(`\\b${city}\\b`, 'i').test(rawArea)) &&
+    !/\bgujarat\b|\b\d{5,6}\b/i.test(rawArea)
+  ) {
+    return rawArea;
+  }
+
+  const parts = cleanAddressParts(rawArea || rawCity)
+    .filter((part) => !leadCities.some((city) => city.toLowerCase() === part.toLowerCase()));
+
+  if (parts.length >= 2) {
+    return toTitleCase(parts[1]);
+  }
+
+  return parts[0] ? toTitleCase(parts[0]) : displayCity;
+};
+
 export default function Leads() {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,15 +84,19 @@ export default function Leads() {
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const itemsPerPage = 10;
 
+  const getServiceManName = (user) => (
+    user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Service Man'
+  );
+  const getServiceManId = (user) => String(user.id || user._id || '');
+
+  const activeServiceMen = serviceMen.filter((user) => (user.status || 'Active').toLowerCase() === 'active');
+
   const assignOptions = [
-    'Unassigned',
-    ...serviceMen.map((user) => user.name),
+    { value: 'Unassigned', label: 'Unassigned' },
+    ...activeServiceMen.map((user) => ({ value: getServiceManId(user), label: getServiceManName(user) })),
   ];
 
-  const bulkAssignOptions = selectedLeads.length > 0 ? assignOptions : ['Unassigned'];
-
-  const editingLead = leads.find((lead) => lead.id === editingId);
-  const singleAssignOptions = editingLead ? assignOptions : ['Unassigned'];
+  const bulkAssignOptions = selectedLeads.length > 0 ? assignOptions : [{ value: 'Unassigned', label: 'Unassigned' }];
 
   const fetchLeads = async () => {
     try {
@@ -68,7 +115,8 @@ export default function Leads() {
       try {
         const response = await fetch('/api/users/role/Service%20Man');
         const data = await response.json();
-        setServiceMen(Array.isArray(data) ? data : []);
+        const users = Array.isArray(data) ? data : data?.value || data?.data || [];
+        setServiceMen(users);
       } catch (err) {
         console.error('Failed to fetch service men:', err);
       }
@@ -81,10 +129,9 @@ export default function Leads() {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (openDropdownId) {
-        // Don't close if clicking inside the dropdown or the assign button
         if (
-          !event.target.closest('[style*="position: fixed"]') && 
-          !event.target.closest('.btn-outline-primary')
+          !event.target.closest('.lead-assign-menu') &&
+          !event.target.closest('.lead-assign-trigger')
         ) {
           setOpenDropdownId(null);
           setEditingId(null);
@@ -140,19 +187,28 @@ export default function Leads() {
 
   // Filtered leads
   const filteredLeads = leads.filter(lead => {
-    const matchesCity = cityFilter === 'All' || lead.city === cityFilter;
-    const matchesArea = areaFilter === 'All' || lead.area === areaFilter;
+    const displayCity = getDisplayCity(lead);
+    const displayArea = getDisplayArea(lead);
+    const matchesCity = cityFilter === 'All' || displayCity === cityFilter;
+    const matchesArea = areaFilter === 'All' || displayArea === areaFilter;
     const matchesSearch = 
       lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.service.toLowerCase().includes(searchTerm.toLowerCase());
+      lead.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      displayCity.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      displayArea.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAssigned = 
       assignedFilter === 'All' || 
       (assignedFilter === 'Assigned' && lead.assigned !== 'Unassigned') ||
       (assignedFilter === 'Not Assigned' && lead.assigned === 'Unassigned');
     return matchesCity && matchesArea && matchesSearch && matchesAssigned;
   });
+
+  const totalLeads = leads.length;
+  const newLeads = leads.filter((lead) => lead.status === 'New').length;
+  const acceptedLeads = leads.filter((lead) => lead.status === 'Accepted' || lead.status === 'Qualified').length;
+  const unassignedLeads = leads.filter((lead) => lead.assigned === 'Unassigned').length;
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
@@ -165,35 +221,29 @@ export default function Leads() {
       setOpenDropdownId(null);
     } else {
       setEditingId(lead.id);
-      setTempAssigned(assignOptions.includes(lead.assigned) ? lead.assigned : 'Unassigned');
-      
+      const currentAssignedId = lead.assignedTo
+        ? String(lead.assignedTo)
+        : activeServiceMen.find((user) => getServiceManName(user) === lead.assigned)?.id;
+      setTempAssigned(currentAssignedId || 'Unassigned');
       const rect = event.currentTarget.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + 8,
-        left: rect.right - 220
-      });
+      const menuWidth = 330;
+      const menuHeight = 420;
+      const viewportPadding = 16;
+      const nextLeft = Math.min(
+        Math.max(viewportPadding, rect.right - menuWidth),
+        window.innerWidth - menuWidth - viewportPadding
+      );
+      const belowTop = rect.bottom + 10;
+      const nextTop = belowTop + menuHeight > window.innerHeight
+        ? Math.max(viewportPadding, rect.top - menuHeight - 10)
+        : belowTop;
+      setDropdownPos({ top: nextTop, left: nextLeft });
       setOpenDropdownId(lead.id);
     }
   };
 
-  const saveAssign = async (leadId) => {
-    try {
-      const response = await fetch(`/api/leads/${leadId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assigned: tempAssigned })
-      });
-      const data = await response.json();
-      if (data.success) {
-        setLeads(leads.map(lead =>
-          lead.id === leadId ? data.lead : lead
-        ));
-        setEditingId(null);
-        setOpenDropdownId(null);
-      }
-    } catch (err) {
-      console.error('Failed to save assignment:', err);
-    }
+  const chooseAssign = (assignedValue) => {
+    setTempAssigned(assignedValue);
   };
 
   const cancelAssign = () => {
@@ -221,10 +271,15 @@ export default function Leads() {
 
   const bulkAssign = async () => {
     try {
+      const selectedUser = activeServiceMen.find((user) => getServiceManId(user) === bulkAssigned);
       const response = await fetch('/api/leads/bulk-assign', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ leadIds: selectedLeads, assigned: bulkAssigned })
+        body: JSON.stringify({
+          leadIds: selectedLeads,
+          assigned: selectedUser ? getServiceManName(selectedUser) : 'Unassigned',
+          assignedUserId: selectedUser ? getServiceManId(selectedUser) : null
+        })
       });
       const data = await response.json();
       if (data.success) {
@@ -234,6 +289,30 @@ export default function Leads() {
       }
     } catch (err) {
       console.error('Failed to bulk assign:', err);
+    }
+  };
+
+  const saveAssign = async (leadId) => {
+    const selectedUser = activeServiceMen.find((user) => getServiceManId(user) === tempAssigned);
+    try {
+      const response = await fetch(`/api/leads/${leadId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assigned: selectedUser ? getServiceManName(selectedUser) : 'Unassigned',
+          assignedUserId: selectedUser ? getServiceManId(selectedUser) : null
+        })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setLeads(leads.map(lead =>
+          lead.id === leadId ? data.lead : lead
+        ));
+        setEditingId(null);
+        setOpenDropdownId(null);
+      }
+    } catch (err) {
+      console.error('Failed to save assignment:', err);
     }
   };
 
@@ -248,8 +327,8 @@ export default function Leads() {
         `"${lead.phone}"`,
         `"${lead.status}"`,
         `"${lead.service}"`,
-        `"${lead.city}"`,
-        `"${lead.area}"`,
+        `"${getDisplayCity(lead)}"`,
+        `"${getDisplayArea(lead)}"`,
         `"${lead.assigned}"`
       ].join(','))
     ].join('\n');
@@ -274,8 +353,8 @@ export default function Leads() {
       pdfContent += `   Phone: ${lead.phone}\n`;
       pdfContent += `   Status: ${lead.status}\n`;
       pdfContent += `   Service: ${lead.service}\n`;
-      pdfContent += `   City: ${lead.city}\n`;
-      pdfContent += `   Area: ${lead.area}\n`;
+      pdfContent += `   City: ${getDisplayCity(lead)}\n`;
+      pdfContent += `   Area: ${getDisplayArea(lead)}\n`;
       pdfContent += `   Assigned To: ${lead.assigned}\n`;
       pdfContent += '-'.repeat(50) + '\n';
     });
@@ -297,9 +376,9 @@ export default function Leads() {
         <div className="page-heading-copy">
           <span className="page-icon"><i className="bi bi-person-lines-fill" aria-hidden="true"></i></span>
           <div>
-            <p className="eyebrow mb-1">Data</p>
+            <p className="eyebrow mb-1">Customer pipeline</p>
             <h1 className="h3 mb-1">Leads Management</h1>
-            <p className="text-muted mb-0">Manage leads, assign service providers, and filter by location.</p>
+            <p className="text-muted mb-0">Track inquiries, filter by location, and assign the right service provider.</p>
           </div>
         </div>
         <div className="heading-actions">
@@ -309,8 +388,39 @@ export default function Leads() {
         </div>
       </div>
 
+      <section className="leads-summary-grid animate-fade-in" aria-label="Lead summary">
+        <article className="lead-summary-card lead-summary-primary">
+          <span className="lead-summary-icon"><i className="bi bi-people" aria-hidden="true"></i></span>
+          <div>
+            <p>Total Leads</p>
+            <strong>{totalLeads}</strong>
+          </div>
+        </article>
+        <article className="lead-summary-card lead-summary-info">
+          <span className="lead-summary-icon"><i className="bi bi-stars" aria-hidden="true"></i></span>
+          <div>
+            <p>New Leads</p>
+            <strong>{newLeads}</strong>
+          </div>
+        </article>
+        <article className="lead-summary-card lead-summary-success">
+          <span className="lead-summary-icon"><i className="bi bi-check2-circle" aria-hidden="true"></i></span>
+          <div>
+            <p>Accepted / Qualified</p>
+            <strong>{acceptedLeads}</strong>
+          </div>
+        </article>
+        <article className="lead-summary-card lead-summary-warning">
+          <span className="lead-summary-icon"><i className="bi bi-person-exclamation" aria-hidden="true"></i></span>
+          <div>
+            <p>Unassigned</p>
+            <strong>{unassignedLeads}</strong>
+          </div>
+        </article>
+      </section>
+
       {showAddForm && (
-        <section className="panel animate-fade-in mb-3">
+        <section className="panel leads-form-panel animate-fade-in mb-3">
           <div className="panel-header">
             <h2 className="h5 mb-0 section-title"><i className="bi bi-plus-circle" aria-hidden="true"></i><span>Add New Lead</span></h2>
           </div>
@@ -364,17 +474,17 @@ export default function Leads() {
         </section>
       )}
 
-      <section className="panel animate-fade-in" style={{ animationDelay: '0.1s' }}>
+      <section className="panel leads-filter-panel animate-fade-in" style={{ animationDelay: '0.1s' }}>
         <div className="panel-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
           <div>
             <h2 className="h5 mb-1 section-title"><i className="bi bi-filter" aria-hidden="true"></i><span>Filters & Search</span></h2>
             <p className="text-muted mb-0">Search leads or filter by city, area, and assignment status.</p>
           </div>
-          <div className="d-flex gap-2 flex-wrap">
-            <button className="btn btn-outline-success btn-sm" onClick={() => exportToExcel(leads, 'all-leads.csv')}><i className="bi bi-file-earmark-excel me-1"></i>Export All Excel</button>
-            <button className="btn btn-outline-danger btn-sm" onClick={() => exportToPDF(leads, 'all-leads.txt')}><i className="bi bi-file-earmark-pdf me-1"></i>Export All PDF</button>
-            <button className="btn btn-success btn-sm" onClick={() => exportToExcel(filteredLeads, 'filtered-leads.csv')}><i className="bi bi-file-earmark-excel me-1"></i>Export Filtered Excel</button>
-            <button className="btn btn-danger btn-sm" onClick={() => exportToPDF(filteredLeads, 'filtered-leads.txt')}><i className="bi bi-file-earmark-pdf me-1"></i>Export Filtered PDF</button>
+          <div className="leads-export-actions">
+            <button className="btn btn-outline-success btn-sm" onClick={() => exportToExcel(leads, 'all-leads.csv')}><i className="bi bi-file-earmark-excel"></i>All CSV</button>
+            <button className="btn btn-outline-danger btn-sm" onClick={() => exportToPDF(leads, 'all-leads.txt')}><i className="bi bi-file-earmark-text"></i>All TXT</button>
+            <button className="btn btn-success btn-sm" onClick={() => exportToExcel(filteredLeads, 'filtered-leads.csv')}><i className="bi bi-file-earmark-excel"></i>Filtered CSV</button>
+            <button className="btn btn-danger btn-sm" onClick={() => exportToPDF(filteredLeads, 'filtered-leads.txt')}><i className="bi bi-file-earmark-text"></i>Filtered TXT</button>
           </div>
         </div>
         <div className="panel-body">
@@ -456,8 +566,8 @@ export default function Leads() {
                 value={bulkAssigned}
                 onChange={(e) => setBulkAssigned(e.target.value)}
               >
-                {bulkAssignOptions.map((user) => (
-                  <option key={user} value={user}>{user}</option>
+                {bulkAssignOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
               <button
@@ -471,7 +581,7 @@ export default function Leads() {
         </section>
       )}
 
-      <section className="panel animate-fade-in" style={{ animationDelay: '0.2s' }}>
+      <section className="panel leads-table-panel animate-fade-in" style={{ animationDelay: '0.2s' }}>
         <div className="panel-header">
           <div>
             <h2 className="h5 mb-1 section-title"><i className="bi bi-table" aria-hidden="true"></i><span>Leads List</span></h2>
@@ -535,9 +645,17 @@ export default function Leads() {
                           onChange={() => toggleSelectLead(lead.id)}
                         />
                       </td>
-                      <td className="fw-semibold">{lead.name}</td>
-                      <td>{lead.email}</td>
-                      <td>{lead.phone}</td>
+                      <td>
+                        <div className="lead-person">
+                          <span className="lead-avatar">{lead.name?.charAt(0)?.toUpperCase() || 'L'}</span>
+                          <div>
+                            <p className="lead-name">{lead.name}</p>
+                            <p className="lead-location">{getDisplayCity(lead)} - {getDisplayArea(lead)}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td><span className="lead-muted-text">{lead.email}</span></td>
+                      <td><span className="lead-phone">{lead.phone}</span></td>
                       <td>
                         {(() => {
                           const style = getStatusStyle(lead.status);
@@ -549,17 +667,17 @@ export default function Leads() {
                           );
                         })()}
                       </td>
-                      <td>{lead.service}</td>
-                      <td>{lead.city}</td>
-                      <td>{lead.area}</td>
+                      <td><span className="lead-service-pill">{lead.service}</span></td>
+                      <td><span className="lead-location-chip">{getDisplayCity(lead)}</span></td>
+                      <td><span className="lead-location-chip">{getDisplayArea(lead)}</span></td>
                       <td className="text-end">
-                        <div className="d-inline-block">
+                        <div className="lead-assign-cell">
                           <button
-                            className="btn btn-outline-primary btn-sm lead-assign-trigger"
+                            className={`btn btn-sm lead-assign-trigger ${lead.assigned === 'Unassigned' ? 'is-unassigned' : 'is-assigned'}`}
                             onClick={(event) => startAssign(lead, event)}
                           >
-                            <i className="bi bi-person-plus me-2"></i>
-                            {lead.assigned}
+                            <i className={`bi ${lead.assigned === 'Unassigned' ? 'bi-person-plus' : 'bi-person-check'} me-2`}></i>
+                            <span>{lead.assigned}</span>
                           </button>
                         </div>
                       </td>
@@ -609,42 +727,71 @@ export default function Leads() {
         </div>
       )}
 
-      {/* Fixed Assign Dropdown */}
       {openDropdownId && (
-        <div 
-          className="lead-assign-dropdown-wrapper"
-          style={{
-            top: dropdownPos.top,
-            left: dropdownPos.left
-          }}
+        <div
+          className="lead-assign-menu"
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
         >
-          <div className="lead-assign-dropdown">
-            <select
-              className="form-select lead-assign-select"
-              value={tempAssigned}
-              onChange={(e) => setTempAssigned(e.target.value)}
-            >
-              {singleAssignOptions.map((user) => (
-                <option key={user} value={user}>{user}</option>
-              ))}
-            </select>
-            <div className="lead-assign-buttons">
-              <button
-                className="lead-assign-btn lead-assign-btn-success"
-                onClick={() => saveAssign(openDropdownId)}
-              >
-                <i className="bi bi-check2 lead-assign-btn-icon"></i>
-              </button>
-              <button
-                className="lead-assign-btn lead-assign-btn-danger"
-                onClick={cancelAssign}
-              >
-                <i className="bi bi-x lead-assign-btn-icon"></i>
-              </button>
+          <div className="lead-assign-menu-header">
+            <div>
+              <strong>Assign service man</strong>
+              <span>{activeServiceMen.length} available</span>
             </div>
+            <button type="button" className="lead-assign-close" onClick={cancelAssign} aria-label="Close assign menu">
+              <i className="bi bi-x"></i>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className={`lead-assign-option ${tempAssigned === 'Unassigned' ? 'selected' : ''}`}
+            onClick={() => chooseAssign('Unassigned')}
+          >
+            <span className="lead-assign-avatar muted"><i className="bi bi-person-dash"></i></span>
+            <span className="lead-assign-info">
+              <strong>Unassigned</strong>
+              <small>No technician selected</small>
+            </span>
+            {tempAssigned === 'Unassigned' && <i className="bi bi-check2 lead-assign-check"></i>}
+          </button>
+
+          <div className="lead-assign-list">
+            {activeServiceMen.length === 0 ? (
+              <div className="lead-assign-empty">
+                <i className="bi bi-person-x"></i>
+                <span>No service man found</span>
+              </div>
+            ) : (
+              activeServiceMen.map((user) => {
+                const name = getServiceManName(user);
+                return (
+                  <button
+                    type="button"
+                    key={user.id || user._id || name}
+                    className={`lead-assign-option ${tempAssigned === getServiceManId(user) ? 'selected' : ''}`}
+                    onClick={() => chooseAssign(getServiceManId(user))}
+                  >
+                    <span className="lead-assign-avatar">{name.charAt(0).toUpperCase()}</span>
+                    <span className="lead-assign-info">
+                      <strong>{name}</strong>
+                      <small>{user.service || user.team || user.phone || 'Service technician'}</small>
+                    </span>
+                    {tempAssigned === getServiceManId(user) && <i className="bi bi-check2 lead-assign-check"></i>}
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="lead-assign-footer">
+            <button type="button" className="btn btn-light btn-sm" onClick={cancelAssign}>Cancel</button>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => saveAssign(openDropdownId)}>
+              <i className="bi bi-check2"></i> Assign
+            </button>
           </div>
         </div>
       )}
+
     </div>
   );
 }

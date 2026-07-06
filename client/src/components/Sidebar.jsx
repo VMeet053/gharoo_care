@@ -50,7 +50,7 @@ const navSections = [
 ];
 
 export default function Sidebar({ isCollapsed, setIsCollapsed, closeMobileSidebar }) {
-  const [openSections, setOpenSections] = useState([]);
+  const [openSections, setOpenSections] = useState(() => navSections.map(section => section.label));
 
   const toggleSection = (label) => {
     setOpenSections((prev) => 
@@ -94,7 +94,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, closeMobileSideba
                 <i className={`bi ${openSections.includes(section.label) ? 'bi-chevron-down' : 'bi-chevron-right'}`} style={{ fontSize: '12px' }}></i>
               </div>
             )}
-            {openSections.includes(section.label) && (
+            {(isCollapsed || openSections.includes(section.label)) && (
               <>
                 {section.items.map((item) => (
                   <NavLink
@@ -103,6 +103,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, closeMobileSideba
                     to={item.to}
                     end={item.end}
                     onClick={closeMobileSidebar}
+                    title={item.text}
                   >
                     <span className="nav-icon"><i className={`bi ${item.icon}`} aria-hidden="true"></i></span>
                     {!isCollapsed && <span className="nav-text">{item.text}</span>}

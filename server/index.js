@@ -446,7 +446,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
     } = req.body;
 
     // Validation
-    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType || !idProofNumber) {
+    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType) {
       return res.status(400).json({ success: false, message: 'All fields are mandatory!' });
     }
     if (password !== confirmPassword) {
@@ -456,6 +456,25 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
     if (!validIdProofTypes.includes(idProofType)) {
       return res.status(400).json({ success: false, message: 'Invalid ID proof type!' });
     }
+
+    const formatEmployeeId = (number) => `GRCAC${String(number).padStart(3, '0')}`;
+    const getNextEmployeeIdFromList = (users = []) => {
+      const maxNumber = users.reduce((max, user) => {
+        const match = String(user.employeeId || '').match(/^GRCAC(\d+)$/);
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0);
+      return formatEmployeeId(maxNumber + 1);
+    };
+    const generateEmployeeId = async () => {
+      if (isMongoConnected) {
+        const serviceMen = await User.find({
+          role: 'Service Man',
+          employeeId: /^GRCAC\d+$/
+        }).select('employeeId').lean();
+        return getNextEmployeeIdFromList(serviceMen);
+      }
+      return getNextEmployeeIdFromList(inMemoryUsers.filter((user) => user.role === 'Service Man'));
+    };
 
     // Function to upload image to Cloudinary
     const uploadToCloudinary = async (file) => {
@@ -496,9 +515,10 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
         notes: '',
         status: 'Active',
         idProofType,
-        idProofNumber,
+        idProofNumber: idProofNumber || null,
         frontIdProofImage: frontIdProofImageUrl,
-        backIdProofImage: backIdProofImageUrl
+        backIdProofImage: backIdProofImageUrl,
+        employeeId: await generateEmployeeId()
       });
 
       await newUser.save();
@@ -525,9 +545,10 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
         joined: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         createdAt: new Date(),
         idProofType,
-        idProofNumber,
+        idProofNumber: idProofNumber || null,
         frontIdProofImage: frontIdProofImageUrl,
-        backIdProofImage: backIdProofImageUrl
+        backIdProofImage: backIdProofImageUrl,
+        employeeId: await generateEmployeeId()
       };
       inMemoryUsers.push(newUser);
       return res.json({ success: true, message: 'Service man registered successfully! Please login.' });
@@ -559,6 +580,75 @@ app.get('/api/users/:id', async (req, res) => {
     }
   } catch (err) {
     console.error('Get user error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Service man profile
+app.get('/api/service-man/profile/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'User id is required' });
+    }
+
+    if (isMongoConnected) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ success: false, message: 'Invalid user id' });
+      }
+      const user = await User.findOne({ _id: id, role: 'Service Man' }).select('-password');
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Profile not found' });
+      }
+      return res.json({ success: true, user });
+    }
+
+    const user = inMemoryUsers.find(u => String(u.id) === String(id) || String(u._id) === String(id));
+    if (!user || user.role !== 'Service Man') {
+      return res.status(404).json({ success: false, message: 'Profile not found' });
+    }
+    const { password: _, ...userWithoutPassword } = user;
+    res.json({ success: true, user: userWithoutPassword });
+  } catch (err) {
+    console.error('Service man profile error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+app.put('/api/service-man/profile-pic', upload.single('profilePic'), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId || !req.file) {
+      return res.status(400).json({ success: false, message: 'User id and profile image are required' });
+    }
+
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+    const result = await cloudinary.uploader.upload(dataURI, { folder: 'gharoocare/profile-pics' });
+
+    if (isMongoConnected) {
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+        return res.status(400).json({ success: false, message: 'Invalid user id' });
+      }
+      const user = await User.findOneAndUpdate(
+        { _id: userId, role: 'Service Man' },
+        { profilePic: result.secure_url },
+        { new: true }
+      ).select('-password');
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Profile not found' });
+      }
+      return res.json({ success: true, profilePic: result.secure_url, user });
+    }
+
+    const user = inMemoryUsers.find(u => String(u.id) === String(userId) || String(u._id) === String(userId));
+    if (!user || user.role !== 'Service Man') {
+      return res.status(404).json({ success: false, message: 'Profile not found' });
+    }
+    user.profilePic = result.secure_url;
+    res.json({ success: true, profilePic: result.secure_url, user });
+  } catch (err) {
+    console.error('Service man profile pic error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -655,6 +745,9 @@ app.post('/api/login', async (req, res) => {
 app.post('/api/service-login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
     const normalizedEmail = email.toLowerCase();
 
     if (!isMongoConnected) {
@@ -995,7 +1088,10 @@ const formatLead = (lead) => ({
   city: lead.city,
   area: lead.area,
   assigned: lead.assigned || 'Unassigned',
-  assignedTo: lead.assignedTo,
+  assignedTo: lead.assignedTo ? lead.assignedTo.toString() : null,
+  isPremium: Boolean(lead.isPremium),
+  premiumPlan: lead.premiumPlan || '',
+  premiumPrice: lead.premiumPrice || '',
   createdAt: lead.createdAt
 });
 
@@ -1015,16 +1111,29 @@ const ensureWorkOrderFromLead = async (lead) => {
     priority: 'medium',
     assignedTo: lead.assignedTo,
     serviceType: lead.service,
-    notes: `Customer email: ${lead.email}`
+    notes: `${lead.isPremium ? `Premium customer${lead.premiumPlan ? ` - ${lead.premiumPlan}` : ''}. ` : ''}Customer email: ${lead.email}`,
+    isPremium: Boolean(lead.isPremium),
+    premiumPlan: lead.premiumPlan || '',
+    premiumPrice: lead.premiumPrice || ''
   });
 
   await workOrder.save();
   return workOrder;
 };
 
-const resolveAssignedTo = async (assignedName) => {
+const resolveAssignedTo = async (assignedName, assignedUserId) => {
   if (!assignedName || assignedName === 'Unassigned') {
     return { assigned: 'Unassigned', assignedTo: null };
+  }
+
+  if (assignedUserId && mongoose.Types.ObjectId.isValid(assignedUserId)) {
+    const serviceManById = await User.findOne({ _id: assignedUserId, role: 'Service Man' });
+    if (serviceManById) {
+      return {
+        assigned: `${serviceManById.firstName} ${serviceManById.lastName}`,
+        assignedTo: serviceManById._id
+      };
+    }
   }
 
   const serviceMen = await User.find({ role: 'Service Man' });
@@ -1072,7 +1181,19 @@ app.post('/api/leads', async (req, res) => {
     if (!isMongoConnected) {
       return res.status(500).json({ success: false, message: 'MongoDB not connected' });
     }
-    const newLead = new Lead(req.body);
+    const leadData = { ...req.body };
+    const premiumUser = await PremiumUser.findOne({
+      $or: [
+        { email: String(leadData.email || '').toLowerCase() },
+        { phone: leadData.phone }
+      ]
+    }).sort({ createdAt: -1 });
+
+    leadData.isPremium = Boolean(leadData.isPremium || premiumUser);
+    leadData.premiumPlan = leadData.premiumPlan || premiumUser?.plan || '';
+    leadData.premiumPrice = leadData.premiumPrice || premiumUser?.price || '';
+
+    const newLead = new Lead(leadData);
     await newLead.save();
     res.json({ success: true, message: 'Lead created successfully!', lead: formatLead(newLead) });
   } catch (err) {
@@ -1124,9 +1245,10 @@ app.put('/api/leads/:id', async (req, res) => {
     const updateData = { ...req.body };
 
     if (Object.prototype.hasOwnProperty.call(updateData, 'assigned')) {
-      const assignment = await resolveAssignedTo(updateData.assigned);
+      const assignment = await resolveAssignedTo(updateData.assigned, updateData.assignedUserId);
       updateData.assigned = assignment.assigned;
       updateData.assignedTo = assignment.assignedTo;
+      delete updateData.assignedUserId;
     }
 
     const updatedLead = await Lead.findByIdAndUpdate(id, updateData, { new: true });
@@ -1145,8 +1267,8 @@ app.put('/api/leads/bulk-assign', async (req, res) => {
     if (!isMongoConnected) {
       return res.status(500).json({ success: false, message: 'MongoDB not connected' });
     }
-    const { leadIds, assigned } = req.body;
-    const assignment = await resolveAssignedTo(assigned);
+    const { leadIds, assigned, assignedUserId } = req.body;
+    const assignment = await resolveAssignedTo(assigned, assignedUserId);
 
     await Lead.updateMany(
       { _id: { $in: leadIds } },
@@ -1403,10 +1525,32 @@ app.put('/api/work-orders/:id', async (req, res) => {
     }
     const { id } = req.params;
     const updateData = req.body;
+    const existingWorkOrder = await WorkOrder.findById(id);
+    if (!existingWorkOrder) {
+      return res.status(404).json({ success: false, message: 'Work order not found' });
+    }
+
+    if (updateData.status === 'in-progress' && !(updateData.beforeImage || existingWorkOrder.beforeImage)) {
+      return res.status(400).json({ success: false, message: 'Before work photo is required to start work' });
+    }
     
     // If status is being set to completed, set completedAt
     if (updateData.status === 'completed' && !updateData.completedAt) {
       updateData.completedAt = new Date();
+    }
+    if (updateData.status === 'completed') {
+      const hasAfterImage = updateData.afterImage || existingWorkOrder.afterImage;
+      const workDetails = (updateData.serviceDetails || existingWorkOrder.serviceDetails || '').trim();
+      if (!hasAfterImage) {
+        return res.status(400).json({ success: false, message: 'After work photo is required to finish work' });
+      }
+      if (!workDetails) {
+        return res.status(400).json({ success: false, message: 'Work details are required to finish work' });
+      }
+      updateData.serviceDetails = workDetails;
+      updateData.finalCost = Number(updateData.finalCost || 0);
+      updateData.earnings = Math.round(updateData.finalCost * 0.2);
+      updateData.paymentMethod = updateData.paymentMethod || 'cash';
     }
     
     const updatedWorkOrder = await WorkOrder.findByIdAndUpdate(id, updateData, { new: true }).populate('assignedTo', 'firstName lastName email');

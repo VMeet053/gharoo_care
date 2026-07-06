@@ -67,7 +67,7 @@ export default function Header({ settings }) {
         <div className="brand">
           <Link to="/" onClick={closeMenu}>
             <h1 className="logo">
-              <img src="/gharoo-logo.png" alt="Gharoo Care Logo" style={{ height: '60px', display: 'block', objectFit: 'contain' }} />
+              <img src="/gharoo-logo.png" alt="Gharoo Care Logo" loading="eager" decoding="async" fetchpriority="high" style={{ height: '60px', display: 'block', objectFit: 'contain' }} />
             </h1>
           </Link>
         </div>
@@ -91,9 +91,9 @@ export default function Header({ settings }) {
           <a href="/service/login" className="get-quote btn-outline-gray hide-mobile-sm" onClick={closeMenu}>
             Service Login
           </a>
-          <Link to="/service-man/register" className="get-quote btn-light-indigo hide-mobile-sm" onClick={closeMenu}>
+          <a href="/service/register" className="get-quote btn-light-indigo hide-mobile-sm" onClick={closeMenu}>
             Service Register
-          </Link>
+          </a>
           <a href="tel:+91 9974389486" className="mobile-call-btn hide-desktop" aria-label="Call us">
             <IconPhone size={20} color="white" />
           </a>

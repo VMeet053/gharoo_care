@@ -6,6 +6,10 @@ function getStoredUser() {
   return raw ? JSON.parse(raw) : null;
 }
 
+function getUserId(user) {
+  return user?._id || user?.id;
+}
+
 function updateStoredUser(updatedUser) {
   if (localStorage.getItem('serviceManUser')) {
     localStorage.setItem('serviceManUser', JSON.stringify(updatedUser));
@@ -72,9 +76,12 @@ export default function Profile() {
 
   useEffect(() => {
     const stored = getStoredUser();
-    if (!stored) return;
+    if (!stored || !getUserId(stored)) {
+      setLoading(false);
+      return;
+    }
     setUser(stored);
-    fetchProfile(stored._id);
+    fetchProfile(getUserId(stored));
   }, []);
 
   const fetchProfile = async (id) => {
@@ -112,7 +119,7 @@ export default function Profile() {
     try {
       const formData = new FormData();
       formData.append('profilePic', file);
-      formData.append('userId', user._id);
+      formData.append('userId', getUserId(user));
 
       const res = await fetch('/api/service-man/profile-pic', {
         method: 'PUT',

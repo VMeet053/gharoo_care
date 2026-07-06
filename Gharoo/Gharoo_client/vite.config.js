@@ -12,6 +12,7 @@ export default defineConfig({
       '/admin': {
         target: 'http://localhost:5174',
         changeOrigin: true,
+        rewrite: (path) => path === '/admin' ? '/admin/login' : path,
       },
       '/login': {
         target: 'http://localhost:5174',

@@ -52,7 +52,7 @@ export default function WhyChooseUs({ settings }) {
           <div className="why-media">
             <div className="why-media-grid">
               <div className="image-panel image-panel-large img-zoom-wrap">
-                <img src={mainImage} alt="Repair technician at work" />
+                <img src={mainImage} alt="Repair technician at work" loading="lazy" decoding="async" />
                 <div className="play-btn-wrap-media">
                   <span className="play-ring" />
                   <button className="play-overlay" aria-label="Watch video">
@@ -61,7 +61,7 @@ export default function WhyChooseUs({ settings }) {
                 </div>
               </div>
               <div className="image-panel image-panel-small img-zoom-wrap floating-slow">
-                <img src={subImage} alt="Electronics repair close-up" />
+                <img src={subImage} alt="Electronics repair close-up" loading="lazy" decoding="async" />
               </div>
             </div>
           </div>

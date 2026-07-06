@@ -371,11 +371,22 @@ body {
   padding: 1.25rem;
   box-shadow: var(--sm-shadow-soft);
   transition: all 0.3s ease;
+  width: 100%;
+  color: inherit;
+  text-align: left;
 }
 
 .sm-stat-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--sm-shadow);
+}
+
+.sm-stat-card-clickable {
+  cursor: pointer;
+}
+
+.sm-stat-card-clickable:hover {
+  border-color: rgba(13, 202, 240, 0.45);
 }
 
 .sm-stat-card p {
@@ -392,6 +403,14 @@ body {
   color: var(--sm-text);
 }
 
+.stat-caption {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--sm-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
 .sm-stat-icon {
   width: 48px;
   height: 48px;
@@ -400,6 +419,16 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 1.375rem;
+}
+
+.earnings-stat-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 991.98px) {
+  .earnings-stat-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Lead / work order cards */
@@ -750,4 +779,182 @@ body {
   opacity: 1;
   visibility: visible;
   transform: translateY(-50%) scale(1);
+}
+
+.work-proof-img {
+  display: block;
+  width: min(320px, 100%);
+  max-height: 220px;
+  object-fit: cover;
+  margin-top: 10px;
+  border: 1px solid #dbe4ee;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+.work-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 767.98px) {
+  .work-proof-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Full responsive hardening for service-man portal */
+html,
+body,
+#root,
+.app-shell {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.app-content,
+.app-main,
+.page-wrap,
+.sm-card,
+.item-card,
+.filter-card {
+  min-width: 0;
+}
+
+.app-shell img,
+.app-shell svg,
+.app-shell canvas,
+.app-shell video {
+  max-width: 100%;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive table {
+  white-space: nowrap;
+}
+
+.detail-row span,
+.detail-row a,
+.item-card-title,
+.item-card-subtitle {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 991.98px) {
+  .app-shell {
+    display: block;
+  }
+
+  .app-sidebar {
+    display: none !important;
+  }
+
+  .app-content {
+    width: 100%;
+  }
+
+  .page-wrap {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .mobile-header {
+    height: auto;
+    min-height: 64px;
+    gap: 0.75rem;
+  }
+
+  .mobile-header-brand small {
+    max-width: 44vw;
+  }
+
+  .page-header {
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .page-header > * {
+    min-width: 0;
+  }
+
+  .page-header h1 {
+    font-size: 1.35rem;
+    overflow-wrap: anywhere;
+  }
+
+  .page-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .sm-stat-grid,
+  .earnings-stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .sm-stat-card {
+    padding: 1rem;
+  }
+
+  .item-card-header,
+  .item-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .item-card-footer .btn {
+    width: 100%;
+  }
+
+  .filter-card,
+  .item-card-section,
+  .item-card-header,
+  .item-card-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .bottom-nav-item {
+    font-size: 0.68rem;
+  }
+
+  .bottom-nav-item i {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .page-wrap {
+    padding: 0.75rem;
+  }
+
+  .mobile-header-brand strong {
+    font-size: 0.92rem;
+  }
+
+  .mobile-header-brand small {
+    max-width: 38vw;
+    font-size: 0.72rem;
+  }
+
+  .bottom-nav-item span {
+    max-width: 62px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .form-control,
+  .form-select,
+  .btn {
+    font-size: 0.9rem;
+  }
 }
