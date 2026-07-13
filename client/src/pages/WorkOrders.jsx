@@ -5,7 +5,9 @@ function WorkOrders() {
   const [workOrders, setWorkOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: '',
@@ -198,6 +200,15 @@ function WorkOrders() {
                         <td>₹{order.earnings || 0}</td>
                         <td className="text-end">
                           <button
+                            className="btn btn-outline-info btn-sm me-1"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowDetailModal(true);
+                            }}
+                          >
+                            <i className="bi bi-eye"></i>
+                          </button>
+                          <button
                             className="btn btn-light btn-sm me-1"
                             onClick={() => {
                               setEditingOrder(order);
@@ -382,6 +393,74 @@ function WorkOrders() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDetailModal && selectedOrder && (
+        <div className="modal d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-xl">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Work Order Details</h5>
+                <button type="button" className="btn-close" onClick={() => setShowDetailModal(false)} aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="row g-4">
+                  <div className="col-md-6">
+                    <h6 className="fw-semibold">Customer Information</h6>
+                    <p className="mb-1"><strong>Name:</strong> {selectedOrder.customerName}</p>
+                    <p className="mb-1"><strong>Phone:</strong> {selectedOrder.customerPhone}</p>
+                    <p className="mb-1"><strong>Address:</strong> {selectedOrder.customerAddress || 'N/A'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <h6 className="fw-semibold">Work Order Info</h6>
+                    <p className="mb-1"><strong>Title:</strong> {selectedOrder.title}</p>
+                    <p className="mb-1"><strong>Status:</strong> {getStatusBadge(selectedOrder.status)}</p>
+                    <p className="mb-1"><strong>Priority:</strong> <span className="badge bg-secondary">{selectedOrder.priority}</span></p>
+                    <p className="mb-1"><strong>Service Type:</strong> {selectedOrder.serviceType || 'N/A'}</p>
+                    <p className="mb-1"><strong>Final Cost:</strong> ₹{selectedOrder.finalCost || 0}</p>
+                    <p className="mb-1"><strong>Earnings:</strong> ₹{selectedOrder.earnings || 0}</p>
+                    <p className="mb-1"><strong>Payment Method:</strong> {selectedOrder.paymentMethod || 'N/A'}</p>
+                  </div>
+                  <div className="col-md-12">
+                    <h6 className="fw-semibold">Service Details</h6>
+                    <p className="mb-3">{selectedOrder.serviceDetails || 'No details provided'}</p>
+                  </div>
+                  <div className="col-md-12">
+                    <h6 className="fw-semibold">Parts Changed</h6>
+                    <p className="mb-3">{selectedOrder.partsChanged || 'No parts changed'}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <h6 className="fw-semibold mb-2">Before Work Photo</h6>
+                    {selectedOrder.beforeImage ? (
+                      <img src={selectedOrder.beforeImage} alt="Before" style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', border: '1px solid #dee2e6', borderRadius: '8px' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '200px', backgroundColor: '#f8f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', color: '#6c757d' }}>
+                        No photo available
+                      </div>
+                    )}
+                  </div>
+                  <div className="col-md-6">
+                    <h6 className="fw-semibold mb-2">After Work Photo</h6>
+                    {selectedOrder.afterImage ? (
+                      <img src={selectedOrder.afterImage} alt="After" style={{ width: '100%', maxHeight: '300px', objectFit: 'contain', border: '1px solid #dee2e6', borderRadius: '8px' }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '200px', backgroundColor: '#f8f9fa', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', color: '#6c757d' }}>
+                        No photo available
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

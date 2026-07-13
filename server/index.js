@@ -1554,6 +1554,21 @@ app.put('/api/work-orders/:id', async (req, res) => {
     }
     
     const updatedWorkOrder = await WorkOrder.findByIdAndUpdate(id, updateData, { new: true }).populate('assignedTo', 'firstName lastName email');
+    
+    // Update corresponding lead's status
+    if (updatedWorkOrder.leadId) {
+      let newLeadStatus = null;
+      if (updatedWorkOrder.status === 'in-progress') {
+        newLeadStatus = 'Working';
+      } else if (updatedWorkOrder.status === 'completed') {
+        newLeadStatus = 'Completed';
+      }
+      
+      if (newLeadStatus) {
+        await Lead.findByIdAndUpdate(updatedWorkOrder.leadId, { status: newLeadStatus });
+      }
+    }
+
     res.json({ success: true, message: 'Work order updated successfully!', workOrder: updatedWorkOrder });
   } catch (err) {
     console.error('Update work order error:', err);
