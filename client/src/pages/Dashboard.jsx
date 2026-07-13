@@ -198,59 +198,67 @@ export default function Dashboard() {
 
       <section className="row g-3 mt-1" aria-label="Dashboard metrics">
         <div className="col-12 col-sm-6 col-xl-3">
-          <article className="metric-card metric-primary">
-            <div className="metric-top">
-              <span className="metric-label">Revenue</span>
-              <span className="metric-icon"><i className="bi bi-currency-rupee" aria-hidden="true"></i></span>
-            </div>
-            <div className="metric-value">₹{totalRevenue.toLocaleString('en-IN')}</div>
-            <div className="metric-meta">
-              <span className="text-muted">-</span>
-              <span>from subscription sales</span>
-            </div>
-          </article>
+          <Link to="/premium-user-list" style={{ textDecoration: 'none' }}>
+            <article className="metric-card metric-primary" style={{ cursor: 'pointer' }}>
+              <div className="metric-top">
+                <span className="metric-label">Revenue</span>
+                <span className="metric-icon"><i className="bi bi-currency-rupee" aria-hidden="true"></i></span>
+              </div>
+              <div className="metric-value">₹{totalRevenue.toLocaleString('en-IN')}</div>
+              <div className="metric-meta">
+                <span className="text-muted">-</span>
+                <span>from subscription sales</span>
+              </div>
+            </article>
+          </Link>
         </div>
 
         <div className="col-12 col-sm-6 col-xl-3">
-          <article className="metric-card metric-success">
-            <div className="metric-top">
-              <span className="metric-label">Orders</span>
-              <span className="metric-icon"><i className="bi bi-bag-check" aria-hidden="true"></i></span>
-            </div>
-            <div className="metric-value">{totalOrders}</div>
-            <div className="metric-meta">
-              <span className="text-muted">-</span>
-              <span>work orders assigned</span>
-            </div>
-          </article>
+          <Link to="/work-orders" style={{ textDecoration: 'none' }}>
+            <article className="metric-card metric-success" style={{ cursor: 'pointer' }}>
+              <div className="metric-top">
+                <span className="metric-label">Orders</span>
+                <span className="metric-icon"><i className="bi bi-bag-check" aria-hidden="true"></i></span>
+              </div>
+              <div className="metric-value">{totalOrders}</div>
+              <div className="metric-meta">
+                <span className="text-muted">-</span>
+                <span>work orders assigned</span>
+              </div>
+            </article>
+          </Link>
         </div>
 
         <div className="col-12 col-sm-6 col-xl-3">
-          <article className="metric-card metric-warning">
-            <div className="metric-top">
-              <span className="metric-label">Customers</span>
-              <span className="metric-icon"><i className="bi bi-people" aria-hidden="true"></i></span>
-            </div>
-            <div className="metric-value">{totalCustomers}</div>
-            <div className="metric-meta">
-              <span className="text-muted">-</span>
-              <span>active user accounts</span>
-            </div>
-          </article>
+          <Link to="/users" style={{ textDecoration: 'none' }}>
+            <article className="metric-card metric-warning" style={{ cursor: 'pointer' }}>
+              <div className="metric-top">
+                <span className="metric-label">Customers</span>
+                <span className="metric-icon"><i className="bi bi-people" aria-hidden="true"></i></span>
+              </div>
+              <div className="metric-value">{totalCustomers}</div>
+              <div className="metric-meta">
+                <span className="text-muted">-</span>
+                <span>active user accounts</span>
+              </div>
+            </article>
+          </Link>
         </div>
 
         <div className="col-12 col-sm-6 col-xl-3">
-          <article className="metric-card metric-danger">
-            <div className="metric-top">
-              <span className="metric-label">Tickets</span>
-              <span className="metric-icon"><i className="bi bi-life-preserver" aria-hidden="true"></i></span>
-            </div>
-            <div className="metric-value">{ticketsNeedReview}</div>
-            <div className="metric-meta">
-              <span className="text-muted">-</span>
-              <span>new leads to review</span>
-            </div>
-          </article>
+          <Link to="/leads" style={{ textDecoration: 'none' }}>
+            <article className="metric-card metric-danger" style={{ cursor: 'pointer' }}>
+              <div className="metric-top">
+                <span className="metric-label">Tickets</span>
+                <span className="metric-icon"><i className="bi bi-life-preserver" aria-hidden="true"></i></span>
+              </div>
+              <div className="metric-value">{ticketsNeedReview}</div>
+              <div className="metric-meta">
+                <span className="text-muted">-</span>
+                <span>new leads to review</span>
+              </div>
+            </article>
+          </Link>
         </div>
       </section>
 
