@@ -25,8 +25,8 @@
   /* Sidebar Design System (Premium Light theme) */
   --admin-sidebar-bg: #ffffff;
   --admin-sidebar-border: #e2e8f0;
-  --admin-sidebar-text: #475569;
-  --admin-sidebar-muted: #94a3b8;
+  --admin-sidebar-text: #1e293b; /* Darker text */
+  --admin-sidebar-muted: #64748b;
   --admin-sidebar-hover-bg: #f1f5f9;
   --admin-sidebar-hover-text: #0f172a;
   --admin-sidebar-active-bg: rgba(79, 70, 229, 0.08);
@@ -90,8 +90,8 @@ body {
 }
 
 .admin-sidebar.collapsed {
-  width: 88px;
-  min-width: 88px;
+  width: 72px;
+  min-width: 72px;
 }
 
 .sidebar-header {
@@ -233,7 +233,7 @@ body {
 }
 
 .admin-sidebar.collapsed .sidebar-nav {
-  padding: 14px 12px 90px;
+  padding: 10px 8px 70px;
 }
 
 .admin-sidebar.collapsed .nav-section {
@@ -242,14 +242,14 @@ body {
 
 .admin-sidebar.collapsed .sidebar-nav .nav-link {
   justify-content: center;
-  padding: 8px;
-  min-height: 48px;
+  padding: 6px;
+  min-height: 40px;
   border-radius: 12px;
 }
 
 .admin-sidebar.collapsed .nav-icon {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
 }
 
 .admin-sidebar.collapsed .nav-section-label,

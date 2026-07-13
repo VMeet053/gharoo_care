@@ -9,6 +9,18 @@ const navSections = [
     ],
   },
   {
+    label: 'Management',
+    items: [
+      { to: '/users', icon: 'bi-people', text: 'Users' },
+      { to: '/work-orders', icon: 'bi-list-check', text: 'Work Orders' },
+      { to: '/premium-user-list', icon: 'bi-award', text: 'Premium User List' },
+      { to: '/service-user-list', icon: 'bi-person-check', text: 'Service User List' },
+      { to: '/service-price', icon: 'bi-tags', text: 'Service Price' },
+      { to: '/leads', icon: 'bi-person-add', text: 'Leads' },
+      { to: '/profile', icon: 'bi-person-badge', text: 'Profile' },
+    ],
+  },
+  {
     label: 'User Panel',
     items: [
       { to: '/user-panel/hero', icon: 'bi-house-door', text: 'Hero Section' },
@@ -25,18 +37,6 @@ const navSections = [
       { to: '/user-panel/contact', icon: 'bi-telephone', text: 'Contact' },
       { to: '/user-panel/header', icon: 'bi-header', text: 'Header' },
       { to: '/user-panel/footer', icon: 'bi-footer', text: 'Footer' },
-    ],
-  },
-  {
-    label: 'Management',
-    items: [
-      { to: '/users', icon: 'bi-people', text: 'Users' },
-      { to: '/work-orders', icon: 'bi-list-check', text: 'Work Orders' },
-      { to: '/premium-user-list', icon: 'bi-award', text: 'Premium User List' },
-      { to: '/service-user-list', icon: 'bi-person-check', text: 'Service User List' },
-      { to: '/service-price', icon: 'bi-tags', text: 'Service Price' },
-      { to: '/leads', icon: 'bi-person-add', text: 'Leads' },
-      { to: '/profile', icon: 'bi-person-badge', text: 'Profile' },
     ],
   },
   {
