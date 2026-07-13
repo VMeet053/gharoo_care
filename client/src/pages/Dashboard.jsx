@@ -262,7 +262,75 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="row g-3 mt-1">
+      <section className="panel mt-3">
+        <div className="panel-header">
+          <div>
+            <h2 className="h5 mb-1 section-title"><i className="bi bi-people" aria-hidden="true"></i><span>Recent Users</span></h2>
+            <p className="text-muted mb-0">Latest account activity across the workspace.</p>
+          </div>
+          <Link className="btn btn-outline-secondary btn-sm" to="/users">Manage Users</Link>
+        </div>
+        <div className="table-responsive">
+          <table className="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">User</th>
+                <th scope="col">Role</th>
+                <th scope="col">Team</th>
+                <th scope="col">Status</th>
+                <th scope="col">Joined</th>
+                <th scope="col" className="text-end">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="text-center py-5">
+                    <div className="blank-icon mx-auto mb-3">
+                      <i className="bi bi-inbox"></i>
+                    </div>
+                    <h5 className="text-muted">No recent users</h5>
+                    <p className="text-muted small">New user activity will appear here</p>
+                  </td>
+                </tr>
+              ) : (
+                recentUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td>
+                      <div className="d-flex align-items-center gap-2">
+                        {user.avatar ? (
+                          <img className="avatar-img avatar-sm" src={user.avatar} alt={user.name} />
+                        ) : (
+                          <div className="avatar-img avatar-sm bg-primary text-white d-flex align-items-center justify-content-center">
+                            {(user.name || '').charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <p className="fw-semibold mb-0">{user.name}</p>
+                          <p className="text-muted small mb-0">{user.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{user.role}</td>
+                    <td>{user.team || '-'}</td>
+                    <td>
+                      <span className={`badge ${getStatusBadgeClass(user.status)}`}>
+                        {user.status || 'Active'}
+                      </span>
+                    </td>
+                    <td>{user.joined}</td>
+                    <td className="text-end">
+                      <Link className="btn btn-light btn-sm" to="/users">View</Link>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="row g-3 mt-3">
         <div className="col-12 col-xl-8">
           <div className="panel h-100">
             <div className="panel-header d-flex justify-content-between align-items-center">
@@ -426,74 +494,6 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="panel mt-3">
-        <div className="panel-header">
-          <div>
-            <h2 className="h5 mb-1 section-title"><i className="bi bi-people" aria-hidden="true"></i><span>Recent Users</span></h2>
-            <p className="text-muted mb-0">Latest account activity across the workspace.</p>
-          </div>
-          <Link className="btn btn-outline-secondary btn-sm" to="/users">Manage Users</Link>
-        </div>
-        <div className="table-responsive">
-          <table className="table align-middle mb-0">
-            <thead>
-              <tr>
-                <th scope="col">User</th>
-                <th scope="col">Role</th>
-                <th scope="col">Team</th>
-                <th scope="col">Status</th>
-                <th scope="col">Joined</th>
-                <th scope="col" className="text-end">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentUsers.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="text-center py-5">
-                    <div className="blank-icon mx-auto mb-3">
-                      <i className="bi bi-inbox"></i>
-                    </div>
-                    <h5 className="text-muted">No recent users</h5>
-                    <p className="text-muted small">New user activity will appear here</p>
-                  </td>
-                </tr>
-              ) : (
-                recentUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td>
-                      <div className="d-flex align-items-center gap-2">
-                        {user.avatar ? (
-                          <img className="avatar-img avatar-sm" src={user.avatar} alt={user.name} />
-                        ) : (
-                          <div className="avatar-img avatar-sm bg-primary text-white d-flex align-items-center justify-content-center">
-                            {(user.name || '').charAt(0)}
-                          </div>
-                        )}
-                        <div>
-                          <p className="fw-semibold mb-0">{user.name}</p>
-                          <p className="text-muted small mb-0">{user.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{user.role}</td>
-                    <td>{user.team || '-'}</td>
-                    <td>
-                      <span className={`badge ${getStatusBadgeClass(user.status)}`}>
-                        {user.status || 'Active'}
-                      </span>
-                    </td>
-                    <td>{user.joined}</td>
-                    <td className="text-end">
-                      <Link className="btn btn-light btn-sm" to="/users">View</Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
         </div>
       </section>
     </div>
