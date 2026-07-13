@@ -10,7 +10,11 @@ export default function AddUser() {
     phone: '',
     role: '',
     team: '',
-    notes: ''
+    notes: '',
+    address: '',
+    city: '',
+    state: '',
+    pinCode: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -162,6 +166,50 @@ export default function AddUser() {
                   <option>Finance</option>
                 </select>
                 <div className="invalid-feedback">Choose a team.</div>
+              </div>
+              <div className="col-12">
+                <label className="form-label" htmlFor="address">Address</label>
+                <textarea 
+                  className="form-control" 
+                  id="address" 
+                  rows="3" 
+                  placeholder="Enter address"
+                  value={formData.address}
+                  onChange={handleChange}
+                ></textarea>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="city">City</label>
+                <input 
+                  className="form-control" 
+                  id="city" 
+                  type="text" 
+                  placeholder="City"
+                  value={formData.city}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="state">State</label>
+                <input 
+                  className="form-control" 
+                  id="state" 
+                  type="text" 
+                  placeholder="State"
+                  value={formData.state}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="pinCode">Pin Code</label>
+                <input 
+                  className="form-control" 
+                  id="pinCode" 
+                  type="text" 
+                  placeholder="Pin Code"
+                  value={formData.pinCode}
+                  onChange={handleChange}
+                />
               </div>
               <div className="col-12">
                 <label className="form-label" htmlFor="notes">Notes</label>

@@ -407,6 +407,28 @@ export default function Profile() {
                     </div>
                   </div>
 
+                  {/* Address Info */}
+                  {(profile.address || profile.city || profile.state || profile.pinCode) && (
+                    <>
+                      <div className="card-info-row">
+                        <div className="card-info-icon"><i className="bi bi-geo-alt-fill"></i></div>
+                        <div className="card-info-text">
+                          <span className="info-label">Address</span>
+                          <span className="info-value">{profile.address || '—'}</span>
+                        </div>
+                      </div>
+                      <div className="card-info-row">
+                        <div className="card-info-icon"><i className="bi bi-geo-fill"></i></div>
+                        <div className="card-info-text">
+                          <span className="info-label">Location</span>
+                          <span className="info-value">
+                            {[profile.city, profile.state, profile.pinCode].filter(Boolean).join(', ') || '—'}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   {/* Auth Section */}
                   <div className="card-auth-section">
                     <div className="card-auth-title">Authorised Signature</div>

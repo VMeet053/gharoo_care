@@ -10,7 +10,11 @@ export default function ServiceManRegistration() {
     phone: '',
     password: '',
     confirmPassword: '',
-    idProofType: ''
+    idProofType: '',
+    address: '',
+    city: '',
+    state: '',
+    pinCode: ''
   })
   const [frontImage, setFrontImage] = useState(null)
   const [backImage, setBackImage] = useState(null)
@@ -116,7 +120,11 @@ export default function ServiceManRegistration() {
           phone: '',
           password: '',
           confirmPassword: '',
-          idProofType: ''
+          idProofType: '',
+          address: '',
+          city: '',
+          state: '',
+          pinCode: ''
         })
         setFrontImage(null)
         setBackImage(null)
@@ -237,6 +245,51 @@ export default function ServiceManRegistration() {
               <option value="Driving License">Driving License</option>
               <option value="Election Card">Election Card</option>
             </select>
+          </div>
+
+          <div>
+            <label>Address</label>
+            <textarea
+              name="address"
+              value={formData.address}
+              onChange={handleChange}
+              rows="3"
+              placeholder="Enter your full address"
+            />
+          </div>
+
+          <div className="form-grid">
+            <div>
+              <label>City</label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                placeholder="City"
+              />
+            </div>
+            <div>
+              <label>State</label>
+              <input
+                type="text"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                placeholder="State"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label>Pin Code</label>
+            <input
+              type="text"
+              name="pinCode"
+              value={formData.pinCode}
+              onChange={handleChange}
+              placeholder="Pin Code"
+            />
           </div>
 
           {formData.idProofType && (

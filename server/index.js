@@ -257,7 +257,11 @@ app.get('/api/users', async (req, res) => {
         idProofType: user.idProofType,
         idProofNumber: user.idProofNumber,
         frontIdProofImage: user.frontIdProofImage,
-        backIdProofImage: user.backIdProofImage
+        backIdProofImage: user.backIdProofImage,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        pinCode: user.pinCode
       }));
       res.json(formattedUsers);
     } else {
@@ -273,7 +277,11 @@ app.get('/api/users', async (req, res) => {
         idProofType: user.idProofType,
         idProofNumber: user.idProofNumber,
         frontIdProofImage: user.frontIdProofImage,
-        backIdProofImage: user.backIdProofImage
+        backIdProofImage: user.backIdProofImage,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        pinCode: user.pinCode
       }));
       res.json(formattedUsers);
     }
@@ -307,7 +315,11 @@ app.get('/api/users/role/:role', async (req, res) => {
         idProofType: user.idProofType,
         idProofNumber: user.idProofNumber,
         frontIdProofImage: user.frontIdProofImage,
-        backIdProofImage: user.backIdProofImage
+        backIdProofImage: user.backIdProofImage,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        pinCode: user.pinCode
       }));
       res.json(formattedUsers);
     } else {
@@ -330,7 +342,11 @@ app.get('/api/users/role/:role', async (req, res) => {
         idProofType: user.idProofType,
         idProofNumber: user.idProofNumber,
         frontIdProofImage: user.frontIdProofImage,
-        backIdProofImage: user.backIdProofImage
+        backIdProofImage: user.backIdProofImage,
+        address: user.address,
+        city: user.city,
+        state: user.state,
+        pinCode: user.pinCode
       }));
       res.json(formattedUsers);
     }
@@ -343,7 +359,7 @@ app.get('/api/users/role/:role', async (req, res) => {
 // Create user
 app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }, { name: 'backIdProofImage', maxCount: 1 }]), async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber } = req.body;
+    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, address, city, state, pinCode } = req.body;
 
     // Function to upload image to Cloudinary
     const uploadToCloudinary = async (file) => {
@@ -389,7 +405,11 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
         idProofType: idProofType || null,
         idProofNumber: idProofNumber || null,
         frontIdProofImage: frontIdProofImageUrl || null,
-        backIdProofImage: backIdProofImageUrl || null
+        backIdProofImage: backIdProofImageUrl || null,
+        address: address || '',
+        city: city || '',
+        state: state || '',
+        pinCode: pinCode || ''
       });
 
       await newUser.save();
@@ -420,7 +440,11 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
         idProofType: idProofType || null,
         idProofNumber: idProofNumber || null,
         frontIdProofImage: frontIdProofImageUrl || null,
-        backIdProofImage: backIdProofImageUrl || null
+        backIdProofImage: backIdProofImageUrl || null,
+        address: address || '',
+        city: city || '',
+        state: state || '',
+        pinCode: pinCode || ''
       };
       inMemoryUsers.push(newUser);
       res.json({ success: true, message: 'User created successfully!' });
@@ -442,7 +466,11 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       password, 
       confirmPassword, 
       idProofType, 
-      idProofNumber 
+      idProofNumber,
+      address,
+      city,
+      state,
+      pinCode
     } = req.body;
 
     // Validation
@@ -518,7 +546,11 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
         idProofNumber: idProofNumber || null,
         frontIdProofImage: frontIdProofImageUrl,
         backIdProofImage: backIdProofImageUrl,
-        employeeId: await generateEmployeeId()
+        employeeId: await generateEmployeeId(),
+        address: address || '',
+        city: city || '',
+        state: state || '',
+        pinCode: pinCode || ''
       });
 
       await newUser.save();
@@ -548,7 +580,11 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
         idProofNumber: idProofNumber || null,
         frontIdProofImage: frontIdProofImageUrl,
         backIdProofImage: backIdProofImageUrl,
-        employeeId: await generateEmployeeId()
+        employeeId: await generateEmployeeId(),
+        address: address || '',
+        city: city || '',
+        state: state || '',
+        pinCode: pinCode || ''
       };
       inMemoryUsers.push(newUser);
       return res.json({ success: true, message: 'Service man registered successfully! Please login.' });

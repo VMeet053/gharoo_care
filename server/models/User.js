@@ -47,6 +47,22 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '/assets/images/avatar/avatar-1.jpg'
   },
+  address: {
+    type: String,
+    default: ''
+  },
+  city: {
+    type: String,
+    default: ''
+  },
+  state: {
+    type: String,
+    default: ''
+  },
+  pinCode: {
+    type: String,
+    default: ''
+  },
   resetPasswordToken: {
     type: String,
     default: ''
