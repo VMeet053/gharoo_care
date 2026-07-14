@@ -4,7 +4,14 @@
   "builds": [
     {
       "src": "server/index.js",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": [
+          "Gharoo/Gharoo_client/dist/**",
+          "client/dist/**",
+          "service-man-client/dist/**"
+        ]
+      }
     }
   ],
   "routes": [

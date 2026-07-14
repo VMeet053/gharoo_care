@@ -1,9 +1,25 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [react()],
   base: '/',
+  resolve: {
+    alias: [
+      {
+        find: /^react-router$/,
+        replacement: resolve(__dirname, 'node_modules/react-router/dist/development/index.js'),
+      },
+      {
+        find: /^react-router\/dom$/,
+        replacement: resolve(__dirname, 'node_modules/react-router/dist/development/dom-export.js'),
+      },
+    ],
+  },
   server: {
     port: 5173,
     strictPort: true,
