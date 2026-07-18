@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './UserForm.css'
+import { fetchGeoapifyAddressSuggestions } from '../utils/geoapify'
 
 export default function UserForm() {
   const navigate = useNavigate()
@@ -25,9 +26,69 @@ export default function UserForm() {
     pincode: savedData.pincode || '',
     addressType: savedData.addressType || 'Home',
   })
+  const [addressQuery, setAddressQuery] = useState(savedData.fullAddress || '')
+  const [addressSuggestions, setAddressSuggestions] = useState([])
+  const [addressLoading, setAddressLoading] = useState(false)
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
+  const skipAddressFetch = useRef(false)
+
+  useEffect(() => {
+    const query = addressQuery.trim()
+    if (skipAddressFetch.current) {
+      skipAddressFetch.current = false
+      return
+    }
+    if (query.length < 3) {
+      return
+    }
+
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(async () => {
+      setAddressLoading(true)
+      try {
+        setAddressSuggestions(await fetchGeoapifyAddressSuggestions(query, controller.signal))
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setAddressSuggestions([])
+        }
+      } finally {
+        setAddressLoading(false)
+      }
+    }, 350)
+
+    return () => {
+      controller.abort()
+      window.clearTimeout(timeoutId)
+    }
+  }, [addressQuery])
 
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+  }
+
+  function handleAddressQueryChange(e) {
+    const value = e.target.value
+    setAddressQuery(value)
+    setShowAddressSuggestions(true)
+    if (value.trim().length < 3) {
+      setAddressSuggestions([])
+      setAddressLoading(false)
+    }
+  }
+
+  function handleAddressSelect(suggestion) {
+    skipAddressFetch.current = true
+    setAddressQuery(suggestion.label)
+    setFormData({
+      ...formData,
+      flatHouse: suggestion.name || suggestion.address,
+      area: suggestion.area,
+      city: suggestion.city,
+      state: suggestion.state,
+      pincode: suggestion.pinCode
+    })
+    setAddressSuggestions([])
+    setShowAddressSuggestions(false)
   }
 
   function handleAddressType(type) {
@@ -92,6 +153,31 @@ export default function UserForm() {
             </div>
 
             <div className="address-section-label">Address Details</div>
+
+            <div className="form-group address-search-group">
+              <label>Search Address / Place <span className="required">*</span></label>
+              <input
+                type="text"
+                name="addressSearch"
+                value={addressQuery}
+                onChange={handleAddressQueryChange}
+                onFocus={() => setShowAddressSuggestions(true)}
+                onBlur={() => window.setTimeout(() => setShowAddressSuggestions(false), 150)}
+                required
+                placeholder="Search society, building, shop or full address"
+              />
+              {showAddressSuggestions && (addressLoading || addressSuggestions.length > 0) && (
+                <div className="address-suggestions" role="listbox">
+                  {addressLoading && <div className="address-suggestion muted">Searching address...</div>}
+                  {!addressLoading && addressSuggestions.map((suggestion) => (
+                    <button type="button" className="address-suggestion" key={suggestion.id} onMouseDown={() => handleAddressSelect(suggestion)}>
+                      <span className="address-source-badge">{suggestion.source === 'places' ? 'Place' : 'Address'}</span>
+                      <span>{suggestion.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <div className="form-group">
               <label>Flat / House / Building <span className="required">*</span></label>

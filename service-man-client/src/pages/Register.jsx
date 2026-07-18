@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/login.css';
-
-const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || 'ea84882880264cf3848317e50c5b6bd4';
+import { fetchGeoapifyAddressSuggestions } from '../utils/geoapify';
 
 const initialForm = {
   firstName: '',
@@ -17,16 +16,6 @@ const initialForm = {
   state: '',
   pinCode: ''
 };
-
-function pickAddress(feature) {
-  const properties = feature?.properties || {};
-  return {
-    address: properties.formatted || properties.address_line1 || properties.name || '',
-    city: properties.city || properties.county || properties.suburb || '',
-    state: properties.state || '',
-    pinCode: properties.postcode || ''
-  };
-}
 
 export default function Register() {
   const [formData, setFormData] = useState(initialForm);
@@ -48,7 +37,7 @@ export default function Register() {
       skipAddressFetch.current = false;
       return;
     }
-    if (!GEOAPIFY_API_KEY || address.length < 3) {
+    if (address.length < 3) {
       return;
     }
 
@@ -56,17 +45,7 @@ export default function Register() {
     const timeoutId = window.setTimeout(async () => {
       setAddressLoading(true);
       try {
-        const params = new URLSearchParams({
-          text: address,
-          apiKey: GEOAPIFY_API_KEY,
-          limit: '5',
-          filter: 'countrycode:in'
-        });
-        const response = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?${params}`, {
-          signal: controller.signal
-        });
-        const data = await response.json();
-        setAddressSuggestions(Array.isArray(data.features) ? data.features : []);
+        setAddressSuggestions(await fetchGeoapifyAddressSuggestions(address, controller.signal));
       } catch (err) {
         if (err.name !== 'AbortError') {
           setAddressSuggestions([]);
@@ -98,11 +77,13 @@ export default function Register() {
   }
 
   function handleAddressSelect(feature) {
-    const selectedAddress = pickAddress(feature);
     skipAddressFetch.current = true;
     setFormData(prev => ({
       ...prev,
-      ...selectedAddress
+      address: feature.address,
+      city: feature.city,
+      state: feature.state,
+      pinCode: feature.pinCode
     }));
     setAddressSuggestions([]);
     setShowAddressSuggestions(false);
@@ -254,15 +235,12 @@ export default function Register() {
                 {showAddressSuggestions && (addressLoading || addressSuggestions.length > 0) && (
                   <div className="address-suggestions" role="listbox">
                     {addressLoading && <div className="address-suggestion muted">Searching address...</div>}
-                    {!addressLoading && addressSuggestions.map((feature) => {
-                      const properties = feature.properties || {};
-                      return (
-                        <button type="button" className="address-suggestion" key={properties.place_id || properties.formatted} onMouseDown={() => handleAddressSelect(feature)}>
-                          <i className="bi bi-geo-alt"></i>
-                          <span>{properties.formatted || properties.address_line1 || properties.name}</span>
-                        </button>
-                      );
-                    })}
+                    {!addressLoading && addressSuggestions.map((feature) => (
+                      <button type="button" className="address-suggestion" key={feature.id} onMouseDown={() => handleAddressSelect(feature)}>
+                        <span className="address-source-badge">{feature.source === 'places' ? 'Place' : 'Address'}</span>
+                        <span>{feature.label}</span>
+                      </button>
+                    ))}
                   </div>
                 )}
               </div>

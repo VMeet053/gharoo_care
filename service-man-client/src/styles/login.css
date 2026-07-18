@@ -102,12 +102,19 @@
   border-bottom: 0;
 }
 
-.address-suggestion i {
-  color: #10b981;
-  margin-top: 0.1rem;
-}
-
 .address-suggestion.muted {
   color: #64748b;
   cursor: default;
+}
+
+.address-source-badge {
+  flex: 0 0 auto;
+  min-width: 58px;
+  padding: 0.18rem 0.35rem;
+  border-radius: 6px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
 }

@@ -1,18 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import './ServiceManRegistration.css'
-
-const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || 'ea84882880264cf3848317e50c5b6bd4'
-
-function pickAddress(feature) {
-  const properties = feature?.properties || {}
-  return {
-    address: properties.formatted || properties.address_line1 || properties.name || '',
-    city: properties.city || properties.county || properties.suburb || '',
-    state: properties.state || '',
-    pinCode: properties.postcode || ''
-  }
-}
+import { fetchGeoapifyAddressSuggestions } from '../utils/geoapify'
 
 export default function ServiceManRegistration() {
   const [formData, setFormData] = useState({
@@ -47,7 +36,7 @@ export default function ServiceManRegistration() {
       skipAddressFetch.current = false
       return
     }
-    if (!GEOAPIFY_API_KEY || address.length < 3) {
+    if (address.length < 3) {
       return
     }
 
@@ -55,17 +44,7 @@ export default function ServiceManRegistration() {
     const timeoutId = window.setTimeout(async () => {
       setAddressLoading(true)
       try {
-        const params = new URLSearchParams({
-          text: address,
-          apiKey: GEOAPIFY_API_KEY,
-          limit: '5',
-          filter: 'countrycode:in'
-        })
-        const res = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?${params}`, {
-          signal: controller.signal
-        })
-        const data = await res.json()
-        setAddressSuggestions(Array.isArray(data.features) ? data.features : [])
+        setAddressSuggestions(await fetchGeoapifyAddressSuggestions(address, controller.signal))
       } catch (err) {
         if (err.name !== 'AbortError') {
           setAddressSuggestions([])
@@ -102,7 +81,10 @@ export default function ServiceManRegistration() {
     skipAddressFetch.current = true
     setFormData(prev => ({
       ...prev,
-      ...pickAddress(feature)
+      address: feature.address,
+      city: feature.city,
+      state: feature.state,
+      pinCode: feature.pinCode
     }))
     setAddressSuggestions([])
     setShowAddressSuggestions(false)
@@ -340,15 +322,12 @@ export default function ServiceManRegistration() {
             {showAddressSuggestions && (addressLoading || addressSuggestions.length > 0) && (
               <div className="address-suggestions" role="listbox">
                 {addressLoading && <div className="address-suggestion muted">Searching address...</div>}
-                {!addressLoading && addressSuggestions.map((feature) => {
-                  const properties = feature.properties || {}
-                  return (
-                    <button type="button" className="address-suggestion" key={properties.place_id || properties.formatted} onMouseDown={() => handleAddressSelect(feature)}>
-                      <span className="address-pin">⌖</span>
-                      <span>{properties.formatted || properties.address_line1 || properties.name}</span>
-                    </button>
-                  )
-                })}
+                {!addressLoading && addressSuggestions.map((feature) => (
+                  <button type="button" className="address-suggestion" key={feature.id} onMouseDown={() => handleAddressSelect(feature)}>
+                    <span className="address-pin">{feature.source === 'places' ? 'Place' : 'Address'}</span>
+                    <span>{feature.label}</span>
+                  </button>
+                ))}
               </div>
             )}
           </div>

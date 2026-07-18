@@ -159,8 +159,15 @@
 }
 
 .address-pin {
+  flex: 0 0 auto;
+  min-width: 58px;
+  padding: 0.18rem 0.35rem;
+  border-radius: 6px;
+  background: #ecfdf5;
   color: #24b57a;
+  font-size: 0.7rem;
   font-weight: 800;
+  text-align: center;
 }
 
 .form-grid {
