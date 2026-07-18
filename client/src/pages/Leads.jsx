@@ -168,6 +168,10 @@ export default function Leads() {
 
   const handleAddLead = async (e) => {
     e.preventDefault();
+    if (!addForm.currentLocation.trim()) {
+      alert('Please add current location before saving lead.');
+      return;
+    }
     try {
       const response = await fetch('/api/leads', {
         method: 'POST',
@@ -491,7 +495,7 @@ export default function Leads() {
               <div className="col-md-3">
                 <label className="form-label" htmlFor="leadCurrentLocation">Current Location</label>
                 <div className="input-group">
-                  <input className="form-control" id="leadCurrentLocation" value={addForm.currentLocation} onChange={(e) => setAddForm({ ...addForm, currentLocation: e.target.value })} placeholder="Maps link or live location" />
+                  <input className="form-control" id="leadCurrentLocation" required value={addForm.currentLocation} onChange={(e) => setAddForm({ ...addForm, currentLocation: e.target.value })} placeholder="Maps link or live location" />
                   <button className="btn btn-outline-primary" type="button" onClick={fillCurrentLocation}>
                     <i className="bi bi-crosshair"></i>
                   </button>

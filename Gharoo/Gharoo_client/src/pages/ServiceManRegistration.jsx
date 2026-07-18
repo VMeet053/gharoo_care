@@ -14,6 +14,7 @@ export default function ServiceManRegistration() {
     idProofType: '',
     houseNumber: '',
     address: '',
+    currentLocation: '',
     city: '',
     state: '',
     pinCode: ''
@@ -92,6 +93,27 @@ export default function ServiceManRegistration() {
     setShowAddressSuggestions(false)
   }
 
+  const handleCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setError('Current location is not supported in this browser!')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        setFormData(prev => ({
+          ...prev,
+          currentLocation: `https://www.google.com/maps?q=${latitude},${longitude}`
+        }))
+      },
+      () => {
+        setError('Could not get current location. Please allow location permission or paste a map link.')
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
   const handleFrontImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -135,6 +157,11 @@ export default function ServiceManRegistration() {
 
     if (!formData.address.trim()) {
       setError('Please enter your address!')
+      return
+    }
+
+    if (!formData.currentLocation.trim()) {
+      setError('Please add your current location!')
       return
     }
 
@@ -185,6 +212,7 @@ export default function ServiceManRegistration() {
           idProofType: '',
           houseNumber: '',
           address: '',
+          currentLocation: '',
           city: '',
           state: '',
           pinCode: ''
@@ -378,6 +406,23 @@ export default function ServiceManRegistration() {
               onChange={handleChange}
               placeholder="Pin Code"
             />
+          </div>
+
+          <div className="current-location-group">
+            <label>Current Location <span style={{ color: '#ef4444' }}>*</span></label>
+            <div className="location-input-row">
+              <input
+                type="url"
+                name="currentLocation"
+                value={formData.currentLocation}
+                onChange={handleChange}
+                required
+                placeholder="Paste Google Maps link or use current location"
+              />
+              <button type="button" className="location-btn" onClick={handleCurrentLocation}>
+                Use Current
+              </button>
+            </div>
           </div>
 
           {formData.idProofType && (

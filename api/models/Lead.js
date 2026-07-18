@@ -32,7 +32,7 @@ const leadSchema = new mongoose.Schema({
   },
   currentLocation: {
     type: String,
-    default: ''
+    required: true
   },
   city: {
     type: String,

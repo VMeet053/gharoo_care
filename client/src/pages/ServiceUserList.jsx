@@ -336,6 +336,14 @@ export default function ServiceUserList() {
                     <label className="form-label fw-semibold">House / Flat Number</label>
                     <p className="mb-0">{selectedUser.houseNumber || '-'}</p>
                   </div>
+                  <div className="col-md-8 mb-3">
+                    <label className="form-label fw-semibold">Current Location</label>
+                    {selectedUser.currentLocation ? (
+                      <p className="mb-0"><a href={selectedUser.currentLocation} target="_blank" rel="noreferrer">Open map</a></p>
+                    ) : (
+                      <p className="mb-0">-</p>
+                    )}
+                  </div>
                   <div className="col-md-4 mb-3">
                     <label className="form-label fw-semibold">City</label>
                     <p className="mb-0">{selectedUser.city || '-'}</p>

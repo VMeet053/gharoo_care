@@ -51,6 +51,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  currentLocation: {
+    type: String,
+    default: ''
+  },
   houseNumber: {
     type: String,
     default: ''

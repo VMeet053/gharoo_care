@@ -119,6 +119,10 @@ export default function UserForm() {
 
   function handleSubmit(e) {
     e.preventDefault()
+    if (!formData.currentLocation.trim()) {
+      alert('Please add current location before payment.')
+      return
+    }
     const fullAddress = `${formData.flatHouse}, ${formData.area}, ${formData.city}, ${formData.state} - ${formData.pincode}`
     const dataToSave = { ...formData, fullAddress }
     localStorage.setItem('userFormData', JSON.stringify(dataToSave))
@@ -227,13 +231,14 @@ export default function UserForm() {
             </div>
 
             <div className="form-group current-location-group">
-              <label>Current Location <span className="optional">(Optional)</span></label>
+              <label>Current Location <span className="required">*</span></label>
               <div className="location-input-row">
                 <input
                   type="url"
                   name="currentLocation"
                   value={formData.currentLocation}
                   onChange={handleChange}
+                  required
                   placeholder="Paste Google Maps link or use current location"
                 />
                 <button type="button" className="location-btn" onClick={handleCurrentLocation}>

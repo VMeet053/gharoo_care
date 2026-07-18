@@ -20,6 +20,10 @@ export default function PaymentPage() {
       showToast('Please select a payment method.', 'warning', 'Payment method required')
       return
     }
+    if (!userFormData.currentLocation) {
+      showToast('Please go back and add current location.', 'warning', 'Current location required')
+      return
+    }
     setIsSubmitting(true)
     try {
       const selectedPlan = JSON.parse(localStorage.getItem('selectedPlan')) || null
@@ -95,9 +99,7 @@ export default function PaymentPage() {
           <p><strong>Email:</strong> {userFormData.email}</p>
           <p><strong>Contact:</strong> {userFormData.contactNumber}</p>
           <p><strong>Address:</strong> {userFormData.fullAddress}</p>
-          {userFormData.currentLocation && (
-            <p><strong>Current Location:</strong> <a href={userFormData.currentLocation} target="_blank" rel="noreferrer">Open map</a></p>
-          )}
+          <p><strong>Current Location:</strong> {userFormData.currentLocation ? <a href={userFormData.currentLocation} target="_blank" rel="noreferrer">Open map</a> : 'Required'}</p>
         </div>
 
         <div className="payment-methods">

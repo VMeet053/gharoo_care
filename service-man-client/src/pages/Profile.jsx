@@ -426,6 +426,17 @@ export default function Profile() {
                           </span>
                         </div>
                       </div>
+                      {profile.currentLocation && (
+                        <div className="card-info-row">
+                          <div className="card-info-icon"><i className="bi bi-crosshair"></i></div>
+                          <div className="card-info-text">
+                            <span className="info-label">Current Location</span>
+                            <span className="info-value">
+                              <a href={profile.currentLocation} target="_blank" rel="noreferrer">Open map</a>
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
 

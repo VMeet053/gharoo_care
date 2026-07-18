@@ -170,6 +170,36 @@
   text-align: center;
 }
 
+.current-location-group {
+  width: 100%;
+}
+
+.location-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.location-btn {
+  min-height: 50px;
+  padding: 0 16px;
+  border: 2px solid #24b57a;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.location-btn:hover {
+  background: #24b57a;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 .form-grid {
   display: flex;
   gap: 1.25rem;
@@ -277,6 +307,10 @@
   
   .register-card {
     padding: 2rem 1.5rem;
+  }
+
+  .location-input-row {
+    grid-template-columns: 1fr;
   }
 }
 

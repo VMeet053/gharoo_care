@@ -13,6 +13,7 @@ const initialForm = {
   idProofType: '',
   houseNumber: '',
   address: '',
+  currentLocation: '',
   city: '',
   state: '',
   pinCode: ''
@@ -91,6 +92,27 @@ export default function Register() {
     setShowAddressSuggestions(false);
   }
 
+  function handleCurrentLocation() {
+    if (!navigator.geolocation) {
+      setError('Current location is not supported in this browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData(prev => ({
+          ...prev,
+          currentLocation: `https://www.google.com/maps?q=${latitude},${longitude}`
+        }));
+      },
+      () => {
+        setError('Could not get current location. Please allow location permission or paste a map link.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   function handleImageChange(e, side) {
     const file = e.target.files[0];
     if (!file) return;
@@ -125,6 +147,11 @@ export default function Register() {
 
     if (!formData.address.trim()) {
       setError('Please enter your address.');
+      return;
+    }
+
+    if (!formData.currentLocation.trim()) {
+      setError('Please add your current location.');
       return;
     }
 
@@ -261,6 +288,13 @@ export default function Register() {
               <div>
                 <label className="form-label" htmlFor="pinCode">Pin code</label>
                 <input className="form-control" id="pinCode" name="pinCode" value={formData.pinCode} onChange={handleChange} placeholder="Pin code" />
+              </div>
+              <div className="auth-form-span current-location-group">
+                <label className="form-label" htmlFor="currentLocation">Current Location <span className="text-danger">*</span></label>
+                <div className="location-input-row">
+                  <input className="form-control" id="currentLocation" name="currentLocation" type="url" value={formData.currentLocation} onChange={handleChange} required placeholder="Paste Google Maps link or use current location" />
+                  <button className="location-btn" type="button" onClick={handleCurrentLocation}>Use Current</button>
+                </div>
               </div>
               <div>
                 <label className="form-label" htmlFor="password">Password</label>

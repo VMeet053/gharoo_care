@@ -260,6 +260,7 @@ app.get('/api/users', async (req, res) => {
         backIdProofImage: user.backIdProofImage,
         houseNumber: user.houseNumber,
         address: user.address,
+        currentLocation: user.currentLocation,
         city: user.city,
         state: user.state,
         pinCode: user.pinCode
@@ -281,6 +282,7 @@ app.get('/api/users', async (req, res) => {
         backIdProofImage: user.backIdProofImage,
         houseNumber: user.houseNumber,
         address: user.address,
+        currentLocation: user.currentLocation,
         city: user.city,
         state: user.state,
         pinCode: user.pinCode
@@ -320,6 +322,7 @@ app.get('/api/users/role/:role', async (req, res) => {
         backIdProofImage: user.backIdProofImage,
         houseNumber: user.houseNumber,
         address: user.address,
+        currentLocation: user.currentLocation,
         city: user.city,
         state: user.state,
         pinCode: user.pinCode
@@ -348,6 +351,7 @@ app.get('/api/users/role/:role', async (req, res) => {
         backIdProofImage: user.backIdProofImage,
         houseNumber: user.houseNumber,
         address: user.address,
+        currentLocation: user.currentLocation,
         city: user.city,
         state: user.state,
         pinCode: user.pinCode
@@ -363,7 +367,7 @@ app.get('/api/users/role/:role', async (req, res) => {
 // Create user
 app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }, { name: 'backIdProofImage', maxCount: 1 }]), async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, houseNumber, address, city, state, pinCode } = req.body;
+    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, houseNumber, address, currentLocation, city, state, pinCode } = req.body;
 
     // Function to upload image to Cloudinary
     const uploadToCloudinary = async (file) => {
@@ -412,6 +416,7 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
         backIdProofImage: backIdProofImageUrl || null,
         houseNumber: houseNumber || '',
         address: address || '',
+        currentLocation: currentLocation || '',
         city: city || '',
         state: state || '',
         pinCode: pinCode || ''
@@ -448,6 +453,7 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
         backIdProofImage: backIdProofImageUrl || null,
         houseNumber: houseNumber || '',
         address: address || '',
+        currentLocation: currentLocation || '',
         city: city || '',
         state: state || '',
         pinCode: pinCode || ''
@@ -475,13 +481,14 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       idProofNumber,
       houseNumber,
       address,
+      currentLocation,
       city,
       state,
       pinCode
     } = req.body;
 
     // Validation
-    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType || !address) {
+    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType || !address || !currentLocation) {
       return res.status(400).json({ success: false, message: 'All fields are mandatory!' });
     }
     if (password !== confirmPassword) {
@@ -556,6 +563,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
         employeeId: await generateEmployeeId(),
         houseNumber: houseNumber || '',
         address: address || '',
+        currentLocation: currentLocation || '',
         city: city || '',
         state: state || '',
         pinCode: pinCode || ''
@@ -591,6 +599,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
         employeeId: await generateEmployeeId(),
         houseNumber: houseNumber || '',
         address: address || '',
+        currentLocation: currentLocation || '',
         city: city || '',
         state: state || '',
         pinCode: pinCode || ''
@@ -1231,6 +1240,9 @@ app.post('/api/leads', async (req, res) => {
       return res.status(500).json({ success: false, message: 'MongoDB not connected' });
     }
     const leadData = { ...req.body };
+    if (!leadData.currentLocation) {
+      return res.status(400).json({ success: false, message: 'Current location is required' });
+    }
     const premiumUser = await PremiumUser.findOne({
       $or: [
         { email: String(leadData.email || '').toLowerCase() },

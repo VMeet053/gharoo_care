@@ -253,6 +253,7 @@ app.get('/api/users', async (req, res) => {
       backIdProofImage: user.backIdProofImage,
       houseNumber: user.houseNumber,
       address: user.address,
+      currentLocation: user.currentLocation,
       city: user.city,
       state: user.state,
       pinCode: user.pinCode
@@ -293,6 +294,7 @@ app.get('/api/users/role/:role', async (req, res) => {
       backIdProofImage: user.backIdProofImage,
       houseNumber: user.houseNumber,
       address: user.address,
+      currentLocation: user.currentLocation,
       city: user.city,
       state: user.state,
       pinCode: user.pinCode
@@ -310,7 +312,7 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
     return res.status(500).json({ success: false, message: 'MongoDB not connected' });
   }
   try {
-    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, houseNumber, address, city, state, pinCode } = req.body;
+    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, houseNumber, address, currentLocation, city, state, pinCode } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -358,6 +360,7 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
       backIdProofImage: backIdProofImageUrl || null,
       houseNumber: houseNumber || '',
       address: address || '',
+      currentLocation: currentLocation || '',
       city: city || '',
       state: state || '',
       pinCode: pinCode || ''
@@ -409,13 +412,14 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       idProofType,
       houseNumber,
       address,
+      currentLocation,
       city,
       state,
       pinCode
     } = req.body;
 
     // Validation
-    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType || !address) {
+    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType || !address || !currentLocation) {
       return res.status(400).json({ success: false, message: 'All fields are mandatory!' });
     }
 
@@ -500,6 +504,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       backIdProofImage: backIdProofImageUrl,
       houseNumber: houseNumber || '',
       address: address || '',
+      currentLocation: currentLocation || '',
       city: city || '',
       state: state || '',
       pinCode: pinCode || '',
@@ -774,6 +779,9 @@ app.post('/api/leads', async (req, res) => {
   try {
     if (!isMongoConnected) {
       return res.status(500).json({ success: false, message: 'MongoDB not connected' });
+    }
+    if (!req.body.currentLocation) {
+      return res.status(400).json({ success: false, message: 'Current location is required' });
     }
     const newLead = new Lead(req.body);
     await newLead.save();

@@ -118,3 +118,35 @@
   font-weight: 800;
   text-align: center;
 }
+
+.current-location-group {
+  position: relative;
+}
+
+.location-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+}
+
+.location-btn {
+  min-height: 48px;
+  padding: 0 1rem;
+  border: 1px solid #10b981;
+  border-radius: 12px;
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.location-btn:hover {
+  background: #10b981;
+  color: #ffffff;
+}
+
+@media (max-width: 640px) {
+  .location-input-row {
+    grid-template-columns: 1fr;
+  }
+}
