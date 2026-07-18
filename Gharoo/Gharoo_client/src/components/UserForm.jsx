@@ -24,6 +24,7 @@ export default function UserForm() {
     city: savedData.city || '',
     state: savedData.state || '',
     pincode: savedData.pincode || '',
+    currentLocation: savedData.currentLocation || '',
     addressType: savedData.addressType || 'Home',
   })
   const [addressQuery, setAddressQuery] = useState(savedData.fullAddress || '')
@@ -95,6 +96,27 @@ export default function UserForm() {
     setFormData({ ...formData, addressType: type })
   }
 
+  function handleCurrentLocation() {
+    if (!navigator.geolocation) {
+      alert('Current location is not supported in this browser.')
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        setFormData({
+          ...formData,
+          currentLocation: `https://www.google.com/maps?q=${latitude},${longitude}`
+        })
+      },
+      () => {
+        alert('Could not get current location. Please allow location permission or paste a map link.')
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
+  }
+
   function handleSubmit(e) {
     e.preventDefault()
     const fullAddress = `${formData.flatHouse}, ${formData.area}, ${formData.city}, ${formData.state} - ${formData.pincode}`
@@ -154,6 +176,11 @@ export default function UserForm() {
 
             <div className="address-section-label">Address Details</div>
 
+            <div className="form-group">
+              <label>Flat / House / Building <span className="required">*</span></label>
+              <input type="text" name="flatHouse" value={formData.flatHouse} onChange={handleChange} required placeholder="C 202 Many Residency" />
+            </div>
+
             <div className="form-group address-search-group">
               <label>Search Address / Place <span className="required">*</span></label>
               <input
@@ -180,11 +207,6 @@ export default function UserForm() {
             </div>
 
             <div className="form-group">
-              <label>Flat / House / Building <span className="required">*</span></label>
-              <input type="text" name="flatHouse" value={formData.flatHouse} onChange={handleChange} required placeholder="C 202 Many Residency" />
-            </div>
-
-            <div className="form-group">
               <label>Area / Locality <span className="required">*</span></label>
               <input type="text" name="area" value={formData.area} onChange={handleChange} required placeholder="Nana Varachha, Near XYZ" />
             </div>
@@ -204,6 +226,22 @@ export default function UserForm() {
               <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} required placeholder="6-digit pincode" maxLength={6} pattern="[0-9]{6}" />
             </div>
 
+            <div className="form-group current-location-group">
+              <label>Current Location <span className="optional">(Optional)</span></label>
+              <div className="location-input-row">
+                <input
+                  type="url"
+                  name="currentLocation"
+                  value={formData.currentLocation}
+                  onChange={handleChange}
+                  placeholder="Paste Google Maps link or use current location"
+                />
+                <button type="button" className="location-btn" onClick={handleCurrentLocation}>
+                  Use Current
+                </button>
+              </div>
+            </div>
+
             <div className="form-group">
               <label>Type of Address</label>
               <div className="address-type-group">
@@ -217,9 +255,11 @@ export default function UserForm() {
             </div>
           </div>
 
-          <button type="submit" className="btn primary btn-shine submit-btn">
-            Proceed to Payment
-          </button>
+          <div className="form-actions">
+            <button type="submit" className="btn primary btn-shine submit-btn">
+              Proceed to Payment
+            </button>
+          </div>
         </form>
       </div>
     </div>

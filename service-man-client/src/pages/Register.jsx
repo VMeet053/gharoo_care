@@ -231,6 +231,10 @@ export default function Register() {
                 <label className="form-label" htmlFor="phone">Phone number</label>
                 <input className="form-control" id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required placeholder="10 digit mobile" />
               </div>
+              <div>
+                <label className="form-label" htmlFor="houseNumber">House / Flat number</label>
+                <input className="form-control" id="houseNumber" name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="House, flat, floor" />
+              </div>
               <div className="auth-form-span address-autocomplete">
                 <label className="form-label" htmlFor="address">Address</label>
                 <textarea className="form-control" id="address" name="address" rows="3" value={formData.address} onChange={handleChange} onFocus={() => setShowAddressSuggestions(true)} onBlur={() => window.setTimeout(() => setShowAddressSuggestions(false), 150)} required placeholder="Search and select your address" />
@@ -245,10 +249,6 @@ export default function Register() {
                     ))}
                   </div>
                 )}
-              </div>
-              <div>
-                <label className="form-label" htmlFor="houseNumber">House / Flat number</label>
-                <input className="form-control" id="houseNumber" name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="House, flat, floor" />
               </div>
               <div>
                 <label className="form-label" htmlFor="city">City</label>

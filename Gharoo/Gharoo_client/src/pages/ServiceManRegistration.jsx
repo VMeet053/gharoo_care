@@ -271,17 +271,6 @@ export default function ServiceManRegistration() {
             />
           </div>
 
-          <div>
-            <label>House / Flat Number</label>
-            <input
-              type="text"
-              name="houseNumber"
-              value={formData.houseNumber}
-              onChange={handleChange}
-              placeholder="House, flat, floor"
-            />
-          </div>
-
           <div className="form-grid">
             <div>
               <label>Password</label>
@@ -319,6 +308,17 @@ export default function ServiceManRegistration() {
               <option value="Driving License">Driving License</option>
               <option value="Election Card">Election Card</option>
             </select>
+          </div>
+
+          <div>
+            <label>House / Flat Number</label>
+            <input
+              type="text"
+              name="houseNumber"
+              value={formData.houseNumber}
+              onChange={handleChange}
+              placeholder="House, flat, floor"
+            />
           </div>
 
           <div className="address-autocomplete">

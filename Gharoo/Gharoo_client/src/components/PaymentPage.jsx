@@ -23,10 +23,14 @@ export default function PaymentPage() {
     setIsSubmitting(true)
     try {
       const selectedPlan = JSON.parse(localStorage.getItem('selectedPlan')) || null
+      const customerName = [userFormData.firstName, userFormData.lastName].filter(Boolean).join(' ')
       const leadData = {
-        name: `${userFormData.firstName} ${userFormData.lastName}`,
+        name: customerName,
         phone: userFormData.contactNumber,
         email: userFormData.email,
+        houseNumber: userFormData.flatHouse || '',
+        address: userFormData.fullAddress || '',
+        currentLocation: userFormData.currentLocation || '',
         city: userFormData.city,
         area: userFormData.area,
         service: 'Home Repair',
@@ -48,7 +52,7 @@ export default function PaymentPage() {
         try {
           const premiumPlan = selectedPlan || { name: 'Premium', price: '$19.99' };
           const premiumUserData = {
-            name: `${userFormData.firstName} ${userFormData.lastName}`,
+            name: customerName,
             email: userFormData.email,
             phone: userFormData.contactNumber,
             plan: premiumPlan.name,
@@ -91,6 +95,9 @@ export default function PaymentPage() {
           <p><strong>Email:</strong> {userFormData.email}</p>
           <p><strong>Contact:</strong> {userFormData.contactNumber}</p>
           <p><strong>Address:</strong> {userFormData.fullAddress}</p>
+          {userFormData.currentLocation && (
+            <p><strong>Current Location:</strong> <a href={userFormData.currentLocation} target="_blank" rel="noreferrer">Open map</a></p>
+          )}
         </div>
 
         <div className="payment-methods">

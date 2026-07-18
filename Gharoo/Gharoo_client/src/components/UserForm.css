@@ -109,6 +109,7 @@
   display: flex;
   flex-direction: column;
   padding: 24px 26px;
+  gap: 18px;
 }
 
 .booking-form-header {
@@ -277,11 +278,47 @@
   color: #047857;
 }
 
+.current-location-group {
+  grid-column: 1 / -1;
+}
+
+.location-input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.location-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid #24b57a;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.location-btn:hover {
+  background: #24b57a;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
 .submit-btn {
   width: min(360px, 100%);
   align-self: flex-end;
   justify-content: center;
-  margin-top: auto;
+  margin-top: 0;
   padding: 14px 22px;
   border-radius: 8px;
   font-size: 0.98rem;
@@ -330,6 +367,13 @@
 
   .submit-btn {
     width: 100%;
-    margin-top: 18px;
+  }
+
+  .form-actions {
+    padding-top: 6px;
+  }
+
+  .location-input-row {
+    grid-template-columns: 1fr;
   }
 }
