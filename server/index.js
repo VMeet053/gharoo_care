@@ -474,7 +474,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
     } = req.body;
 
     // Validation
-    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType) {
+    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType || !address) {
       return res.status(400).json({ success: false, message: 'All fields are mandatory!' });
     }
     if (password !== confirmPassword) {

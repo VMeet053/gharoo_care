@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/login.css';
+
+const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || 'ea84882880264cf3848317e50c5b6bd4';
 
 const initialForm = {
   firstName: '',
@@ -9,11 +11,28 @@ const initialForm = {
   phone: '',
   password: '',
   confirmPassword: '',
-  idProofType: ''
+  idProofType: '',
+  address: '',
+  city: '',
+  state: '',
+  pinCode: ''
 };
+
+function pickAddress(feature) {
+  const properties = feature?.properties || {};
+  return {
+    address: properties.formatted || properties.address_line1 || properties.name || '',
+    city: properties.city || properties.county || properties.suburb || '',
+    state: properties.state || '',
+    pinCode: properties.postcode || ''
+  };
+}
 
 export default function Register() {
   const [formData, setFormData] = useState(initialForm);
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false);
   const [frontImage, setFrontImage] = useState(null);
   const [backImage, setBackImage] = useState(null);
   const [frontImagePreview, setFrontImagePreview] = useState(null);
@@ -21,6 +40,47 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const skipAddressFetch = useRef(false);
+
+  useEffect(() => {
+    const address = formData.address.trim();
+    if (skipAddressFetch.current) {
+      skipAddressFetch.current = false;
+      return;
+    }
+    if (!GEOAPIFY_API_KEY || address.length < 3) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      setAddressLoading(true);
+      try {
+        const params = new URLSearchParams({
+          text: address,
+          apiKey: GEOAPIFY_API_KEY,
+          limit: '5',
+          filter: 'countrycode:in'
+        });
+        const response = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?${params}`, {
+          signal: controller.signal
+        });
+        const data = await response.json();
+        setAddressSuggestions(Array.isArray(data.features) ? data.features : []);
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setAddressSuggestions([]);
+        }
+      } finally {
+        setAddressLoading(false);
+      }
+    }, 350);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [formData.address]);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -28,6 +88,24 @@ export default function Register() {
       ...prev,
       [name]: name === 'phone' ? value.replace(/\D/g, '').slice(0, 10) : value
     }));
+    if (name === 'address') {
+      setShowAddressSuggestions(true);
+      if (value.trim().length < 3) {
+        setAddressSuggestions([]);
+        setAddressLoading(false);
+      }
+    }
+  }
+
+  function handleAddressSelect(feature) {
+    const selectedAddress = pickAddress(feature);
+    skipAddressFetch.current = true;
+    setFormData(prev => ({
+      ...prev,
+      ...selectedAddress
+    }));
+    setAddressSuggestions([]);
+    setShowAddressSuggestions(false);
   }
 
   function handleImageChange(e, side) {
@@ -59,6 +137,11 @@ export default function Register() {
 
     if (formData.phone.length !== 10) {
       setError('Phone number must be exactly 10 digits.');
+      return;
+    }
+
+    if (!formData.address.trim()) {
+      setError('Please enter your address.');
       return;
     }
 
@@ -164,6 +247,36 @@ export default function Register() {
               <div>
                 <label className="form-label" htmlFor="phone">Phone number</label>
                 <input className="form-control" id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required placeholder="10 digit mobile" />
+              </div>
+              <div className="auth-form-span address-autocomplete">
+                <label className="form-label" htmlFor="address">Address</label>
+                <textarea className="form-control" id="address" name="address" rows="3" value={formData.address} onChange={handleChange} onFocus={() => setShowAddressSuggestions(true)} onBlur={() => window.setTimeout(() => setShowAddressSuggestions(false), 150)} required placeholder="Search and select your address" />
+                {showAddressSuggestions && (addressLoading || addressSuggestions.length > 0) && (
+                  <div className="address-suggestions" role="listbox">
+                    {addressLoading && <div className="address-suggestion muted">Searching address...</div>}
+                    {!addressLoading && addressSuggestions.map((feature) => {
+                      const properties = feature.properties || {};
+                      return (
+                        <button type="button" className="address-suggestion" key={properties.place_id || properties.formatted} onMouseDown={() => handleAddressSelect(feature)}>
+                          <i className="bi bi-geo-alt"></i>
+                          <span>{properties.formatted || properties.address_line1 || properties.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="form-label" htmlFor="city">City</label>
+                <input className="form-control" id="city" name="city" value={formData.city} onChange={handleChange} placeholder="City" />
+              </div>
+              <div>
+                <label className="form-label" htmlFor="state">State</label>
+                <input className="form-control" id="state" name="state" value={formData.state} onChange={handleChange} placeholder="State" />
+              </div>
+              <div>
+                <label className="form-label" htmlFor="pinCode">Pin code</label>
+                <input className="form-control" id="pinCode" name="pinCode" value={formData.pinCode} onChange={handleChange} placeholder="Pin code" />
               </div>
               <div>
                 <label className="form-label" htmlFor="password">Password</label>

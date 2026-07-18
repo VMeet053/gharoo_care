@@ -1,6 +1,18 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import './ServiceManRegistration.css'
+
+const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || 'ea84882880264cf3848317e50c5b6bd4'
+
+function pickAddress(feature) {
+  const properties = feature?.properties || {}
+  return {
+    address: properties.formatted || properties.address_line1 || properties.name || '',
+    city: properties.city || properties.county || properties.suburb || '',
+    state: properties.state || '',
+    pinCode: properties.postcode || ''
+  }
+}
 
 export default function ServiceManRegistration() {
   const [formData, setFormData] = useState({
@@ -24,6 +36,50 @@ export default function ServiceManRegistration() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [addressSuggestions, setAddressSuggestions] = useState([])
+  const [addressLoading, setAddressLoading] = useState(false)
+  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
+  const skipAddressFetch = useRef(false)
+
+  useEffect(() => {
+    const address = formData.address.trim()
+    if (skipAddressFetch.current) {
+      skipAddressFetch.current = false
+      return
+    }
+    if (!GEOAPIFY_API_KEY || address.length < 3) {
+      return
+    }
+
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(async () => {
+      setAddressLoading(true)
+      try {
+        const params = new URLSearchParams({
+          text: address,
+          apiKey: GEOAPIFY_API_KEY,
+          limit: '5',
+          filter: 'countrycode:in'
+        })
+        const res = await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?${params}`, {
+          signal: controller.signal
+        })
+        const data = await res.json()
+        setAddressSuggestions(Array.isArray(data.features) ? data.features : [])
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          setAddressSuggestions([])
+        }
+      } finally {
+        setAddressLoading(false)
+      }
+    }, 350)
+
+    return () => {
+      controller.abort()
+      window.clearTimeout(timeoutId)
+    }
+  }, [formData.address])
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -33,6 +89,23 @@ export default function ServiceManRegistration() {
     } else {
       setFormData(prev => ({ ...prev, [name]: value }))
     }
+    if (name === 'address') {
+      setShowAddressSuggestions(true)
+      if (value.trim().length < 3) {
+        setAddressSuggestions([])
+        setAddressLoading(false)
+      }
+    }
+  }
+
+  const handleAddressSelect = (feature) => {
+    skipAddressFetch.current = true
+    setFormData(prev => ({
+      ...prev,
+      ...pickAddress(feature)
+    }))
+    setAddressSuggestions([])
+    setShowAddressSuggestions(false)
   }
 
   const handleFrontImageChange = (e) => {
@@ -73,6 +146,11 @@ export default function ServiceManRegistration() {
 
     if (formData.phone.length !== 10) {
       setError('Phone number must be exactly 10 digits!')
+      return
+    }
+
+    if (!formData.address.trim()) {
+      setError('Please enter your address!')
       return
     }
 
@@ -247,15 +325,32 @@ export default function ServiceManRegistration() {
             </select>
           </div>
 
-          <div>
+          <div className="address-autocomplete">
             <label>Address</label>
             <textarea
               name="address"
               value={formData.address}
               onChange={handleChange}
+              onFocus={() => setShowAddressSuggestions(true)}
+              onBlur={() => window.setTimeout(() => setShowAddressSuggestions(false), 150)}
               rows="3"
-              placeholder="Enter your full address"
+              required
+              placeholder="Search and select your address"
             />
+            {showAddressSuggestions && (addressLoading || addressSuggestions.length > 0) && (
+              <div className="address-suggestions" role="listbox">
+                {addressLoading && <div className="address-suggestion muted">Searching address...</div>}
+                {!addressLoading && addressSuggestions.map((feature) => {
+                  const properties = feature.properties || {}
+                  return (
+                    <button type="button" className="address-suggestion" key={properties.place_id || properties.formatted} onMouseDown={() => handleAddressSelect(feature)}>
+                      <span className="address-pin">⌖</span>
+                      <span>{properties.formatted || properties.address_line1 || properties.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           <div className="form-grid">

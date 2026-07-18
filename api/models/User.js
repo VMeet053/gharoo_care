@@ -47,6 +47,22 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: '/assets/images/avatar/avatar-1.jpg'
   },
+  address: {
+    type: String,
+    default: ''
+  },
+  city: {
+    type: String,
+    default: ''
+  },
+  state: {
+    type: String,
+    default: ''
+  },
+  pinCode: {
+    type: String,
+    default: ''
+  },
   idProofType: {
     type: String,
     enum: ['Pan Card', 'Aadhaar Card', 'Driving License', 'Election Card'],
@@ -63,6 +79,25 @@ const userSchema = new mongoose.Schema({
   backIdProofImage: {
     type: String,
     default: null
+  },
+  employeeId: {
+    type: String,
+    default: undefined,
+    unique: true,
+    sparse: true
+  },
+  profilePic: {
+    type: String,
+    default: null
+  },
+  authorizationStatus: {
+    type: String,
+    enum: ['pending', 'authorized'],
+    default: 'pending'
+  },
+  designation: {
+    type: String,
+    default: 'Service Technician'
   }
 }, { timestamps: true });
 

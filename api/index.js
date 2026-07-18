@@ -250,7 +250,11 @@ app.get('/api/users', async (req, res) => {
       idProofType: user.idProofType,
  // idProofNumber: user.idProofNumber,
       frontIdProofImage: user.frontIdProofImage,
-      backIdProofImage: user.backIdProofImage
+      backIdProofImage: user.backIdProofImage,
+      address: user.address,
+      city: user.city,
+      state: user.state,
+      pinCode: user.pinCode
     }));
     res.json(formattedUsers);
   } catch (err) {
@@ -285,7 +289,11 @@ app.get('/api/users/role/:role', async (req, res) => {
       idProofType: user.idProofType,
       idProofNumber: user.idProofNumber,
       frontIdProofImage: user.frontIdProofImage,
-      backIdProofImage: user.backIdProofImage
+      backIdProofImage: user.backIdProofImage,
+      address: user.address,
+      city: user.city,
+      state: user.state,
+      pinCode: user.pinCode
     }));
     res.json(formattedUsers);
   } catch (err) {
@@ -300,7 +308,7 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
     return res.status(500).json({ success: false, message: 'MongoDB not connected' });
   }
   try {
-    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber } = req.body;
+    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, address, city, state, pinCode } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -345,7 +353,11 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
       idProofType: idProofType || null,
       idProofNumber: idProofNumber || null,
       frontIdProofImage: frontIdProofImageUrl || null,
-      backIdProofImage: backIdProofImageUrl || null
+      backIdProofImage: backIdProofImageUrl || null,
+      address: address || '',
+      city: city || '',
+      state: state || '',
+      pinCode: pinCode || ''
     });
 
     await newUser.save();
@@ -391,11 +403,15 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       phone, 
       password, 
       confirmPassword, 
-      idProofType
+      idProofType,
+      address,
+      city,
+      state,
+      pinCode
     } = req.body;
 
     // Validation
-    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType) {
+    if (!firstName || !lastName || !email || !phone || !password || !confirmPassword || !idProofType || !address) {
       return res.status(400).json({ success: false, message: 'All fields are mandatory!' });
     }
 
@@ -478,6 +494,10 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       idProofNumber: null,
       frontIdProofImage: frontIdProofImageUrl,
       backIdProofImage: backIdProofImageUrl,
+      address: address || '',
+      city: city || '',
+      state: state || '',
+      pinCode: pinCode || '',
       employeeId,
       authorizationStatus: 'pending',
       designation: 'Service Technician'

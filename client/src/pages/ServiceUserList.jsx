@@ -328,6 +328,22 @@ export default function ServiceUserList() {
                     <label className="form-label fw-semibold">ID Proof Number</label>
                     <p className="mb-0">{selectedUser.idProofNumber || '-'}</p>
                   </div>
+                  <div className="col-md-12 mb-3">
+                    <label className="form-label fw-semibold">Address</label>
+                    <p className="mb-0">{selectedUser.address || '-'}</p>
+                  </div>
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label fw-semibold">City</label>
+                    <p className="mb-0">{selectedUser.city || '-'}</p>
+                  </div>
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label fw-semibold">State</label>
+                    <p className="mb-0">{selectedUser.state || '-'}</p>
+                  </div>
+                  <div className="col-md-4 mb-3">
+                    <label className="form-label fw-semibold">Pin Code</label>
+                    <p className="mb-0">{selectedUser.pinCode || '-'}</p>
+                  </div>
                   <div className="col-md-6 mb-3">
                     <label className="form-label fw-semibold">Front Side ID Proof</label>
                     {selectedUser.frontIdProofImage ? (
