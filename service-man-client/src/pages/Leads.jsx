@@ -19,6 +19,10 @@ function getUserId(user) {
   return user?._id || user?.id;
 }
 
+function fullLeadAddress(lead) {
+  return [lead.houseNumber, lead.address, lead.area, lead.city].filter(Boolean).join(', ');
+}
+
 function LeadCard({ lead, acceptingId, onAccept }) {
   const leadId = lead.id || lead._id;
 
@@ -56,8 +60,14 @@ function LeadCard({ lead, acceptingId, onAccept }) {
         <p className="item-card-section-title">Location</p>
         <div className="detail-row">
           <i className="bi bi-geo-alt"></i>
-          <span>{lead.area ? `${lead.area}, ` : ''}{lead.city}</span>
+          <span>{fullLeadAddress(lead) || '-'}</span>
         </div>
+        {lead.currentLocation && (
+          <div className="detail-row">
+            <i className="bi bi-crosshair"></i>
+            <a href={lead.currentLocation} target="_blank" rel="noreferrer">Open current location</a>
+          </div>
+        )}
         <div className="detail-row">
           <i className="bi bi-calendar3"></i>
           <span>{lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '—'}</span>
@@ -128,6 +138,9 @@ export default function Leads() {
       lead.email?.toLowerCase().includes(term) ||
       lead.phone?.includes(term) ||
       lead.service?.toLowerCase().includes(term) ||
+      lead.houseNumber?.toLowerCase().includes(term) ||
+      lead.address?.toLowerCase().includes(term) ||
+      lead.currentLocation?.toLowerCase().includes(term) ||
       lead.city?.toLowerCase().includes(term) ||
       lead.area?.toLowerCase().includes(term);
 
@@ -274,8 +287,12 @@ export default function Leads() {
                       </td>
                       <td>{lead.service}</td>
                       <td>
-                        <div>{lead.city}</div>
-                        <div className="text-muted small">{lead.area}</div>
+                        <div>{fullLeadAddress(lead) || '-'}</div>
+                        {lead.currentLocation && (
+                          <a className="text-muted small" href={lead.currentLocation} target="_blank" rel="noreferrer">
+                            <i className="bi bi-crosshair me-1"></i>Current location
+                          </a>
+                        )}
                       </td>
                       <td>
                         <span className={`badge ${statusBadges[lead.status] || 'bg-secondary'} rounded-pill px-3 py-2`}>

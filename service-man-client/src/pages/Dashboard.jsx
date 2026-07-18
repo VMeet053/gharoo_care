@@ -164,6 +164,12 @@ export default function Dashboard() {
                     <span>{order.customerAddress}</span>
                   </div>
                 )}
+                {order.customerCurrentLocation && (
+                  <div className="detail-row">
+                    <i className="bi bi-crosshair"></i>
+                    <a href={order.customerCurrentLocation} target="_blank" rel="noreferrer">Open current location</a>
+                  </div>
+                )}
               </div>
               <div className="item-card-footer">
                 {order.status === 'assigned' && (

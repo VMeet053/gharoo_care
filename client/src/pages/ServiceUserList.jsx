@@ -333,6 +333,10 @@ export default function ServiceUserList() {
                     <p className="mb-0">{selectedUser.address || '-'}</p>
                   </div>
                   <div className="col-md-4 mb-3">
+                    <label className="form-label fw-semibold">House / Flat Number</label>
+                    <p className="mb-0">{selectedUser.houseNumber || '-'}</p>
+                  </div>
+                  <div className="col-md-4 mb-3">
                     <label className="form-label fw-semibold">City</label>
                     <p className="mb-0">{selectedUser.city || '-'}</p>
                   </div>

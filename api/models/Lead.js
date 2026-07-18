@@ -22,6 +22,18 @@ const leadSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  houseNumber: {
+    type: String,
+    default: ''
+  },
+  address: {
+    type: String,
+    default: ''
+  },
+  currentLocation: {
+    type: String,
+    default: ''
+  },
   city: {
     type: String,
     default: ''

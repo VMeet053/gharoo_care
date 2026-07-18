@@ -244,6 +244,12 @@ export default function WorkOrderDetail() {
           )}
           <div className="detail-row"><i className="bi bi-telephone"></i><a href={"tel:" + workOrder.customerPhone}>{workOrder.customerPhone}</a></div>
           {workOrder.customerAddress && <div className="detail-row"><i className="bi bi-geo-alt"></i><span>{workOrder.customerAddress}</span></div>}
+          {workOrder.customerCurrentLocation && (
+            <div className="detail-row">
+              <i className="bi bi-crosshair"></i>
+              <a href={workOrder.customerCurrentLocation} target="_blank" rel="noreferrer">Open current location</a>
+            </div>
+          )}
           <div className="detail-row"><i className="bi bi-tools"></i><span>{workOrder.serviceType || workOrder.title}</span></div>
         </div>
       </div>

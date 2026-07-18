@@ -18,6 +18,9 @@ const emptyLeadForm = {
   phone: '',
   status: 'New',
   service: '',
+  houseNumber: '',
+  address: '',
+  currentLocation: '',
   city: '',
   area: ''
 };
@@ -182,6 +185,27 @@ export default function Leads() {
     }
   };
 
+  const fillCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Current location is not supported in this browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setAddForm((prev) => ({
+          ...prev,
+          currentLocation: `https://www.google.com/maps?q=${latitude},${longitude}`
+        }));
+      },
+      () => {
+        alert('Could not get current location. Please allow location permission or paste a map link.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // Get available areas based on selected city
   const availableAreas = cityAreas[cityFilter] || ['All'];
 
@@ -196,6 +220,9 @@ export default function Leads() {
       lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.houseNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.address?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.currentLocation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       displayCity.toLowerCase().includes(searchTerm.toLowerCase()) ||
       displayArea.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesAssigned = 
@@ -318,7 +345,7 @@ export default function Leads() {
 
   const exportToExcel = (dataToExport, filename) => {
     if (!dataToExport.length) return;
-    const headers = ['Name', 'Email', 'Phone', 'Status', 'Service', 'City', 'Area', 'Assigned To'];
+    const headers = ['Name', 'Email', 'Phone', 'Status', 'Service', 'House Number', 'Address', 'Current Location', 'City', 'Area', 'Assigned To'];
     const csvContent = [
       headers.join(','),
       ...dataToExport.map(lead => [
@@ -327,6 +354,9 @@ export default function Leads() {
         `"${lead.phone}"`,
         `"${lead.status}"`,
         `"${lead.service}"`,
+        `"${lead.houseNumber || ''}"`,
+        `"${lead.address || ''}"`,
+        `"${lead.currentLocation || ''}"`,
         `"${getDisplayCity(lead)}"`,
         `"${getDisplayArea(lead)}"`,
         `"${lead.assigned}"`
@@ -353,6 +383,9 @@ export default function Leads() {
       pdfContent += `   Phone: ${lead.phone}\n`;
       pdfContent += `   Status: ${lead.status}\n`;
       pdfContent += `   Service: ${lead.service}\n`;
+      pdfContent += `   House Number: ${lead.houseNumber || '-'}\n`;
+      pdfContent += `   Address: ${lead.address || '-'}\n`;
+      pdfContent += `   Current Location: ${lead.currentLocation || '-'}\n`;
       pdfContent += `   City: ${getDisplayCity(lead)}\n`;
       pdfContent += `   Area: ${getDisplayArea(lead)}\n`;
       pdfContent += `   Assigned To: ${lead.assigned}\n`;
@@ -446,6 +479,23 @@ export default function Leads() {
                     <option key={service} value={service}>{service}</option>
                   ))}
                 </select>
+              </div>
+              <div className="col-md-3">
+                <label className="form-label" htmlFor="leadHouseNumber">House / Flat Number</label>
+                <input className="form-control" id="leadHouseNumber" value={addForm.houseNumber} onChange={(e) => setAddForm({ ...addForm, houseNumber: e.target.value })} placeholder="House, flat, floor" />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="leadAddress">Address</label>
+                <input className="form-control" id="leadAddress" required value={addForm.address} onChange={(e) => setAddForm({ ...addForm, address: e.target.value })} placeholder="Full customer address" />
+              </div>
+              <div className="col-md-3">
+                <label className="form-label" htmlFor="leadCurrentLocation">Current Location</label>
+                <div className="input-group">
+                  <input className="form-control" id="leadCurrentLocation" value={addForm.currentLocation} onChange={(e) => setAddForm({ ...addForm, currentLocation: e.target.value })} placeholder="Maps link or live location" />
+                  <button className="btn btn-outline-primary" type="button" onClick={fillCurrentLocation}>
+                    <i className="bi bi-crosshair"></i>
+                  </button>
+                </div>
               </div>
               <div className="col-md-3">
                 <label className="form-label" htmlFor="leadCity">City</label>
@@ -610,6 +660,7 @@ export default function Leads() {
                   <th scope="col">Phone</th>
                   <th scope="col">Status</th>
                   <th scope="col">Service</th>
+                  <th scope="col">Address</th>
                   <th scope="col">City</th>
                   <th scope="col">Area</th>
                   <th scope="col" className="text-end">Assigned To</th>
@@ -618,7 +669,7 @@ export default function Leads() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="9" className="text-center py-5">
+                    <td colSpan="10" className="text-center py-5">
                       <div className="spinner-border" role="status">
                         <span className="visually-hidden">Loading...</span>
                       </div>
@@ -626,7 +677,7 @@ export default function Leads() {
                   </tr>
                 ) : currentLeads.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="text-center py-5">
+                    <td colSpan="10" className="text-center py-5">
                       <div className="blank-icon mx-auto mb-3">
                         <i className="bi bi-inbox"></i>
                       </div>
@@ -668,6 +719,14 @@ export default function Leads() {
                         })()}
                       </td>
                       <td><span className="lead-service-pill">{lead.service}</span></td>
+                      <td>
+                        <div className="lead-muted-text">{[lead.houseNumber, lead.address].filter(Boolean).join(', ') || '-'}</div>
+                        {lead.currentLocation && (
+                          <a className="small" href={lead.currentLocation} target="_blank" rel="noreferrer">
+                            <i className="bi bi-geo-alt me-1"></i>Current location
+                          </a>
+                        )}
+                      </td>
                       <td><span className="lead-location-chip">{getDisplayCity(lead)}</span></td>
                       <td><span className="lead-location-chip">{getDisplayArea(lead)}</span></td>
                       <td className="text-end">

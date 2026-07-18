@@ -11,6 +11,7 @@ const initialForm = {
   password: '',
   confirmPassword: '',
   idProofType: '',
+  houseNumber: '',
   address: '',
   city: '',
   state: '',
@@ -81,6 +82,7 @@ export default function Register() {
     setFormData(prev => ({
       ...prev,
       address: feature.address,
+      houseNumber: prev.houseNumber,
       city: feature.city,
       state: feature.state,
       pinCode: feature.pinCode
@@ -243,6 +245,10 @@ export default function Register() {
                     ))}
                   </div>
                 )}
+              </div>
+              <div>
+                <label className="form-label" htmlFor="houseNumber">House / Flat number</label>
+                <input className="form-control" id="houseNumber" name="houseNumber" value={formData.houseNumber} onChange={handleChange} placeholder="House, flat, floor" />
               </div>
               <div>
                 <label className="form-label" htmlFor="city">City</label>

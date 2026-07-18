@@ -12,6 +12,7 @@ export default function ServiceManRegistration() {
     password: '',
     confirmPassword: '',
     idProofType: '',
+    houseNumber: '',
     address: '',
     city: '',
     state: '',
@@ -82,6 +83,7 @@ export default function ServiceManRegistration() {
     setFormData(prev => ({
       ...prev,
       address: feature.address,
+      houseNumber: prev.houseNumber,
       city: feature.city,
       state: feature.state,
       pinCode: feature.pinCode
@@ -181,6 +183,7 @@ export default function ServiceManRegistration() {
           password: '',
           confirmPassword: '',
           idProofType: '',
+          houseNumber: '',
           address: '',
           city: '',
           state: '',
@@ -265,6 +268,17 @@ export default function ServiceManRegistration() {
               value={formData.phone}
               onChange={handleChange}
               required
+            />
+          </div>
+
+          <div>
+            <label>House / Flat Number</label>
+            <input
+              type="text"
+              name="houseNumber"
+              value={formData.houseNumber}
+              onChange={handleChange}
+              placeholder="House, flat, floor"
             />
           </div>
 

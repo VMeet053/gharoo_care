@@ -21,6 +21,10 @@ const workOrderSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  customerCurrentLocation: {
+    type: String,
+    default: ''
+  },
   status: {
     type: String,
     enum: ['pending', 'assigned', 'in-progress', 'completed', 'cancelled'],

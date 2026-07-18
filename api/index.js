@@ -251,6 +251,7 @@ app.get('/api/users', async (req, res) => {
  // idProofNumber: user.idProofNumber,
       frontIdProofImage: user.frontIdProofImage,
       backIdProofImage: user.backIdProofImage,
+      houseNumber: user.houseNumber,
       address: user.address,
       city: user.city,
       state: user.state,
@@ -290,6 +291,7 @@ app.get('/api/users/role/:role', async (req, res) => {
       idProofNumber: user.idProofNumber,
       frontIdProofImage: user.frontIdProofImage,
       backIdProofImage: user.backIdProofImage,
+      houseNumber: user.houseNumber,
       address: user.address,
       city: user.city,
       state: user.state,
@@ -308,7 +310,7 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
     return res.status(500).json({ success: false, message: 'MongoDB not connected' });
   }
   try {
-    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, address, city, state, pinCode } = req.body;
+    const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, houseNumber, address, city, state, pinCode } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -354,6 +356,7 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
       idProofNumber: idProofNumber || null,
       frontIdProofImage: frontIdProofImageUrl || null,
       backIdProofImage: backIdProofImageUrl || null,
+      houseNumber: houseNumber || '',
       address: address || '',
       city: city || '',
       state: state || '',
@@ -404,6 +407,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       password, 
       confirmPassword, 
       idProofType,
+      houseNumber,
       address,
       city,
       state,
@@ -494,6 +498,7 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       idProofNumber: null,
       frontIdProofImage: frontIdProofImageUrl,
       backIdProofImage: backIdProofImageUrl,
+      houseNumber: houseNumber || '',
       address: address || '',
       city: city || '',
       state: state || '',
@@ -686,6 +691,9 @@ const formatLead = (lead) => ({
   phone: lead.phone,
   status: lead.status,
   service: lead.service,
+  houseNumber: lead.houseNumber || '',
+  address: lead.address || '',
+  currentLocation: lead.currentLocation || '',
   city: lead.city,
   area: lead.area,
   assigned: lead.assigned || 'Unassigned',
@@ -697,7 +705,7 @@ const ensureWorkOrderFromLead = async (lead) => {
   const existing = await WorkOrder.findOne({ leadId: lead._id });
   if (existing) return existing;
 
-  const location = [lead.area, lead.city].filter(Boolean).join(', ');
+  const location = [lead.houseNumber, lead.address, lead.area, lead.city].filter(Boolean).join(', ');
   const workOrder = new WorkOrder({
     leadId: lead._id,
     title: `${lead.service} - ${lead.name}`,
@@ -705,6 +713,7 @@ const ensureWorkOrderFromLead = async (lead) => {
     customerName: lead.name,
     customerPhone: lead.phone,
     customerAddress: location,
+    customerCurrentLocation: lead.currentLocation || '',
     status: 'assigned',
     priority: 'medium',
     assignedTo: lead.assignedTo,
