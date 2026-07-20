@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/users.css';
 
+const getUserImageSrc = (user) => {
+  const image = user.profilePic || user.avatar || '';
+  if (!image) return '';
+  if (image.startsWith('http') || image.startsWith('data:')) return image;
+  if (image.startsWith('/assets/')) return `/admin${image}`;
+  return image;
+};
+
 export default function Users() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -156,11 +164,27 @@ export default function Users() {
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                users.map((user) => {
+                  const imageSrc = getUserImageSrc(user);
+                  const initial = (user.name || user.email || 'U').charAt(0).toUpperCase();
+                  return (
                   <tr key={user.id}>
                     <td>
                       <div className="d-flex align-items-center gap-2">
-                        <img className="avatar-img avatar-sm" src={user.avatar} alt={user.name} />
+                        {imageSrc ? (
+                          <img
+                            className="avatar-img avatar-sm"
+                            src={imageSrc}
+                            alt={user.name}
+                            onError={(event) => {
+                              event.currentTarget.style.display = 'none';
+                              event.currentTarget.nextElementSibling?.classList.remove('d-none');
+                            }}
+                          />
+                        ) : null}
+                        <div className={`avatar-img avatar-sm bg-primary text-white d-flex align-items-center justify-content-center ${imageSrc ? 'd-none' : ''}`}>
+                          {initial}
+                        </div>
                         <div>
                           <p className="fw-semibold mb-0">{user.name}</p>
                           <p className="text-muted small mb-0">{user.email}</p>
@@ -173,7 +197,8 @@ export default function Users() {
                     <td>{user.joined}</td>
                     <td className="text-end"><Link className="btn btn-light btn-sm" to="/user-details">View</Link></td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>
