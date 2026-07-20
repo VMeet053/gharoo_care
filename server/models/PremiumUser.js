@@ -29,13 +29,38 @@ const premiumUserSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  upiId: {
+    type: String,
+    default: ''
+  },
+  paymentName: {
+    type: String,
+    default: ''
+  },
+  paymentMethod: {
+    type: String,
+    default: 'UPI'
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['Pending Approval', 'Approved'],
+    default: 'Pending Approval'
+  },
+  transactionNote: {
+    type: String,
+    default: ''
+  },
+  leadData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
   expiryDate: {
     type: Date,
     required: true
   },
   status: {
     type: String,
-    enum: ['Active', 'Expiring Soon', 'Expired'],
+    enum: ['Payment Pending', 'Active', 'Expiring Soon', 'Expired'],
     default: 'Active'
   }
 }, { timestamps: true });

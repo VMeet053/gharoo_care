@@ -799,9 +799,51 @@ body {
   margin-bottom: 18px;
 }
 
+.service-upi-panel {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
+  background: #f0fdf4;
+}
+
+.service-upi-panel p {
+  margin: 0 0 0.45rem;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.service-upi-panel .service-upi-title {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.service-upi-panel img {
+  width: 150px;
+  height: 150px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #dcfce7;
+  padding: 0.5rem;
+}
+
 @media (max-width: 767.98px) {
   .work-proof-grid {
     grid-template-columns: 1fr;
+  }
+
+  .service-upi-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .service-upi-panel img {
+    width: min(220px, 100%);
+    height: auto;
+    justify-self: center;
   }
 }
 

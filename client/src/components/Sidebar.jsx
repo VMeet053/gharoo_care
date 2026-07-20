@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const navSections = [
   {
@@ -51,6 +51,33 @@ const navSections = [
 
 export default function Sidebar({ isCollapsed, setIsCollapsed, closeMobileSidebar }) {
   const [openSections, setOpenSections] = useState(() => navSections.map(section => section.label));
+  const [pendingPremiumCount, setPendingPremiumCount] = useState(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchPendingCount = async () => {
+      try {
+        const res = await fetch('/api/premium-users/pending-count');
+        const data = await res.json();
+        if (isMounted && data.success) {
+          setPendingPremiumCount(Number(data.count) || 0);
+        }
+      } catch (err) {
+        console.error('Failed to fetch premium pending count:', err);
+      }
+    };
+
+    fetchPendingCount();
+    const intervalId = window.setInterval(fetchPendingCount, 30000);
+    window.addEventListener('premium-payments-updated', fetchPendingCount);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('premium-payments-updated', fetchPendingCount);
+    };
+  }, []);
 
   const toggleSection = (label) => {
     setOpenSections((prev) => 
@@ -107,6 +134,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, closeMobileSideba
                   >
                     <span className="nav-icon"><i className={`bi ${item.icon}`} aria-hidden="true"></i></span>
                     {!isCollapsed && <span className="nav-text">{item.text}</span>}
+                    {item.to === '/premium-user-list' && pendingPremiumCount > 0 && (
+                      <span className="nav-notification-badge" aria-label={`${pendingPremiumCount} pending premium payments`}>
+                        {pendingPremiumCount > 99 ? '99+' : pendingPremiumCount}
+                      </span>
+                    )}
                   </NavLink>
                 ))}
               </>

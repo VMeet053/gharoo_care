@@ -25,6 +25,15 @@ function serviceEarning(value) {
   return Math.round(Number(value || 0) * 0.2);
 }
 
+const UPI_ID = 'kalpeshgajera3-1@okaxis';
+const UPI_NAME = 'Kalpesh Gajera';
+
+function getUpiQrUrl(amount, note) {
+  const safeAmount = Number(amount || 0).toFixed(2);
+  const upiUri = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent(UPI_NAME)}&am=${safeAmount}&cu=INR&tn=${encodeURIComponent(note)}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(upiUri)}`;
+}
+
 export default function WorkOrderDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -40,7 +49,7 @@ export default function WorkOrderDetail() {
     serviceDetails: '',
     partsChanged: '',
     finalCost: 0,
-    paymentMethod: 'cash'
+    paymentMethod: 'upi'
   });
 
   useEffect(() => {
@@ -67,7 +76,7 @@ export default function WorkOrderDetail() {
         serviceDetails: data.serviceDetails || '',
         partsChanged: data.partsChanged || '',
         finalCost: Number(data.finalCost || 0),
-        paymentMethod: data.paymentMethod || 'cash'
+        paymentMethod: 'upi'
       });
     } catch (err) {
       console.error('Error fetching work order:', err);
@@ -182,7 +191,7 @@ export default function WorkOrderDetail() {
       partsChanged: partName,
       finalCost: Number(formData.finalCost || 0),
       earnings: serviceEarning(formData.finalCost),
-      paymentMethod: formData.paymentMethod,
+      paymentMethod: 'upi',
       status: 'completed',
       completedAt: new Date()
     }, 'Work completed and payment entry saved.');
@@ -206,6 +215,9 @@ export default function WorkOrderDetail() {
       </div>
     );
   }
+
+  const paymentNote = `Gharoo Care ${workOrder.serviceType || 'Service'} Payment`;
+  const serviceQrUrl = getUpiQrUrl(formData.finalCost, paymentNote);
 
   return (
     <div className="page-wrap">
@@ -316,20 +328,22 @@ export default function WorkOrderDetail() {
               <p className="text-muted small mt-2 mb-0">If only plan/service work was done, keep this as {'\u20b9'}0.</p>
             </div>
 
-            <div className="row g-3">
+            <div className="row g-3 align-items-stretch">
               <div className="col-md-6">
                 <label className="form-label">Final amount</label>
                 <input type="number" className="form-control" value={formData.finalCost} onChange={(e) => setFormData({ ...formData, finalCost: Number(e.target.value) })} />
                 <p className="text-muted small mt-2 mb-0">Service earning: {money(serviceEarning(formData.finalCost))} (20%)</p>
               </div>
               <div className="col-md-6">
-                <label className="form-label">Payment mode</label>
-                <select className="form-select" value={formData.paymentMethod} onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}>
-                  <option value="cash">Cash</option>
-                  <option value="upi">Online - UPI</option>
-                  <option value="card">Online - Card</option>
-                  <option value="net-banking">Online - Net Banking</option>
-                </select>
+                <div className="service-upi-panel">
+                  <div>
+                    <p className="service-upi-title">Scan & Pay with GPay / UPI</p>
+                    <p>Payee: <strong>{UPI_NAME}</strong></p>
+                    <p>UPI ID: <strong>{UPI_ID}</strong></p>
+                    <p>Amount: <strong>{money(formData.finalCost)}</strong></p>
+                  </div>
+                  <img src={serviceQrUrl} alt={`UPI QR for ${money(formData.finalCost)}`} />
+                </div>
               </div>
             </div>
 
@@ -358,7 +372,7 @@ export default function WorkOrderDetail() {
             <p><strong>Spare Part:</strong> {workOrder.partsChanged || 'No spare part / only service'}</p>
             <p><strong>Final Amount:</strong> {money(workOrder.finalCost)}</p>
             <p><strong>Service Earning:</strong> {money(serviceEarning(workOrder.finalCost))} (20%)</p>
-            <p><strong>Payment Method:</strong> {workOrder.paymentMethod === 'cash' ? 'Cash' : `Online (${workOrder.paymentMethod})`}</p>
+            <p><strong>Payment Method:</strong> QR / UPI</p>
           </div>
         </div>
       )}

@@ -62,10 +62,7 @@ export default function Dashboard() {
   if (!user) return null;
 
   const completedOrders = workOrders.filter((w) => w.status === 'completed');
-  const cashOrders = completedOrders.filter((w) => w.paymentMethod === 'cash');
-  const onlineOrders = completedOrders.filter((w) => w.paymentMethod && w.paymentMethod !== 'cash');
-  const cashTotal = cashOrders.reduce((sum, order) => sum + Number(order.finalCost || order.earnings || 0), 0);
-  const onlineTotal = onlineOrders.reduce((sum, order) => sum + Number(order.finalCost || order.earnings || 0), 0);
+  const upiTotal = completedOrders.reduce((sum, order) => sum + Number(order.finalCost || order.earnings || 0), 0);
   const totalEarnings = completedOrders.reduce((sum, order) => sum + getOrderEarning(order), 0);
 
   const stats = [
@@ -74,8 +71,7 @@ export default function Dashboard() {
     { label: 'Pending', value: workOrders.filter((w) => w.status === 'pending' || w.status === 'assigned').length, icon: 'bi-clock-history', color: 'warning' },
     { label: 'Completed', value: completedOrders.length, icon: 'bi-check-circle', color: 'success' },
     { label: 'My Earnings', value: money(totalEarnings), caption: '20% service share', icon: 'bi-currency-rupee', color: 'info', to: '/earnings' },
-    { label: 'Cash Collection', value: money(cashTotal), caption: `${cashOrders.length} cash entries`, icon: 'bi-cash-stack', color: 'success' },
-    { label: 'Online Collection', value: money(onlineTotal), caption: `${onlineOrders.length} online entries`, icon: 'bi-phone', color: 'primary' }
+    { label: 'QR / UPI Collection', value: money(upiTotal), caption: `${completedOrders.length} paid entries`, icon: 'bi-qr-code', color: 'primary' }
   ];
 
   return (

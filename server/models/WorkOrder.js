@@ -88,8 +88,8 @@ const workOrderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['cash', 'upi', 'card', 'net-banking'],
-    default: 'cash'
+    enum: ['upi'],
+    default: 'upi'
   },
   startedAt: {
     type: Date,

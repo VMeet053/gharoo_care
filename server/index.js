@@ -1244,6 +1244,7 @@ app.post('/api/leads', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Current location is required' });
     }
     const premiumUser = await PremiumUser.findOne({
+      status: 'Active',
       $or: [
         { email: String(leadData.email || '').toLowerCase() },
         { phone: leadData.phone }
@@ -1460,9 +1461,38 @@ app.get('/api/premium-users', async (req, res) => {
   }
 });
 
+app.get('/api/premium-users/pending-count', async (req, res) => {
+  try {
+    if (isMongoConnected) {
+      const count = await PremiumUser.countDocuments({ status: 'Payment Pending' });
+      return res.json({ success: true, count });
+    }
+    const count = inMemoryPremiumUsers.filter((user) => user.status === 'Payment Pending').length;
+    res.json({ success: true, count });
+  } catch (err) {
+    console.error('Get pending premium count error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 app.post('/api/premium-users', async (req, res) => {
   try {
-    const { name, email, phone, plan, price, city, address } = req.body;
+    const {
+      name,
+      email,
+      phone,
+      plan,
+      price,
+      city,
+      address,
+      status,
+      upiId,
+      paymentName,
+      paymentMethod,
+      paymentStatus,
+      transactionNote,
+      leadData
+    } = req.body;
     
     // Default expiryDate to 1 year from now
     const expiryDate = new Date();
@@ -1477,8 +1507,14 @@ app.post('/api/premium-users', async (req, res) => {
         price: price || '$0',
         city: city || '',
         address: address || '',
+        upiId: upiId || '',
+        paymentName: paymentName || '',
+        paymentMethod: paymentMethod || 'UPI',
+        paymentStatus: paymentStatus || (status === 'Payment Pending' ? 'Pending Approval' : 'Approved'),
+        transactionNote: transactionNote || '',
+        leadData: leadData || null,
         expiryDate,
-        status: 'Active'
+        status: status || 'Active'
       });
       await newUser.save();
       res.json({ success: true, message: 'Premium user registered successfully!', data: newUser });
@@ -1492,8 +1528,14 @@ app.post('/api/premium-users', async (req, res) => {
         price: price || '$0',
         city: city || '',
         address: address || '',
+        upiId: upiId || '',
+        paymentName: paymentName || '',
+        paymentMethod: paymentMethod || 'UPI',
+        paymentStatus: paymentStatus || (status === 'Payment Pending' ? 'Pending Approval' : 'Approved'),
+        transactionNote: transactionNote || '',
+        leadData: leadData || null,
         expiryDate: expiryDate.toISOString(),
-        status: 'Active',
+        status: status || 'Active',
         createdAt: new Date().toISOString()
       };
       inMemoryPremiumUsers.push(newUser);
@@ -1501,6 +1543,72 @@ app.post('/api/premium-users', async (req, res) => {
     }
   } catch (err) {
     console.error('Create premium user error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+app.put('/api/premium-users/:id/approve-payment', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (isMongoConnected) {
+      const premiumUser = await PremiumUser.findById(id);
+      if (!premiumUser) {
+        return res.status(404).json({ success: false, message: 'Premium user not found' });
+      }
+
+      premiumUser.status = 'Active';
+      premiumUser.paymentStatus = 'Approved';
+      await premiumUser.save();
+
+      let lead = null;
+      if (premiumUser.leadData) {
+        const existingLead = await Lead.findOne({
+          email: premiumUser.email,
+          phone: premiumUser.phone,
+          premiumPlan: premiumUser.plan,
+          premiumPrice: premiumUser.price
+        });
+
+        if (!existingLead) {
+          const newLead = new Lead({
+            ...premiumUser.leadData,
+            isPremium: true,
+            premiumPlan: premiumUser.plan,
+            premiumPrice: premiumUser.price,
+            status: 'New'
+          });
+          await newLead.save();
+          lead = formatLead(newLead);
+        } else {
+          lead = formatLead(existingLead);
+        }
+      }
+
+      return res.json({
+        success: true,
+        message: 'Payment approved successfully!',
+        data: premiumUser,
+        lead
+      });
+    }
+
+    const index = inMemoryPremiumUsers.findIndex((user) => String(user.id) === String(id));
+    if (index === -1) {
+      return res.status(404).json({ success: false, message: 'Premium user not found' });
+    }
+    inMemoryPremiumUsers[index] = {
+      ...inMemoryPremiumUsers[index],
+      status: 'Active',
+      paymentStatus: 'Approved'
+    };
+    res.json({
+      success: true,
+      message: 'Payment approved successfully!',
+      data: inMemoryPremiumUsers[index]
+    });
+  } catch (err) {
+    console.error('Approve premium payment error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -1611,7 +1719,7 @@ app.put('/api/work-orders/:id', async (req, res) => {
       updateData.serviceDetails = workDetails;
       updateData.finalCost = Number(updateData.finalCost || 0);
       updateData.earnings = Math.round(updateData.finalCost * 0.2);
-      updateData.paymentMethod = updateData.paymentMethod || 'cash';
+      updateData.paymentMethod = 'upi';
     }
     
     const updatedWorkOrder = await WorkOrder.findByIdAndUpdate(id, updateData, { new: true }).populate('assignedTo', 'firstName lastName email');

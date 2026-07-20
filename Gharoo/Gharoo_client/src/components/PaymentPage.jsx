@@ -3,31 +3,53 @@ import { useNavigate } from 'react-router-dom'
 import './PaymentPage.css'
 import { useToast } from './ToastProvider'
 
+const UPI_ID = 'kalpeshgajera3-1@okaxis'
+const UPI_NAME = 'Kalpesh Gajera'
+
+function parsePlanAmount(price = '') {
+  const amount = Number(String(price).replace(/[^0-9.]/g, ''))
+  return Number.isFinite(amount) ? amount : 0
+}
+
+function readLocalStorageJson(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key))
+  } catch {
+    return null
+  }
+}
+
 export default function PaymentPage() {
   const navigate = useNavigate()
   const { showToast } = useToast()
-  const userFormData = JSON.parse(localStorage.getItem('userFormData'))
+  const userFormData = readLocalStorageJson('userFormData')
+  const selectedPlan = readLocalStorageJson('selectedPlan')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('')
 
   if (!userFormData) {
     navigate('/booking')
     return null
   }
 
+  const planAmount = parsePlanAmount(selectedPlan?.price)
+  const paymentAmount = planAmount.toFixed(2)
+  const customerName = [userFormData.firstName, userFormData.lastName].filter(Boolean).join(' ')
+  const transactionNote = `Gharoo Care ${selectedPlan?.name || 'Premium'} Plan`
+  const upiUri = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent(UPI_NAME)}&am=${paymentAmount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(upiUri)}`
+
   const handlePayment = async () => {
-    if (!selectedPaymentMethod) {
-      showToast('Please select a payment method.', 'warning', 'Payment method required')
+    if (!selectedPlan || !planAmount) {
+      showToast('Please select a plan before payment.', 'warning', 'Plan required')
       return
     }
     if (!userFormData.currentLocation) {
       showToast('Please go back and add current location.', 'warning', 'Current location required')
       return
     }
+
     setIsSubmitting(true)
     try {
-      const selectedPlan = JSON.parse(localStorage.getItem('selectedPlan')) || null
-      const customerName = [userFormData.firstName, userFormData.lastName].filter(Boolean).join(' ')
       const leadData = {
         name: customerName,
         phone: userFormData.contactNumber,
@@ -39,46 +61,42 @@ export default function PaymentPage() {
         area: userFormData.area,
         service: 'Home Repair',
         status: 'New',
-        isPremium: Boolean(selectedPlan),
-        premiumPlan: selectedPlan?.name || '',
-        premiumPrice: selectedPlan?.price || ''
+        isPremium: true,
+        premiumPlan: selectedPlan.name,
+        premiumPrice: selectedPlan.price
       }
 
-      const res = await fetch('/api/leads', {
+      const premiumUserData = {
+        name: customerName,
+        email: userFormData.email,
+        phone: userFormData.contactNumber,
+        plan: selectedPlan.name,
+        price: selectedPlan.price,
+        city: userFormData.city,
+        address: userFormData.fullAddress,
+        status: 'Payment Pending',
+        paymentStatus: 'Pending Approval',
+        paymentMethod: 'UPI',
+        upiId: UPI_ID,
+        paymentName: UPI_NAME,
+        transactionNote,
+        leadData
+      }
+
+      const res = await fetch('/api/premium-users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(leadData)
+        body: JSON.stringify(premiumUserData)
       })
 
       const data = await res.json()
       if (data.success) {
-        // Also register as a premium user
-        try {
-          const premiumPlan = selectedPlan || { name: 'Premium', price: '$19.99' };
-          const premiumUserData = {
-            name: customerName,
-            email: userFormData.email,
-            phone: userFormData.contactNumber,
-            plan: premiumPlan.name,
-            price: premiumPlan.price,
-            city: userFormData.fullAddress,
-            address: userFormData.fullAddress
-          };
-          await fetch('/api/premium-users', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(premiumUserData)
-          });
-        } catch (premiumErr) {
-          console.error('Failed to register premium user:', premiumErr);
-        }
-
-        showToast('Booking confirmed. We will contact you soon.', 'success', 'Booking confirmed')
+        showToast('Payment submitted. Admin approval pending.', 'success', 'Payment sent')
         localStorage.removeItem('userFormData')
         localStorage.removeItem('selectedPlan')
         setTimeout(() => navigate('/'), 900)
       } else {
-        showToast('Something went wrong. Please try again.', 'error', 'Payment failed')
+        showToast(data.message || 'Something went wrong. Please try again.', 'error', 'Payment failed')
       }
     } catch (err) {
       console.error(err)
@@ -92,52 +110,37 @@ export default function PaymentPage() {
     <div className="payment-container">
       <div className="payment-card">
         <h2>Payment Details</h2>
-        
+
         <div className="user-details">
           <h3>Booking Summary</h3>
-          <p><strong>Name:</strong> {userFormData.firstName} {userFormData.lastName}</p>
+          <p><strong>Name:</strong> {customerName}</p>
           <p><strong>Email:</strong> {userFormData.email}</p>
           <p><strong>Contact:</strong> {userFormData.contactNumber}</p>
           <p><strong>Address:</strong> {userFormData.fullAddress}</p>
           <p><strong>Current Location:</strong> {userFormData.currentLocation ? <a href={userFormData.currentLocation} target="_blank" rel="noreferrer">Open map</a> : 'Required'}</p>
+          <p><strong>Plan:</strong> {selectedPlan?.name || '-'}</p>
+          <p><strong>Amount:</strong> Rs. {planAmount.toLocaleString('en-IN')}</p>
         </div>
 
-        <div className="payment-methods">
-          <h3>Select Payment Method</h3>
-          <div className="payment-options">
-            <button 
-              className={`payment-option ${selectedPaymentMethod === 'card' ? 'selected' : ''}`}
-              onClick={() => setSelectedPaymentMethod('card')}
-            >
-              <span className="icon">💳</span> Credit/Debit Card
-            </button>
-            <button 
-              className={`payment-option ${selectedPaymentMethod === 'upi' ? 'selected' : ''}`}
-              onClick={() => setSelectedPaymentMethod('upi')}
-            >
-              <span className="icon">📱</span> UPI
-            </button>
-            <button 
-              className={`payment-option ${selectedPaymentMethod === 'netbanking' ? 'selected' : ''}`}
-              onClick={() => setSelectedPaymentMethod('netbanking')}
-            >
-              <span className="icon">🏦</span> Net Banking
-            </button>
-            <button 
-              className={`payment-option ${selectedPaymentMethod === 'cod' ? 'selected' : ''}`}
-              onClick={() => setSelectedPaymentMethod('cod')}
-            >
-              <span className="icon">💵</span> Cash on Delivery
-            </button>
+        <div className="upi-payment-panel">
+          <div className="upi-payment-copy">
+            <h3>Scan & Pay with GPay / UPI</h3>
+            <p>Payee: <strong>{UPI_NAME}</strong></p>
+            <p>UPI ID: <strong>{UPI_ID}</strong></p>
+            <p>Amount: <strong>Rs. {planAmount.toLocaleString('en-IN')}</strong></p>
+          </div>
+          <div className="qr-box">
+            <img src={qrUrl} alt={`UPI QR for Rs. ${planAmount}`} />
+            <span>QR includes selected plan amount</span>
           </div>
         </div>
 
-        <button 
-          onClick={handlePayment} 
+        <button
+          onClick={handlePayment}
           className="btn primary btn-shine pay-btn"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Processing...' : 'Confirm & Pay'}
+          {isSubmitting ? 'Submitting...' : 'I Have Paid'}
         </button>
         <button onClick={() => navigate('/booking')} className="btn secondary">
           Back to Form

@@ -5,28 +5,30 @@ export default function PremiumUserList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [approvingId, setApprovingId] = useState('');
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    const fetchPremiumUsers = async () => {
-      try {
-        const res = await fetch('/api/premium-users');
-        const data = await res.json();
-        if (data.success) {
-          setUsers(data.data || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch premium users:', err);
-      } finally {
-        setLoading(false);
+  const fetchPremiumUsers = async () => {
+    try {
+      const res = await fetch('/api/premium-users');
+      const data = await res.json();
+      if (data.success) {
+        setUsers(data.data || []);
       }
-    };
+    } catch (err) {
+      console.error('Failed to fetch premium users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchPremiumUsers();
   }, []);
 
   const totalPremium = users.length;
   const activePremium = users.filter(u => u.status === 'Active').length;
-  const expiringPremium = users.filter(u => u.status === 'Expiring Soon').length;
+  const pendingPremium = users.filter(u => u.status === 'Payment Pending').length;
   const expiredPremium = users.filter(u => u.status === 'Expired').length;
 
   // Filter users
@@ -38,6 +40,8 @@ export default function PremiumUserList() {
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
+      case 'Payment Pending':
+        return 'text-bg-danger';
       case 'Active':
         return 'text-bg-success';
       case 'Expiring Soon':
@@ -46,6 +50,26 @@ export default function PremiumUserList() {
         return 'text-bg-danger';
       default:
         return 'text-bg-secondary';
+    }
+  };
+
+  const handleApprovePayment = async (userId) => {
+    setApprovingId(userId);
+    try {
+      const res = await fetch(`/api/premium-users/${userId}/approve-payment`, {
+        method: 'PUT'
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.message || 'Failed to approve payment');
+      }
+      await fetchPremiumUsers();
+      window.dispatchEvent(new Event('premium-payments-updated'));
+    } catch (err) {
+      console.error('Failed to approve payment:', err);
+      alert('Failed to approve payment');
+    } finally {
+      setApprovingId('');
     }
   };
 
@@ -109,13 +133,13 @@ export default function PremiumUserList() {
         <div className="col-12 col-sm-6 col-xl-3">
           <article className="metric-card metric-warning">
             <div className="metric-top">
-              <span className="metric-label">Expiring Soon</span>
-              <span className="metric-icon"><i className="bi bi-hourglass-split" aria-hidden="true"></i></span>
+              <span className="metric-label">Payment Pending</span>
+              <span className="metric-icon"><i className="bi bi-bell" aria-hidden="true"></i></span>
             </div>
-            <div className="metric-value">{expiringPremium}</div>
+            <div className="metric-value">{pendingPremium}</div>
             <div className="metric-meta">
               <span className="text-muted">-</span>
-              <span>next 7 days</span>
+              <span>needs approval</span>
             </div>
           </article>
         </div>
@@ -159,6 +183,8 @@ export default function PremiumUserList() {
               <tr>
                 <th scope="col">User</th>
                 <th scope="col">Plan</th>
+                <th scope="col">Amount</th>
+                <th scope="col">UPI</th>
                 <th scope="col">City</th>
                 <th scope="col">Expiry Date</th>
                 <th scope="col">Status</th>
@@ -168,7 +194,7 @@ export default function PremiumUserList() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-5">
+                  <td colSpan="8" className="text-center py-5">
                     <div className="spinner-border text-primary" role="status">
                       <span className="visually-hidden">Loading...</span>
                     </div>
@@ -176,7 +202,7 @@ export default function PremiumUserList() {
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-5">
+                  <td colSpan="8" className="text-center py-5">
                     <div className="blank-icon mx-auto mb-3">
                       <i className="bi bi-inbox"></i>
                     </div>
@@ -199,11 +225,29 @@ export default function PremiumUserList() {
                       </div>
                     </td>
                     <td><span className={`badge ${getPlanBadgeClass(user.plan)}`}>{user.plan}</span></td>
+                    <td>{user.price || '-'}</td>
+                    <td>
+                      <div className="small">
+                        <div className="fw-semibold">{user.paymentName || '-'}</div>
+                        <div className="text-muted">{user.upiId || '-'}</div>
+                      </div>
+                    </td>
                     <td>{user.city}</td>
                     <td>{user.expiryDate ? new Date(user.expiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</td>
                     <td><span className={`badge ${getStatusBadgeClass(user.status)}`}>{user.status}</span></td>
                     <td className="text-end">
-                      <button className="btn btn-light btn-sm">View</button>
+                      {user.status === 'Payment Pending' ? (
+                        <button
+                          className="btn btn-success btn-sm"
+                          type="button"
+                          disabled={approvingId === user.id}
+                          onClick={() => handleApprovePayment(user.id)}
+                        >
+                          {approvingId === user.id ? 'Approving...' : 'Approve Payment'}
+                        </button>
+                      ) : (
+                        <button className="btn btn-light btn-sm">View</button>
+                      )}
                     </td>
                   </tr>
                 ))
