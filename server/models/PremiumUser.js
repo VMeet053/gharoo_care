@@ -17,6 +17,11 @@ const premiumUserSchema = new mongoose.Schema({
     type: String,
     default: 'Premium'
   },
+  premiumMemberId: {
+    type: String,
+    default: '',
+    index: true
+  },
   price: {
     type: String,
     default: '$0'
@@ -54,6 +59,24 @@ const premiumUserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: null
   },
+  serviceLimit: {
+    type: Number,
+    default: 0
+  },
+  servicesUsed: {
+    type: Number,
+    default: 0
+  },
+  serviceUsage: [{
+    workOrderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'WorkOrder'
+    },
+    usedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   expiryDate: {
     type: Date,
     required: true

@@ -43,13 +43,17 @@ export default function WorkOrderDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState('');
+  const [checkingPremium, setCheckingPremium] = useState(false);
+  const [premiumInfo, setPremiumInfo] = useState(null);
+  const [premiumMessage, setPremiumMessage] = useState('');
   const [formData, setFormData] = useState({
     beforeImage: '',
     afterImage: '',
     serviceDetails: '',
     partsChanged: '',
     finalCost: 0,
-    paymentMethod: 'upi'
+    paymentMethod: 'upi',
+    premiumMemberId: ''
   });
 
   useEffect(() => {
@@ -76,8 +80,21 @@ export default function WorkOrderDetail() {
         serviceDetails: data.serviceDetails || '',
         partsChanged: data.partsChanged || '',
         finalCost: Number(data.finalCost || 0),
-        paymentMethod: 'upi'
+        paymentMethod: 'upi',
+        premiumMemberId: data.premiumMemberId || ''
       });
+      if (data.premiumMemberId) {
+        setPremiumInfo({
+          premiumMemberId: data.premiumMemberId,
+          plan: data.premiumPlan,
+          remainingServices: data.premiumServiceCovered ? 1 : 0,
+          serviceLimit: data.premiumServiceUsageNumber || 0,
+          usedThisYear: data.premiumServiceUsageNumber || 0
+        });
+      } else {
+        setPremiumInfo(null);
+        setPremiumMessage('');
+      }
     } catch (err) {
       console.error('Error fetching work order:', err);
       showToast('Could not load work order.', 'error');
@@ -100,11 +117,54 @@ export default function WorkOrderDetail() {
   const handlePartChange = (e) => {
     const partId = e.target.value;
     const part = services.find((service) => String(service._id || service.id) === String(partId));
+    const premiumHasFreeService = premiumInfo && Number(premiumInfo.remainingServices || 0) > 0;
     setFormData((prev) => ({
       ...prev,
       partsChanged: partId,
-      finalCost: part ? Number(part.price || 0) : 0
+      finalCost: part ? Number(part.price || 0) : (premiumHasFreeService ? 0 : prev.finalCost)
     }));
+  };
+
+  const handleApplyPremiumId = async () => {
+    const premiumId = String(formData.premiumMemberId || '').trim().toUpperCase();
+    if (!premiumId) {
+      setPremiumInfo(null);
+      setPremiumMessage('Enter Premium ID to check free service.');
+      return;
+    }
+
+    setCheckingPremium(true);
+    setPremiumMessage('');
+    try {
+      const res = await fetch(`/api/premium-users/lookup/${encodeURIComponent(premiumId)}`);
+      const data = await res.json();
+      if (!data.success) {
+        setPremiumInfo(null);
+        setPremiumMessage(data.message || 'Premium ID not valid.');
+        showToast(data.message || 'Premium ID not valid.', 'warning');
+        return;
+      }
+
+      setPremiumInfo(data.premiumUser);
+      setFormData((prev) => ({
+        ...prev,
+        premiumMemberId: data.premiumUser.premiumMemberId,
+        finalCost: !prev.partsChanged && data.premiumUser.remainingServices > 0 ? 0 : prev.finalCost
+      }));
+      if (data.premiumUser.remainingServices > 0) {
+        setPremiumMessage(`${data.premiumUser.plan}: ${data.premiumUser.remainingServices} free service left this year.`);
+        showToast('Premium ID applied. Service-only job is free.', 'success');
+      } else {
+        setPremiumMessage(`${data.premiumUser.plan}: free service limit over. Payment is required.`);
+        showToast('Free service limit over. Payment is required.', 'warning');
+      }
+    } catch (err) {
+      console.error(err);
+      setPremiumMessage('Could not check Premium ID.');
+      showToast('Could not check Premium ID.', 'error');
+    } finally {
+      setCheckingPremium(false);
+    }
   };
 
   const handleImageUpload = async (e, type) => {
@@ -192,6 +252,7 @@ export default function WorkOrderDetail() {
       finalCost: Number(formData.finalCost || 0),
       earnings: serviceEarning(formData.finalCost),
       paymentMethod: 'upi',
+      premiumMemberId: String(formData.premiumMemberId || '').trim().toUpperCase(),
       status: 'completed',
       completedAt: new Date()
     }, 'Work completed and payment entry saved.');
@@ -218,6 +279,7 @@ export default function WorkOrderDetail() {
 
   const paymentNote = `Gharoo Care ${workOrder.serviceType || 'Service'} Payment`;
   const serviceQrUrl = getUpiQrUrl(formData.finalCost, paymentNote);
+  const paymentRequired = Number(formData.finalCost || 0) > 0;
 
   return (
     <div className="page-wrap">
@@ -316,6 +378,31 @@ export default function WorkOrderDetail() {
             </div>
 
             <div className="mb-3">
+              <label className="form-label">Premium User ID</label>
+              <div className="input-group">
+                <input
+                  type="text"
+                  className="form-control"
+                  value={formData.premiumMemberId}
+                  onChange={(e) => {
+                    setFormData({ ...formData, premiumMemberId: e.target.value.toUpperCase() });
+                    setPremiumInfo(null);
+                    setPremiumMessage('');
+                  }}
+                  placeholder="Example: GCP-123456-ABCD"
+                />
+                <button type="button" className="btn btn-outline-primary" onClick={handleApplyPremiumId} disabled={checkingPremium}>
+                  {checkingPremium ? 'Checking...' : 'Apply'}
+                </button>
+              </div>
+              {premiumMessage && (
+                <p className={`small mt-2 mb-0 ${premiumInfo?.remainingServices > 0 ? 'text-success' : 'text-warning'}`}>
+                  {premiumMessage}
+                </p>
+              )}
+            </div>
+
+            <div className="mb-3">
               <label className="form-label">Spare part changed</label>
               <select className="form-select" value={formData.partsChanged} onChange={handlePartChange}>
                 <option value="">No spare part / only service - {'\u20b9'}0</option>
@@ -335,15 +422,26 @@ export default function WorkOrderDetail() {
                 <p className="text-muted small mt-2 mb-0">Service earning: {money(serviceEarning(formData.finalCost))} (20%)</p>
               </div>
               <div className="col-md-6">
-                <div className="service-upi-panel">
-                  <div>
-                    <p className="service-upi-title">Scan & Pay with GPay / UPI</p>
-                    <p>Payee: <strong>{UPI_NAME}</strong></p>
-                    <p>UPI ID: <strong>{UPI_ID}</strong></p>
-                    <p>Amount: <strong>{money(formData.finalCost)}</strong></p>
+                {paymentRequired ? (
+                  <div className="service-upi-panel">
+                    <div>
+                      <p className="service-upi-title">Scan & Pay with GPay / UPI</p>
+                      <p>Payee: <strong>{UPI_NAME}</strong></p>
+                      <p>UPI ID: <strong>{UPI_ID}</strong></p>
+                      <p>Amount: <strong>{money(formData.finalCost)}</strong></p>
+                    </div>
+                    <img src={serviceQrUrl} alt={`UPI QR for ${money(formData.finalCost)}`} />
                   </div>
-                  <img src={serviceQrUrl} alt={`UPI QR for ${money(formData.finalCost)}`} />
-                </div>
+                ) : (
+                  <div className="service-upi-panel service-free-panel">
+                    <div>
+                      <p className="service-upi-title">No Payment Required</p>
+                      <p>Premium service-only job is covered.</p>
+                      <p>Premium ID: <strong>{formData.premiumMemberId || '-'}</strong></p>
+                    </div>
+                    <i className="bi bi-check-circle-fill"></i>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -373,6 +471,8 @@ export default function WorkOrderDetail() {
             <p><strong>Final Amount:</strong> {money(workOrder.finalCost)}</p>
             <p><strong>Service Earning:</strong> {money(serviceEarning(workOrder.finalCost))} (20%)</p>
             <p><strong>Payment Method:</strong> QR / UPI</p>
+            {workOrder.premiumMemberId && <p><strong>Premium ID:</strong> {workOrder.premiumMemberId}</p>}
+            {workOrder.premiumServiceCovered && <p><strong>Premium Use:</strong> Free service #{workOrder.premiumServiceUsageNumber}</p>}
           </div>
         </div>
       )}

@@ -831,6 +831,17 @@ body {
   padding: 0.5rem;
 }
 
+.service-free-panel {
+  border-color: #86efac;
+  background: #ecfdf5;
+}
+
+.service-free-panel i {
+  justify-self: center;
+  color: #16a34a;
+  font-size: 3rem;
+}
+
 @media (max-width: 767.98px) {
   .work-proof-grid {
     grid-template-columns: 1fr;

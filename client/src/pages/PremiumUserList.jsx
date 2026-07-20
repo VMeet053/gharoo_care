@@ -189,6 +189,7 @@ export default function PremiumUserList() {
               <tr>
                 <th scope="col">User</th>
                 <th scope="col">Plan</th>
+                <th scope="col">Premium ID</th>
                 <th scope="col">Amount</th>
                 <th scope="col">Status</th>
                 <th scope="col" className="text-end">Accept</th>
@@ -200,7 +201,7 @@ export default function PremiumUserList() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5">
+                  <td colSpan="9" className="text-center py-5">
                     <div className="spinner-border text-primary" role="status">
                       <span className="visually-hidden">Loading...</span>
                     </div>
@@ -208,7 +209,7 @@ export default function PremiumUserList() {
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center py-5">
+                  <td colSpan="9" className="text-center py-5">
                     <div className="blank-icon mx-auto mb-3">
                       <i className="bi bi-inbox"></i>
                     </div>
@@ -231,6 +232,16 @@ export default function PremiumUserList() {
                       </div>
                     </td>
                     <td><span className={`badge ${getPlanBadgeClass(user.plan)}`}>{user.plan}</span></td>
+                    <td>
+                      {user.premiumMemberId ? (
+                        <div>
+                          <div className="fw-semibold">{user.premiumMemberId}</div>
+                          <div className="text-muted small">{Number(user.servicesUsed || 0)} / {Number(user.serviceLimit || 0)} used</div>
+                        </div>
+                      ) : (
+                        <span className="text-muted small">After accept</span>
+                      )}
+                    </td>
                     <td>{user.price || '-'}</td>
                     <td><span className={`badge ${getStatusBadgeClass(user.status)}`}>{user.status}</span></td>
                     <td className="text-end">

@@ -106,6 +106,27 @@ const workOrderSchema = new mongoose.Schema({
   premiumPrice: {
     type: String,
     default: ''
+  },
+  premiumMemberId: {
+    type: String,
+    default: ''
+  },
+  premiumUserId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PremiumUser',
+    default: null
+  },
+  premiumServiceCovered: {
+    type: Boolean,
+    default: false
+  },
+  premiumServiceUsageNumber: {
+    type: Number,
+    default: 0
+  },
+  paymentRequired: {
+    type: Boolean,
+    default: true
   }
 }, { timestamps: true });
 

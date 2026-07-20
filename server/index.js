@@ -56,6 +56,40 @@ let inMemoryUsers = [];
 let inMemoryPremiumUsers = [];
 let nextUserId = 1;
 
+const parseServiceLimit = (plan = {}) => {
+  const text = [
+    plan.name,
+    plan.serviceLimit,
+    ...(Array.isArray(plan.features) ? plan.features : [])
+  ].filter(Boolean).join(' ');
+  const match = text.match(/(\d+)\s*(free\s*)?(service|services|visit|visits)/i);
+  if (match) return Number(match[1]);
+  if (/(service|services|visit|visits)/i.test(text)) {
+    const fallbackMatch = text.match(/\d+/);
+    return fallbackMatch ? Number(fallbackMatch[0]) : 0;
+  }
+  return 0;
+};
+
+const generatePremiumMemberId = () => {
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `GCP-${Date.now().toString().slice(-6)}-${random}`;
+};
+
+const getPlanServiceLimit = async (planName) => {
+  if (!planName) return 0;
+  const settings = isMongoConnected ? await PanelSettings.findOne() : { pricing: inMemorySettings?.pricing };
+  const plans = settings?.pricing?.plans || [];
+  const plan = plans.find((item) => String(item.name || '').toLowerCase() === String(planName).toLowerCase());
+  return parseServiceLimit(plan || { name: planName });
+};
+
+const getCurrentPremiumUsage = (premiumUser) => {
+  const now = new Date();
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  return (premiumUser.serviceUsage || []).filter((entry) => new Date(entry.usedAt) >= yearStart).length;
+};
+
 // Helper function to get default settings
 const getDefaultSettings = () => ({
   hero: {
@@ -1495,7 +1529,9 @@ app.post('/api/premium-users', async (req, res) => {
       paymentMethod,
       paymentStatus,
       transactionNote,
-      leadData
+      leadData,
+      premiumMemberId,
+      serviceLimit
     } = req.body;
     
     // Default expiryDate to 1 year from now
@@ -1517,6 +1553,8 @@ app.post('/api/premium-users', async (req, res) => {
         paymentStatus: paymentStatus || (status === 'Payment Pending' ? 'Pending Approval' : 'Approved'),
         transactionNote: transactionNote || '',
         leadData: leadData || null,
+        premiumMemberId: premiumMemberId || '',
+        serviceLimit: Number(serviceLimit || 0),
         expiryDate,
         status: status || 'Active'
       });
@@ -1538,6 +1576,10 @@ app.post('/api/premium-users', async (req, res) => {
         paymentStatus: paymentStatus || (status === 'Payment Pending' ? 'Pending Approval' : 'Approved'),
         transactionNote: transactionNote || '',
         leadData: leadData || null,
+        premiumMemberId: premiumMemberId || '',
+        serviceLimit: Number(serviceLimit || 0),
+        servicesUsed: 0,
+        serviceUsage: [],
         expiryDate: expiryDate.toISOString(),
         status: status || 'Active',
         createdAt: new Date().toISOString()
@@ -1547,6 +1589,68 @@ app.post('/api/premium-users', async (req, res) => {
     }
   } catch (err) {
     console.error('Create premium user error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+app.get('/api/premium-users/lookup/:memberId', async (req, res) => {
+  try {
+    const memberId = String(req.params.memberId || '').trim().toUpperCase();
+    if (!memberId) {
+      return res.status(400).json({ success: false, message: 'Premium ID is required' });
+    }
+
+    if (isMongoConnected) {
+      const premiumUser = await PremiumUser.findOne({ premiumMemberId: memberId, status: 'Active' });
+      if (!premiumUser) {
+        return res.status(404).json({ success: false, message: 'Premium ID not found or not active' });
+      }
+      const now = new Date();
+      if (premiumUser.expiryDate && new Date(premiumUser.expiryDate) < now) {
+        return res.status(400).json({ success: false, message: 'Premium plan is expired' });
+      }
+      const usedThisYear = getCurrentPremiumUsage(premiumUser);
+      const serviceLimit = Number(premiumUser.serviceLimit || 0);
+      return res.json({
+        success: true,
+        premiumUser: {
+          id: premiumUser._id.toString(),
+          premiumMemberId: premiumUser.premiumMemberId,
+          name: premiumUser.name,
+          phone: premiumUser.phone,
+          plan: premiumUser.plan,
+          serviceLimit,
+          usedThisYear,
+          remainingServices: Math.max(serviceLimit - usedThisYear, 0),
+          expiryDate: premiumUser.expiryDate
+        }
+      });
+    }
+
+    const premiumUser = inMemoryPremiumUsers.find(
+      (user) => String(user.premiumMemberId || '').toUpperCase() === memberId && user.status === 'Active'
+    );
+    if (!premiumUser) {
+      return res.status(404).json({ success: false, message: 'Premium ID not found or not active' });
+    }
+    const serviceLimit = Number(premiumUser.serviceLimit || 0);
+    const usedThisYear = Number(premiumUser.servicesUsed || 0);
+    res.json({
+      success: true,
+      premiumUser: {
+        id: premiumUser.id,
+        premiumMemberId: premiumUser.premiumMemberId,
+        name: premiumUser.name,
+        phone: premiumUser.phone,
+        plan: premiumUser.plan,
+        serviceLimit,
+        usedThisYear,
+        remainingServices: Math.max(serviceLimit - usedThisYear, 0),
+        expiryDate: premiumUser.expiryDate
+      }
+    });
+  } catch (err) {
+    console.error('Lookup premium user error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 });
@@ -1563,6 +1667,16 @@ app.put('/api/premium-users/:id/approve-payment', async (req, res) => {
 
       premiumUser.status = 'Active';
       premiumUser.paymentStatus = 'Approved';
+      if (!premiumUser.premiumMemberId) {
+        let nextMemberId = generatePremiumMemberId();
+        while (await PremiumUser.exists({ premiumMemberId: nextMemberId })) {
+          nextMemberId = generatePremiumMemberId();
+        }
+        premiumUser.premiumMemberId = nextMemberId;
+      }
+      if (!premiumUser.serviceLimit) {
+        premiumUser.serviceLimit = await getPlanServiceLimit(premiumUser.plan);
+      }
       await premiumUser.save();
 
       let lead = null;
@@ -1604,7 +1718,11 @@ app.put('/api/premium-users/:id/approve-payment', async (req, res) => {
     inMemoryPremiumUsers[index] = {
       ...inMemoryPremiumUsers[index],
       status: 'Active',
-      paymentStatus: 'Approved'
+      paymentStatus: 'Approved',
+      premiumMemberId: inMemoryPremiumUsers[index].premiumMemberId || generatePremiumMemberId(),
+      serviceLimit: Number(inMemoryPremiumUsers[index].serviceLimit || 0),
+      servicesUsed: Number(inMemoryPremiumUsers[index].servicesUsed || 0),
+      serviceUsage: inMemoryPremiumUsers[index].serviceUsage || []
     };
     res.json({
       success: true,
@@ -1722,6 +1840,45 @@ app.put('/api/work-orders/:id', async (req, res) => {
       }
       updateData.serviceDetails = workDetails;
       updateData.finalCost = Number(updateData.finalCost || 0);
+      const submittedPremiumId = String(updateData.premiumMemberId || '').trim().toUpperCase();
+
+      if (updateData.finalCost <= 0) {
+        if (!submittedPremiumId) {
+          return res.status(400).json({ success: false, message: 'Premium ID is required for free service. Otherwise select a paid service price.' });
+        }
+        const premiumUser = await PremiumUser.findOne({ premiumMemberId: submittedPremiumId, status: 'Active' });
+        if (!premiumUser) {
+          return res.status(400).json({ success: false, message: 'Premium ID not found or not active' });
+        }
+        if (premiumUser.expiryDate && new Date(premiumUser.expiryDate) < new Date()) {
+          return res.status(400).json({ success: false, message: 'Premium plan is expired. Payment is required.' });
+        }
+        const serviceLimit = Number(premiumUser.serviceLimit || 0);
+        const usedThisYear = getCurrentPremiumUsage(premiumUser);
+        const alreadyUsedForThisOrder = (premiumUser.serviceUsage || []).some(
+          (entry) => String(entry.workOrderId || '') === String(existingWorkOrder._id)
+        );
+        if (!alreadyUsedForThisOrder && usedThisYear >= serviceLimit) {
+          return res.status(400).json({ success: false, message: `Free service limit over. This plan allows ${serviceLimit} free services per year. Payment is required.` });
+        }
+        if (!alreadyUsedForThisOrder) {
+          premiumUser.serviceUsage.push({ workOrderId: existingWorkOrder._id, usedAt: new Date() });
+          premiumUser.servicesUsed = getCurrentPremiumUsage(premiumUser);
+          await premiumUser.save();
+        }
+        updateData.premiumUserId = premiumUser._id;
+        updateData.premiumMemberId = premiumUser.premiumMemberId;
+        updateData.premiumServiceCovered = true;
+        updateData.premiumServiceUsageNumber = alreadyUsedForThisOrder ? existingWorkOrder.premiumServiceUsageNumber : usedThisYear + 1;
+        updateData.paymentRequired = false;
+        updateData.isPremium = true;
+        updateData.premiumPlan = premiumUser.plan;
+        updateData.premiumPrice = premiumUser.price;
+      } else {
+        updateData.premiumMemberId = submittedPremiumId || existingWorkOrder.premiumMemberId || '';
+        updateData.premiumServiceCovered = false;
+        updateData.paymentRequired = true;
+      }
       updateData.earnings = Math.round(updateData.finalCost * 0.2);
       updateData.paymentMethod = 'upi';
     }
