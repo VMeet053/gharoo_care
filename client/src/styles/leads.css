@@ -109,7 +109,7 @@
 }
 
 .leads-table-panel .table {
-  min-width: 1040px;
+  min-width: 980px;
 }
 
 .leads-table-panel .table tbody td {
@@ -120,7 +120,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 210px;
+  min-width: 190px;
 }
 
 .lead-avatar {
@@ -225,7 +225,7 @@
 }
 
 .lead-assign-trigger {
-  min-width: 154px;
+  min-width: 138px;
   border-radius: 12px;
   padding: 8px 14px;
   font-size: 0.88rem;

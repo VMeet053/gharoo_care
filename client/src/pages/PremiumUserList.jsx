@@ -26,17 +26,23 @@ export default function PremiumUserList() {
     fetchPremiumUsers();
   }, []);
 
-  const totalPremium = users.length;
   const activePremium = users.filter(u => u.status === 'Active').length;
   const pendingPremium = users.filter(u => u.status === 'Payment Pending').length;
   const expiredPremium = users.filter(u => u.status === 'Expired').length;
+  const totalPremium = activePremium;
 
   // Filter users
-  const filteredUsers = users.filter(user => 
-    (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.phone || '').includes(searchTerm)
-  );
+  const filteredUsers = users
+    .filter(user =>
+      (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.phone || '').includes(searchTerm)
+    )
+    .sort((a, b) => {
+      if (a.status === 'Payment Pending' && b.status !== 'Payment Pending') return -1;
+      if (a.status !== 'Payment Pending' && b.status === 'Payment Pending') return 1;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
@@ -92,7 +98,7 @@ export default function PremiumUserList() {
           <div>
             <p className="eyebrow mb-1">Management</p>
             <h1 className="h3 mb-1">Premium User List</h1>
-            <p className="text-muted mb-0">Manage premium user accounts and subscription plans.</p>
+            <p className="text-muted mb-0">Payment requests become premium only after admin accepts them.</p>
           </div>
         </div>
         <div className="heading-actions">
@@ -111,7 +117,7 @@ export default function PremiumUserList() {
             <div className="metric-value">{totalPremium}</div>
             <div className="metric-meta">
               <span className="text-muted">-</span>
-              <span>this month</span>
+              <span>accepted users</span>
             </div>
           </article>
         </div>
@@ -163,8 +169,8 @@ export default function PremiumUserList() {
       <section className="panel mt-3 animate-fade-in" style={{ animationDelay: '0.2s' }}>
         <div className="panel-header">
           <div>
-            <h2 className="h5 mb-1 section-title"><i className="bi bi-table" aria-hidden="true"></i><span>Premium User List</span></h2>
-            <p className="text-muted mb-0">Search, review, and manage premium user accounts.</p>
+            <h2 className="h5 mb-1 section-title"><i className="bi bi-table" aria-hidden="true"></i><span>Payment Requests & Premium Users</span></h2>
+            <p className="text-muted mb-0">Paid requests appear first. Click Accept to activate premium.</p>
           </div>
           <div className="d-flex flex-wrap gap-2">
             <input 
@@ -184,11 +190,11 @@ export default function PremiumUserList() {
                 <th scope="col">User</th>
                 <th scope="col">Plan</th>
                 <th scope="col">Amount</th>
-                <th scope="col">UPI</th>
-                <th scope="col">City</th>
-                <th scope="col">Expiry Date</th>
                 <th scope="col">Status</th>
-                <th scope="col" className="text-end">Action</th>
+                <th scope="col" className="text-end">Accept</th>
+                <th scope="col">UPI</th>
+                <th scope="col">Address / City</th>
+                <th scope="col">Expiry Date</th>
               </tr>
             </thead>
             <tbody>
@@ -226,14 +232,6 @@ export default function PremiumUserList() {
                     </td>
                     <td><span className={`badge ${getPlanBadgeClass(user.plan)}`}>{user.plan}</span></td>
                     <td>{user.price || '-'}</td>
-                    <td>
-                      <div className="small">
-                        <div className="fw-semibold">{user.paymentName || '-'}</div>
-                        <div className="text-muted">{user.upiId || '-'}</div>
-                      </div>
-                    </td>
-                    <td>{user.city}</td>
-                    <td>{user.expiryDate ? new Date(user.expiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</td>
                     <td><span className={`badge ${getStatusBadgeClass(user.status)}`}>{user.status}</span></td>
                     <td className="text-end">
                       {user.status === 'Payment Pending' ? (
@@ -243,12 +241,20 @@ export default function PremiumUserList() {
                           disabled={approvingId === user.id}
                           onClick={() => handleApprovePayment(user.id)}
                         >
-                          {approvingId === user.id ? 'Approving...' : 'Approve Payment'}
+                          {approvingId === user.id ? 'Accepting...' : 'Accept'}
                         </button>
                       ) : (
-                        <button className="btn btn-light btn-sm">View</button>
+                        <span className="badge text-bg-success">Premium</span>
                       )}
                     </td>
+                    <td>
+                      <div className="small">
+                        <div className="fw-semibold">{user.paymentName || '-'}</div>
+                        <div className="text-muted">{user.upiId || '-'}</div>
+                      </div>
+                    </td>
+                    <td className="text-wrap" style={{ minWidth: '260px', maxWidth: '420px' }}>{user.address || user.city || '-'}</td>
+                    <td>{user.expiryDate ? new Date(user.expiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '-'}</td>
                   </tr>
                 ))
               )}

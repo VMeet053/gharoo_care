@@ -660,6 +660,7 @@ export default function Leads() {
                     />
                   </th>
                   <th scope="col">Name</th>
+                  <th scope="col">Assigned To</th>
                   <th scope="col">Email</th>
                   <th scope="col">Phone</th>
                   <th scope="col">Status</th>
@@ -667,7 +668,6 @@ export default function Leads() {
                   <th scope="col">Address</th>
                   <th scope="col">City</th>
                   <th scope="col">Area</th>
-                  <th scope="col" className="text-end">Assigned To</th>
                 </tr>
               </thead>
               <tbody>
@@ -709,6 +709,17 @@ export default function Leads() {
                           </div>
                         </div>
                       </td>
+                      <td>
+                        <div className="lead-assign-cell">
+                          <button
+                            className={`btn btn-sm lead-assign-trigger ${lead.assigned === 'Unassigned' ? 'is-unassigned' : 'is-assigned'}`}
+                            onClick={(event) => startAssign(lead, event)}
+                          >
+                            <i className={`bi ${lead.assigned === 'Unassigned' ? 'bi-person-plus' : 'bi-person-check'} me-2`}></i>
+                            <span>{lead.assigned}</span>
+                          </button>
+                        </div>
+                      </td>
                       <td><span className="lead-muted-text">{lead.email}</span></td>
                       <td><span className="lead-phone">{lead.phone}</span></td>
                       <td>
@@ -733,17 +744,6 @@ export default function Leads() {
                       </td>
                       <td><span className="lead-location-chip">{getDisplayCity(lead)}</span></td>
                       <td><span className="lead-location-chip">{getDisplayArea(lead)}</span></td>
-                      <td className="text-end">
-                        <div className="lead-assign-cell">
-                          <button
-                            className={`btn btn-sm lead-assign-trigger ${lead.assigned === 'Unassigned' ? 'is-unassigned' : 'is-assigned'}`}
-                            onClick={(event) => startAssign(lead, event)}
-                          >
-                            <i className={`bi ${lead.assigned === 'Unassigned' ? 'bi-person-plus' : 'bi-person-check'} me-2`}></i>
-                            <span>{lead.assigned}</span>
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                   ))
                 )}
