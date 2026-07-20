@@ -109,18 +109,29 @@
 }
 
 .leads-table-panel .table {
-  min-width: 980px;
+  min-width: 860px;
 }
 
 .leads-table-panel .table tbody td {
   vertical-align: middle;
 }
 
+.leads-table-panel .lead-name-column {
+  width: 300px;
+  max-width: 300px;
+}
+
+.leads-table-panel .lead-assigned-column {
+  width: 170px;
+  max-width: 170px;
+}
+
 .lead-person {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 190px;
+  width: 280px;
+  min-width: 0;
 }
 
 .lead-avatar {
@@ -147,6 +158,10 @@
   color: #64748b;
   font-size: 0.78rem;
   font-weight: 700;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lead-muted-text {
@@ -225,12 +240,21 @@
 }
 
 .lead-assign-trigger {
-  min-width: 138px;
+  min-width: 126px;
+  max-width: 150px;
   border-radius: 12px;
   padding: 8px 14px;
   font-size: 0.88rem;
   border-width: 1.5px;
   white-space: nowrap;
+}
+
+.lead-assign-trigger span {
+  display: inline-block;
+  max-width: 92px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
 }
 
 .lead-assign-trigger.is-unassigned {

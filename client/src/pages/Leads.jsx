@@ -659,8 +659,8 @@ export default function Leads() {
                       onChange={selectAll}
                     />
                   </th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Assigned To</th>
+                  <th scope="col" className="lead-name-column">Name</th>
+                  <th scope="col" className="lead-assigned-column">Assigned To</th>
                   <th scope="col">Email</th>
                   <th scope="col">Phone</th>
                   <th scope="col">Status</th>
@@ -700,7 +700,7 @@ export default function Leads() {
                           onChange={() => toggleSelectLead(lead.id)}
                         />
                       </td>
-                      <td>
+                      <td className="lead-name-column">
                         <div className="lead-person">
                           <span className="lead-avatar">{lead.name?.charAt(0)?.toUpperCase() || 'L'}</span>
                           <div>
@@ -709,7 +709,7 @@ export default function Leads() {
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td className="lead-assigned-column">
                         <div className="lead-assign-cell">
                           <button
                             className={`btn btn-sm lead-assign-trigger ${lead.assigned === 'Unassigned' ? 'is-unassigned' : 'is-assigned'}`}
