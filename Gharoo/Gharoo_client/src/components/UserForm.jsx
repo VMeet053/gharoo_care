@@ -7,24 +7,6 @@ function createMapLink(latitude, longitude) {
   return `https://www.google.com/maps?q=${latitude},${longitude}`
 }
 
-function createMapEmbedUrl(location) {
-  if (!location?.lat || !location?.lon) return ''
-
-  const lat = Number(location.lat)
-  const lon = Number(location.lon)
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return ''
-
-  const delta = 0.004
-  const bbox = [
-    lon - delta,
-    lat - delta,
-    lon + delta,
-    lat + delta
-  ].join(',')
-
-  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`
-}
-
 export default function UserForm() {
   const navigate = useNavigate()
 
@@ -61,7 +43,6 @@ export default function UserForm() {
   const [locating, setLocating] = useState(false)
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
   const skipAddressFetch = useRef(false)
-  const mapEmbedUrl = createMapEmbedUrl(selectedLocation)
 
   useEffect(() => {
     const query = addressQuery.trim()
@@ -268,30 +249,14 @@ export default function UserForm() {
               )}
             </div>
 
-            <div className="address-map-panel">
-              <div className="address-map">
-                {mapEmbedUrl ? (
-                  <iframe
-                    title="Selected service address map"
-                    src={mapEmbedUrl}
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="map-placeholder">
-                    <span>Search address or use current location</span>
-                  </div>
-                )}
-                <div className="map-pin" aria-hidden="true" />
+            <div className="location-capture-card">
+              <div>
+                <strong>{formData.currentLocation ? 'Location added' : 'Add current location'}</strong>
+                <span>{formData.currentLocation ? 'Your map location is saved for the technician.' : 'Select an address or use GPS to save service location.'}</span>
               </div>
-              <div className="address-map-actions">
-                <div>
-                  <strong>{selectedLocation ? 'Location pinned' : 'Pin your service location'}</strong>
-                  <span>{selectedLocation ? 'Confirm the details below before payment.' : 'Like Amazon and Flipkart, select the exact doorstep location.'}</span>
-                </div>
-                <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
-                  {locating ? 'Detecting...' : 'Use Current Location'}
-                </button>
-              </div>
+              <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
+                {locating ? 'Detecting...' : 'Use Current Location'}
+              </button>
             </div>
 
             <div className="form-group">
@@ -317,23 +282,6 @@ export default function UserForm() {
             <div className="form-group">
               <label>Pincode <span className="required">*</span></label>
               <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} required placeholder="6-digit pincode" maxLength={6} pattern="[0-9]{6}" />
-            </div>
-
-            <div className="form-group current-location-group">
-              <label>Map Link <span className="required">*</span></label>
-              <div className="location-input-row">
-                <input
-                  type="url"
-                  name="currentLocation"
-                  value={formData.currentLocation}
-                  onChange={handleChange}
-                  required
-                  placeholder="Auto-filled from map or paste Google Maps link"
-                />
-                <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
-                  {locating ? 'Detecting...' : 'Use Current'}
-                </button>
-              </div>
             </div>
 
             <div className="form-group">

@@ -1,7 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import './ServiceManRegistration.css'
-import { fetchGeoapifyAddressSuggestions } from '../utils/geoapify'
+import { fetchGeoapifyAddressSuggestions, fetchGeoapifyReverseAddress } from '../utils/geoapify'
+
+function createMapLink(latitude, longitude) {
+  return `https://www.google.com/maps?q=${latitude},${longitude}`
+}
 
 export default function ServiceManRegistration() {
   const [formData, setFormData] = useState({
@@ -29,6 +33,7 @@ export default function ServiceManRegistration() {
   const [error, setError] = useState('')
   const [addressSuggestions, setAddressSuggestions] = useState([])
   const [addressLoading, setAddressLoading] = useState(false)
+  const [locating, setLocating] = useState(false)
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
   const skipAddressFetch = useRef(false)
 
@@ -81,16 +86,30 @@ export default function ServiceManRegistration() {
 
   const handleAddressSelect = (feature) => {
     skipAddressFetch.current = true
+    const hasLocation = Number.isFinite(feature.lat) && Number.isFinite(feature.lon)
     setFormData(prev => ({
       ...prev,
       address: feature.address,
       houseNumber: prev.houseNumber,
       city: feature.city,
       state: feature.state,
-      pinCode: feature.pinCode
+      pinCode: feature.pinCode,
+      currentLocation: hasLocation ? createMapLink(feature.lat, feature.lon) : prev.currentLocation
     }))
     setAddressSuggestions([])
     setShowAddressSuggestions(false)
+  }
+
+  const applyResolvedAddress = (suggestion, latitude, longitude) => {
+    skipAddressFetch.current = true
+    setFormData(prev => ({
+      ...prev,
+      address: suggestion?.address || prev.address,
+      city: suggestion?.city || prev.city,
+      state: suggestion?.state || prev.state,
+      pinCode: suggestion?.pinCode || prev.pinCode,
+      currentLocation: createMapLink(latitude, longitude)
+    }))
   }
 
   const handleCurrentLocation = () => {
@@ -99,15 +118,23 @@ export default function ServiceManRegistration() {
       return
     }
 
+    setLocating(true)
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords
-        setFormData(prev => ({
-          ...prev,
-          currentLocation: `https://www.google.com/maps?q=${latitude},${longitude}`
-        }))
+        const controller = new AbortController()
+
+        try {
+          const suggestion = await fetchGeoapifyReverseAddress(latitude, longitude, controller.signal)
+          applyResolvedAddress(suggestion, latitude, longitude)
+        } catch {
+          applyResolvedAddress(null, latitude, longitude)
+        } finally {
+          setLocating(false)
+        }
       },
       () => {
+        setLocating(false)
         setError('Could not get current location. Please allow location permission or paste a map link.')
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -161,7 +188,7 @@ export default function ServiceManRegistration() {
     }
 
     if (!formData.currentLocation.trim()) {
-      setError('Please add your current location!')
+      setError('Please use current location or select an address from suggestions!')
       return
     }
 
@@ -408,21 +435,14 @@ export default function ServiceManRegistration() {
             />
           </div>
 
-          <div className="current-location-group">
-            <label>Current Location <span style={{ color: '#ef4444' }}>*</span></label>
-            <div className="location-input-row">
-              <input
-                type="url"
-                name="currentLocation"
-                value={formData.currentLocation}
-                onChange={handleChange}
-                required
-                placeholder="Paste Google Maps link or use current location"
-              />
-              <button type="button" className="location-btn" onClick={handleCurrentLocation}>
-                Use Current
-              </button>
+          <div className="location-capture-card">
+            <div>
+              <strong>{formData.currentLocation ? 'Location added' : 'Add current location'}</strong>
+              <span>{formData.currentLocation ? 'Your map location is saved for admin verification.' : 'Select an address or use GPS to save your location.'}</span>
             </div>
+            <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
+              {locating ? 'Detecting...' : 'Use Current Location'}
+            </button>
           </div>
 
           {formData.idProofType && (

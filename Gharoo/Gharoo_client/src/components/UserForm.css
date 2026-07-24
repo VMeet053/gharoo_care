@@ -278,105 +278,33 @@
   color: #047857;
 }
 
-.address-map-panel {
+.location-capture-card {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 14px;
-  align-items: stretch;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid #dbe4ee;
   border-radius: 8px;
   background: #f8fafc;
 }
 
-.address-map {
-  position: relative;
-  min-height: 220px;
-  overflow: hidden;
-  border-radius: 8px;
-  border: 1px solid #dbe4ee;
-  background: #e2e8f0;
-}
-
-.address-map iframe {
-  width: 100%;
-  height: 100%;
-  min-height: 220px;
-  border: 0;
+.location-capture-card strong,
+.location-capture-card span {
   display: block;
 }
 
-.map-placeholder {
-  height: 100%;
-  min-height: 220px;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  color: #64748b;
-  font-weight: 800;
-  text-align: center;
-  background:
-    linear-gradient(90deg, rgba(148, 163, 184, 0.18) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(148, 163, 184, 0.18) 1px, transparent 1px),
-    #f1f5f9;
-  background-size: 28px 28px;
-}
-
-.map-pin {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 18px;
-  height: 18px;
-  border-radius: 50% 50% 50% 0;
-  background: #ef4444;
-  transform: translate(-50%, -100%) rotate(-45deg);
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.24);
-  pointer-events: none;
-}
-
-.map-pin::after {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border-radius: 50%;
-  background: #ffffff;
-}
-
-.address-map-actions {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 8px 4px;
-}
-
-.address-map-actions strong,
-.address-map-actions span {
-  display: block;
-}
-
-.address-map-actions strong {
+.location-capture-card strong {
   color: #0f172a;
   font-size: 1rem;
   margin-bottom: 6px;
 }
 
-.address-map-actions span {
+.location-capture-card span {
   color: #64748b;
   font-size: 0.88rem;
   line-height: 1.5;
-}
-
-.current-location-group {
-  grid-column: 1 / -1;
-}
-
-.location-input-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
 }
 
 .location-btn {
@@ -469,12 +397,9 @@
     padding-top: 6px;
   }
 
-  .location-input-row {
-    grid-template-columns: 1fr;
-  }
-
-  .address-map-panel {
-    grid-template-columns: 1fr;
+  .location-capture-card {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .address-type-group {
