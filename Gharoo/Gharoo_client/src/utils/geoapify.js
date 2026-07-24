@@ -83,3 +83,24 @@ export async function fetchGeoapifyAddressSuggestions(query, signal) {
 
   return uniqueSuggestions([...autocompleteSuggestions, ...placeSuggestions]).slice(0, 8)
 }
+
+export async function fetchGeoapifyReverseAddress(latitude, longitude, signal) {
+  if (!GEOAPIFY_API_KEY || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null
+  }
+
+  const params = new URLSearchParams({
+    lat: String(latitude),
+    lon: String(longitude),
+    apiKey: GEOAPIFY_API_KEY
+  })
+
+  const response = await fetch(
+    `https://api.geoapify.com/v1/geocode/reverse?${params}`,
+    { signal }
+  )
+  const data = await response.json()
+  const [feature] = data.features || []
+
+  return feature ? normalizeFeature(feature, 'current') : null
+}

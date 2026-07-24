@@ -1,7 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './UserForm.css'
-import { fetchGeoapifyAddressSuggestions } from '../utils/geoapify'
+import { fetchGeoapifyAddressSuggestions, fetchGeoapifyReverseAddress } from '../utils/geoapify'
+
+function createMapLink(latitude, longitude) {
+  return `https://www.google.com/maps?q=${latitude},${longitude}`
+}
+
+function createMapEmbedUrl(location) {
+  if (!location?.lat || !location?.lon) return ''
+
+  const lat = Number(location.lat)
+  const lon = Number(location.lon)
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return ''
+
+  const delta = 0.004
+  const bbox = [
+    lon - delta,
+    lat - delta,
+    lon + delta,
+    lat + delta
+  ].join(',')
+
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`
+}
 
 export default function UserForm() {
   const navigate = useNavigate()
@@ -28,10 +50,18 @@ export default function UserForm() {
     addressType: savedData.addressType || 'Home',
   })
   const [addressQuery, setAddressQuery] = useState(savedData.fullAddress || '')
+  const [selectedLocation, setSelectedLocation] = useState(() => {
+    if (Number.isFinite(savedData.latitude) && Number.isFinite(savedData.longitude)) {
+      return { lat: savedData.latitude, lon: savedData.longitude }
+    }
+    return null
+  })
   const [addressSuggestions, setAddressSuggestions] = useState([])
   const [addressLoading, setAddressLoading] = useState(false)
+  const [locating, setLocating] = useState(false)
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
   const skipAddressFetch = useRef(false)
+  const mapEmbedUrl = createMapEmbedUrl(selectedLocation)
 
   useEffect(() => {
     const query = addressQuery.trim()
@@ -80,14 +110,19 @@ export default function UserForm() {
   function handleAddressSelect(suggestion) {
     skipAddressFetch.current = true
     setAddressQuery(suggestion.label)
+    const hasLocation = Number.isFinite(suggestion.lat) && Number.isFinite(suggestion.lon)
     setFormData({
       ...formData,
       flatHouse: suggestion.name || suggestion.address,
       area: suggestion.area,
       city: suggestion.city,
       state: suggestion.state,
-      pincode: suggestion.pinCode
+      pincode: suggestion.pinCode,
+      currentLocation: hasLocation ? createMapLink(suggestion.lat, suggestion.lon) : formData.currentLocation
     })
+    if (hasLocation) {
+      setSelectedLocation({ lat: suggestion.lat, lon: suggestion.lon })
+    }
     setAddressSuggestions([])
     setShowAddressSuggestions(false)
   }
@@ -96,21 +131,44 @@ export default function UserForm() {
     setFormData({ ...formData, addressType: type })
   }
 
+  function applyResolvedAddress(suggestion, latitude, longitude) {
+    skipAddressFetch.current = true
+    setAddressQuery(suggestion?.label || `Pinned location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`)
+    setSelectedLocation({ lat: latitude, lon: longitude })
+    setFormData({
+      ...formData,
+      flatHouse: suggestion?.name || formData.flatHouse,
+      area: suggestion?.area || formData.area,
+      city: suggestion?.city || formData.city,
+      state: suggestion?.state || formData.state,
+      pincode: suggestion?.pinCode || formData.pincode,
+      currentLocation: createMapLink(latitude, longitude)
+    })
+  }
+
   function handleCurrentLocation() {
     if (!navigator.geolocation) {
       alert('Current location is not supported in this browser.')
       return
     }
 
+    setLocating(true)
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords
-        setFormData({
-          ...formData,
-          currentLocation: `https://www.google.com/maps?q=${latitude},${longitude}`
-        })
+        const controller = new AbortController()
+
+        try {
+          const suggestion = await fetchGeoapifyReverseAddress(latitude, longitude, controller.signal)
+          applyResolvedAddress(suggestion, latitude, longitude)
+        } catch {
+          applyResolvedAddress(null, latitude, longitude)
+        } finally {
+          setLocating(false)
+        }
       },
       () => {
+        setLocating(false)
         alert('Could not get current location. Please allow location permission or paste a map link.')
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -124,7 +182,12 @@ export default function UserForm() {
       return
     }
     const fullAddress = `${formData.flatHouse}, ${formData.area}, ${formData.city}, ${formData.state} - ${formData.pincode}`
-    const dataToSave = { ...formData, fullAddress }
+    const dataToSave = {
+      ...formData,
+      fullAddress,
+      latitude: selectedLocation?.lat || '',
+      longitude: selectedLocation?.lon || ''
+    }
     localStorage.setItem('userFormData', JSON.stringify(dataToSave))
     navigate('/payment')
   }
@@ -178,12 +241,7 @@ export default function UserForm() {
               <input type="tel" name="altContact" value={formData.altContact} onChange={handleChange} placeholder="Alternate number" maxLength={10} />
             </div>
 
-            <div className="address-section-label">Address Details</div>
-
-            <div className="form-group">
-              <label>Flat / House / Building <span className="required">*</span></label>
-              <input type="text" name="flatHouse" value={formData.flatHouse} onChange={handleChange} required placeholder="C 202 Many Residency" />
-            </div>
+            <div className="address-section-label">Delivery Address</div>
 
             <div className="form-group address-search-group">
               <label>Search Address / Place <span className="required">*</span></label>
@@ -210,6 +268,37 @@ export default function UserForm() {
               )}
             </div>
 
+            <div className="address-map-panel">
+              <div className="address-map">
+                {mapEmbedUrl ? (
+                  <iframe
+                    title="Selected service address map"
+                    src={mapEmbedUrl}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="map-placeholder">
+                    <span>Search address or use current location</span>
+                  </div>
+                )}
+                <div className="map-pin" aria-hidden="true" />
+              </div>
+              <div className="address-map-actions">
+                <div>
+                  <strong>{selectedLocation ? 'Location pinned' : 'Pin your service location'}</strong>
+                  <span>{selectedLocation ? 'Confirm the details below before payment.' : 'Like Amazon and Flipkart, select the exact doorstep location.'}</span>
+                </div>
+                <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
+                  {locating ? 'Detecting...' : 'Use Current Location'}
+                </button>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Flat / House / Building <span className="required">*</span></label>
+              <input type="text" name="flatHouse" value={formData.flatHouse} onChange={handleChange} required placeholder="C 202, Maruti Residency" />
+            </div>
+
             <div className="form-group">
               <label>Area / Locality <span className="required">*</span></label>
               <input type="text" name="area" value={formData.area} onChange={handleChange} required placeholder="Nana Varachha, Near XYZ" />
@@ -231,7 +320,7 @@ export default function UserForm() {
             </div>
 
             <div className="form-group current-location-group">
-              <label>Current Location <span className="required">*</span></label>
+              <label>Map Link <span className="required">*</span></label>
               <div className="location-input-row">
                 <input
                   type="url"
@@ -239,10 +328,10 @@ export default function UserForm() {
                   value={formData.currentLocation}
                   onChange={handleChange}
                   required
-                  placeholder="Paste Google Maps link or use current location"
+                  placeholder="Auto-filled from map or paste Google Maps link"
                 />
-                <button type="button" className="location-btn" onClick={handleCurrentLocation}>
-                  Use Current
+                <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
+                  {locating ? 'Detecting...' : 'Use Current'}
                 </button>
               </div>
             </div>
@@ -255,6 +344,9 @@ export default function UserForm() {
                 </button>
                 <button type="button" className={`address-type-btn ${formData.addressType === 'Work' ? 'active' : ''}`} onClick={() => handleAddressType('Work')}>
                   Work
+                </button>
+                <button type="button" className={`address-type-btn ${formData.addressType === 'Other' ? 'active' : ''}`} onClick={() => handleAddressType('Other')}>
+                  Other
                 </button>
               </div>
             </div>
