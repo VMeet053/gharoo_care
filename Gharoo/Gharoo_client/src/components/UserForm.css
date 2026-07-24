@@ -298,38 +298,26 @@
   background: #eef2f7;
 }
 
-.google-map-frame iframe {
+.leaflet-map-canvas {
   display: block;
   width: 100%;
-  height: 100%;
+  height: 230px;
   min-height: 230px;
-  border: 0;
+  z-index: 1;
 }
 
-.map-drag-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  cursor: grab;
-  touch-action: none;
-}
-
-.map-drag-layer.dragging {
-  cursor: grabbing;
-}
-
-.draggable-map-pin {
-  position: absolute;
+.leaflet-draggable-pin {
+  display: block;
   width: 24px;
   height: 24px;
   border-radius: 50% 50% 50% 0;
   background: #ef4444;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
-  transform: translate(-50%, -100%) rotate(-45deg);
+  transform: rotate(-45deg);
   transition: box-shadow 0.2s, transform 0.2s;
 }
 
-.draggable-map-pin::after {
+.leaflet-draggable-pin::after {
   content: "";
   position: absolute;
   inset: 7px;
@@ -337,9 +325,10 @@
   background: #ffffff;
 }
 
-.map-drag-layer.dragging .draggable-map-pin {
+.leaflet-marker-draggable:hover .leaflet-draggable-pin,
+.leaflet-marker-draggable:active .leaflet-draggable-pin {
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.34);
-  transform: translate(-50%, -112%) rotate(-45deg) scale(1.08);
+  transform: rotate(-45deg) scale(1.08);
 }
 
 .google-map-tools {
@@ -472,8 +461,9 @@
 }
 
 .google-map-frame.expanded,
-.google-map-frame.expanded iframe {
+.google-map-frame.expanded .leaflet-map-canvas {
   min-height: min(68vh, 620px);
+  height: min(68vh, 620px);
 }
 
 .form-actions {
@@ -550,8 +540,9 @@
   }
 
   .google-map-frame,
-  .google-map-frame iframe {
+  .leaflet-map-canvas {
     min-height: 260px;
+    height: 260px;
   }
 
   .location-btn {
@@ -577,8 +568,9 @@
   }
 
   .google-map-frame.expanded,
-  .google-map-frame.expanded iframe {
+  .google-map-frame.expanded .leaflet-map-canvas {
     min-height: 68vh;
+    height: 68vh;
   }
 
   .address-type-group {

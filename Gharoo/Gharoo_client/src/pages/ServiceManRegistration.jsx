@@ -1,40 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import './ServiceManRegistration.css'
+import DraggableAddressMap from '../components/DraggableAddressMap'
 import { fetchGeoapifyAddressSuggestions, fetchGeoapifyReverseAddress } from '../utils/geoapify'
-
-const DEFAULT_MAP_LOCATION = { lat: 21.1702, lon: 72.8311 }
-const MAP_DRAG_SPAN = { lat: 0.012, lon: 0.012 }
 
 function createMapLink(latitude, longitude) {
   return `https://www.google.com/maps?q=${latitude},${longitude}`
-}
-
-function createGoogleMapEmbedUrl(location) {
-  if (!location) return 'https://maps.google.com/maps?q=Surat,Gujarat,India&z=12&output=embed'
-
-  const lat = Number(location.lat)
-  const lon = Number(location.lon)
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-    return 'https://maps.google.com/maps?q=Surat,Gujarat,India&z=12&output=embed'
-  }
-
-  return `https://maps.google.com/maps?q=${lat},${lon}&z=17&output=embed`
-}
-
-function getPointFromEvent(event, element) {
-  const rect = element.getBoundingClientRect()
-  return {
-    x: Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)),
-    y: Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100))
-  }
-}
-
-function getLocationFromPin(center, point) {
-  return {
-    lat: center.lat + ((50 - point.y) / 100) * MAP_DRAG_SPAN.lat,
-    lon: center.lon + ((point.x - 50) / 100) * MAP_DRAG_SPAN.lon
-  }
 }
 
 function getLocationErrorMessage(error) {
@@ -78,15 +49,8 @@ export default function ServiceManRegistration() {
   const [addressLoading, setAddressLoading] = useState(false)
   const [locating, setLocating] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState(null)
-  const [pinPosition, setPinPosition] = useState({ x: 50, y: 50 })
-  const [pinDragging, setPinDragging] = useState(false)
-  const [mapExpanded, setMapExpanded] = useState(false)
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
-  const mapFrameRef = useRef(null)
-  const pinDraggingRef = useRef(false)
   const skipAddressFetch = useRef(false)
-  const googleMapUrl = createGoogleMapEmbedUrl(selectedLocation)
-  const mapCenter = selectedLocation || DEFAULT_MAP_LOCATION
 
   useEffect(() => {
     const address = formData.address.trim()
@@ -148,7 +112,6 @@ export default function ServiceManRegistration() {
       currentLocation: hasLocation ? createMapLink(feature.lat, feature.lon) : prev.currentLocation
     }))
     if (hasLocation) {
-      setPinPosition({ x: 50, y: 50 })
       setSelectedLocation({ lat: feature.lat, lon: feature.lon })
     }
     setAddressSuggestions([])
@@ -158,7 +121,6 @@ export default function ServiceManRegistration() {
   const applyResolvedAddress = (suggestion, latitude, longitude) => {
     skipAddressFetch.current = true
     setSelectedLocation({ lat: latitude, lon: longitude })
-    setPinPosition({ x: 50, y: 50 })
     setFormData(prev => ({
       ...prev,
       address: suggestion?.address || prev.address,
@@ -169,48 +131,23 @@ export default function ServiceManRegistration() {
     }))
   }
 
-  const updatePinnedAddress = async (point) => {
-    const pinnedLocation = getLocationFromPin(mapCenter, point)
+  const updatePinnedAddress = async (location) => {
     setLocating(true)
-    applyResolvedAddress(null, pinnedLocation.lat, pinnedLocation.lon)
+    applyResolvedAddress(null, location.lat, location.lon)
 
     const controller = new AbortController()
     const timeoutId = window.setTimeout(() => controller.abort(), 7000)
     try {
-      const suggestion = await fetchGeoapifyReverseAddress(pinnedLocation.lat, pinnedLocation.lon, controller.signal)
+      const suggestion = await fetchGeoapifyReverseAddress(location.lat, location.lon, controller.signal)
       if (suggestion) {
-        applyResolvedAddress(suggestion, pinnedLocation.lat, pinnedLocation.lon)
+        applyResolvedAddress(suggestion, location.lat, location.lon)
       }
     } catch {
-      applyResolvedAddress(null, pinnedLocation.lat, pinnedLocation.lon)
+      applyResolvedAddress(null, location.lat, location.lon)
     } finally {
       window.clearTimeout(timeoutId)
       setLocating(false)
     }
-  }
-
-  const handleMapPointerDown = (event) => {
-    if (!mapFrameRef.current) return
-    event.preventDefault()
-    const point = getPointFromEvent(event, mapFrameRef.current)
-    pinDraggingRef.current = true
-    setPinDragging(true)
-    setPinPosition(point)
-    event.currentTarget.setPointerCapture(event.pointerId)
-  }
-
-  const handleMapPointerMove = (event) => {
-    if (!pinDraggingRef.current || !mapFrameRef.current) return
-    setPinPosition(getPointFromEvent(event, mapFrameRef.current))
-  }
-
-  const handleMapPointerUp = (event) => {
-    if (!pinDraggingRef.current || !mapFrameRef.current) return
-    const point = getPointFromEvent(event, mapFrameRef.current)
-    pinDraggingRef.current = false
-    setPinDragging(false)
-    setPinPosition(point)
-    updatePinnedAddress(point)
   }
 
   const handleCurrentLocation = () => {
@@ -483,48 +420,15 @@ export default function ServiceManRegistration() {
             />
           </div>
 
-          <div className="google-map-card">
-            <div className="google-map-frame" ref={mapFrameRef}>
-              <iframe
-                title="Google map selected service man location"
-                src={googleMapUrl}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-              <div
-                className={`map-drag-layer ${pinDragging ? 'dragging' : ''}`}
-                onPointerDown={handleMapPointerDown}
-                onPointerMove={handleMapPointerMove}
-                onPointerUp={handleMapPointerUp}
-                onPointerCancel={() => {
-                  pinDraggingRef.current = false
-                  setPinDragging(false)
-                }}
-                role="button"
-                tabIndex={0}
-                aria-label="Move map pin"
-              >
-                <span
-                  className="draggable-map-pin"
-                  style={{ left: `${pinPosition.x}%`, top: `${pinPosition.y}%` }}
-                />
-              </div>
-            </div>
-            <div className="google-map-tools">
-              <div>
-                <strong>{formData.currentLocation ? 'Location pinned' : 'Pin exact work location'}</strong>
-                <span>{formData.currentLocation ? 'Drag the pin to fine tune. Address below stays editable.' : 'Search your address, use GPS, or drag the pin on map.'}</span>
-              </div>
-              <div className="map-action-row">
-                <button type="button" className="map-expand-btn" onClick={() => setMapExpanded(true)}>
-                  Expand Map
-                </button>
-                <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
-                  {locating ? 'Detecting...' : 'Use Current Location'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <DraggableAddressMap
+            location={selectedLocation}
+            locating={locating}
+            onSelect={updatePinnedAddress}
+            onUseCurrent={handleCurrentLocation}
+            title="Location pinned"
+            idleText="Search your address, use GPS, or tap the map."
+            pinnedText="Move the pin to fine tune. Address below stays editable."
+          />
 
           <div className="address-autocomplete">
             <label>Address</label>
@@ -660,50 +564,6 @@ export default function ServiceManRegistration() {
           </p>
         </div>
 
-        {mapExpanded && (
-          <div className="map-modal" role="dialog" aria-modal="true" aria-label="Select exact map location">
-            <div className="map-modal-panel">
-              <div className="map-modal-header">
-                <div>
-                  <strong>Select Exact Location</strong>
-                  <span>Tap or drag the pin, then edit address below.</span>
-                </div>
-                <button type="button" className="map-close-btn" onClick={() => setMapExpanded(false)}>
-                  Close
-                </button>
-              </div>
-              <div className="google-map-frame expanded" ref={mapFrameRef}>
-                <iframe
-                  title="Expanded Google map selected service man location"
-                  src={googleMapUrl}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-                <div
-                  className={`map-drag-layer ${pinDragging ? 'dragging' : ''}`}
-                  onPointerDown={handleMapPointerDown}
-                  onPointerMove={handleMapPointerMove}
-                  onPointerUp={handleMapPointerUp}
-                  onPointerCancel={() => {
-                    pinDraggingRef.current = false
-                    setPinDragging(false)
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  aria-label="Move map pin"
-                >
-                  <span
-                    className="draggable-map-pin"
-                    style={{ left: `${pinPosition.x}%`, top: `${pinPosition.y}%` }}
-                  />
-                </div>
-              </div>
-              <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
-                {locating ? 'Detecting...' : 'Use Current Location'}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )
