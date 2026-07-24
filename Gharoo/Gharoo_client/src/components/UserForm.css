@@ -290,6 +290,7 @@
 }
 
 .google-map-frame {
+  position: relative;
   min-height: 230px;
   overflow: hidden;
   border: 1px solid #dbe4ee;
@@ -305,19 +306,40 @@
   border: 0;
 }
 
-.google-map-empty {
-  min-height: 230px;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  color: #64748b;
-  font-weight: 800;
-  text-align: center;
-  background:
-    linear-gradient(90deg, rgba(148, 163, 184, 0.18) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(148, 163, 184, 0.18) 1px, transparent 1px),
-    #f8fafc;
-  background-size: 30px 30px;
+.map-drag-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  cursor: grab;
+  touch-action: none;
+}
+
+.map-drag-layer.dragging {
+  cursor: grabbing;
+}
+
+.draggable-map-pin {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50% 50% 50% 0;
+  background: #ef4444;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
+  transform: translate(-50%, -100%) rotate(-45deg);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.draggable-map-pin::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.map-drag-layer.dragging .draggable-map-pin {
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.34);
+  transform: translate(-50%, -112%) rotate(-45deg) scale(1.08);
 }
 
 .google-map-tools {
@@ -444,8 +466,7 @@
   }
 
   .google-map-frame,
-  .google-map-frame iframe,
-  .google-map-empty {
+  .google-map-frame iframe {
     min-height: 260px;
   }
 

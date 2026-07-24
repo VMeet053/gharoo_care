@@ -99,6 +99,8 @@ export async function fetchGeoapifyReverseAddress(latitude, longitude, signal) {
     `https://api.geoapify.com/v1/geocode/reverse?${params}`,
     { signal }
   )
+  if (!response.ok) return null
+
   const data = await response.json()
   const [feature] = data.features || []
 

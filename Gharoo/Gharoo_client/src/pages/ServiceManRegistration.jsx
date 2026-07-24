@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import './ServiceManRegistration.css'
 import { fetchGeoapifyAddressSuggestions, fetchGeoapifyReverseAddress } from '../utils/geoapify'
 
+const DEFAULT_MAP_LOCATION = { lat: 21.1702, lon: 72.8311 }
+const MAP_DRAG_SPAN = { lat: 0.012, lon: 0.012 }
+
 function createMapLink(latitude, longitude) {
   return `https://www.google.com/maps?q=${latitude},${longitude}`
 }
@@ -17,6 +20,34 @@ function createGoogleMapEmbedUrl(location) {
   }
 
   return `https://maps.google.com/maps?q=${lat},${lon}&z=17&output=embed`
+}
+
+function getPointFromEvent(event, element) {
+  const rect = element.getBoundingClientRect()
+  return {
+    x: Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100)),
+    y: Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100))
+  }
+}
+
+function getLocationFromPin(center, point) {
+  return {
+    lat: center.lat + ((50 - point.y) / 100) * MAP_DRAG_SPAN.lat,
+    lon: center.lon + ((point.x - 50) / 100) * MAP_DRAG_SPAN.lon
+  }
+}
+
+function getLocationErrorMessage(error) {
+  if (error?.code === 1) {
+    return 'Location permission is blocked. Please allow location access from browser settings.'
+  }
+  if (error?.code === 2) {
+    return 'Could not detect your location. Please check GPS/network and try again.'
+  }
+  if (error?.code === 3) {
+    return 'Location detection timed out. Please try again.'
+  }
+  return 'Could not get current location. Please allow location permission and try again.'
 }
 
 export default function ServiceManRegistration() {
@@ -47,9 +78,13 @@ export default function ServiceManRegistration() {
   const [addressLoading, setAddressLoading] = useState(false)
   const [locating, setLocating] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState(null)
+  const [pinPosition, setPinPosition] = useState({ x: 50, y: 50 })
+  const [pinDragging, setPinDragging] = useState(false)
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
+  const mapFrameRef = useRef(null)
   const skipAddressFetch = useRef(false)
   const googleMapUrl = createGoogleMapEmbedUrl(selectedLocation)
+  const mapCenter = selectedLocation || DEFAULT_MAP_LOCATION
 
   useEffect(() => {
     const address = formData.address.trim()
@@ -111,6 +146,7 @@ export default function ServiceManRegistration() {
       currentLocation: hasLocation ? createMapLink(feature.lat, feature.lon) : prev.currentLocation
     }))
     if (hasLocation) {
+      setPinPosition({ x: 50, y: 50 })
       setSelectedLocation({ lat: feature.lat, lon: feature.lon })
     }
     setAddressSuggestions([])
@@ -120,6 +156,7 @@ export default function ServiceManRegistration() {
   const applyResolvedAddress = (suggestion, latitude, longitude) => {
     skipAddressFetch.current = true
     setSelectedLocation({ lat: latitude, lon: longitude })
+    setPinPosition({ x: 50, y: 50 })
     setFormData(prev => ({
       ...prev,
       address: suggestion?.address || prev.address,
@@ -128,6 +165,48 @@ export default function ServiceManRegistration() {
       pinCode: suggestion?.pinCode || prev.pinCode,
       currentLocation: createMapLink(latitude, longitude)
     }))
+  }
+
+  const updatePinnedAddress = async (point) => {
+    const pinnedLocation = getLocationFromPin(mapCenter, point)
+    setLocating(true)
+    applyResolvedAddress(null, pinnedLocation.lat, pinnedLocation.lon)
+
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), 7000)
+    try {
+      const suggestion = await fetchGeoapifyReverseAddress(pinnedLocation.lat, pinnedLocation.lon, controller.signal)
+      if (suggestion) {
+        applyResolvedAddress(suggestion, pinnedLocation.lat, pinnedLocation.lon)
+      }
+    } catch {
+      applyResolvedAddress(null, pinnedLocation.lat, pinnedLocation.lon)
+    } finally {
+      window.clearTimeout(timeoutId)
+      setLocating(false)
+    }
+  }
+
+  const handleMapPointerDown = (event) => {
+    if (!mapFrameRef.current) return
+    event.preventDefault()
+    const point = getPointFromEvent(event, mapFrameRef.current)
+    setPinDragging(true)
+    setPinPosition(point)
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const handleMapPointerMove = (event) => {
+    if (!pinDragging || !mapFrameRef.current) return
+    setPinPosition(getPointFromEvent(event, mapFrameRef.current))
+  }
+
+  const handleMapPointerUp = (event) => {
+    if (!pinDragging || !mapFrameRef.current) return
+    const point = getPointFromEvent(event, mapFrameRef.current)
+    setPinDragging(false)
+    setPinPosition(point)
+    updatePinnedAddress(point)
   }
 
   const handleCurrentLocation = () => {
@@ -140,22 +219,27 @@ export default function ServiceManRegistration() {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords
+        applyResolvedAddress(null, latitude, longitude)
         const controller = new AbortController()
+        const timeoutId = window.setTimeout(() => controller.abort(), 7000)
 
         try {
           const suggestion = await fetchGeoapifyReverseAddress(latitude, longitude, controller.signal)
-          applyResolvedAddress(suggestion, latitude, longitude)
+          if (suggestion) {
+            applyResolvedAddress(suggestion, latitude, longitude)
+          }
         } catch {
           applyResolvedAddress(null, latitude, longitude)
         } finally {
+          window.clearTimeout(timeoutId)
           setLocating(false)
         }
       },
-      () => {
+      (error) => {
         setLocating(false)
-        setError('Could not get current location. Please allow location permission or paste a map link.')
+        setError(getLocationErrorMessage(error))
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
     )
   }
 
@@ -395,6 +479,41 @@ export default function ServiceManRegistration() {
             />
           </div>
 
+          <div className="google-map-card">
+            <div className="google-map-frame" ref={mapFrameRef}>
+              <iframe
+                title="Google map selected service man location"
+                src={googleMapUrl}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div
+                className={`map-drag-layer ${pinDragging ? 'dragging' : ''}`}
+                onPointerDown={handleMapPointerDown}
+                onPointerMove={handleMapPointerMove}
+                onPointerUp={handleMapPointerUp}
+                onPointerCancel={() => setPinDragging(false)}
+                role="button"
+                tabIndex={0}
+                aria-label="Move map pin"
+              >
+                <span
+                  className="draggable-map-pin"
+                  style={{ left: `${pinPosition.x}%`, top: `${pinPosition.y}%` }}
+                />
+              </div>
+            </div>
+            <div className="google-map-tools">
+              <div>
+                <strong>{formData.currentLocation ? 'Location pinned' : 'Pin exact work location'}</strong>
+                <span>{formData.currentLocation ? 'Drag the pin to fine tune. Address below stays editable.' : 'Search your address, use GPS, or drag the pin on map.'}</span>
+              </div>
+              <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
+                {locating ? 'Detecting...' : 'Use Current Location'}
+              </button>
+            </div>
+          </div>
+
           <div className="address-autocomplete">
             <label>Address</label>
             <textarea
@@ -452,26 +571,6 @@ export default function ServiceManRegistration() {
               onChange={handleChange}
               placeholder="Pin Code"
             />
-          </div>
-
-          <div className="google-map-card">
-            <div className="google-map-frame">
-              <iframe
-                title="Google map selected service man location"
-                src={googleMapUrl}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-            <div className="google-map-tools">
-              <div>
-                <strong>{formData.currentLocation ? 'Location pinned' : 'Pin exact work location'}</strong>
-                <span>{formData.currentLocation ? 'Google map location is saved for admin verification.' : 'Search your address or use GPS to save your location.'}</span>
-              </div>
-              <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
-                {locating ? 'Detecting...' : 'Use Current Location'}
-              </button>
-            </div>
           </div>
 
           {formData.idProofType && (
