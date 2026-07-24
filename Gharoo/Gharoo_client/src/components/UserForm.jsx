@@ -86,8 +86,10 @@ export default function UserForm() {
   const [locating, setLocating] = useState(false)
   const [pinPosition, setPinPosition] = useState({ x: 50, y: 50 })
   const [pinDragging, setPinDragging] = useState(false)
+  const [mapExpanded, setMapExpanded] = useState(false)
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
   const mapFrameRef = useRef(null)
+  const pinDraggingRef = useRef(false)
   const skipAddressFetch = useRef(false)
   const googleMapUrl = createGoogleMapEmbedUrl(selectedLocation)
   const mapCenter = selectedLocation || DEFAULT_MAP_LOCATION
@@ -201,19 +203,21 @@ export default function UserForm() {
     if (!mapFrameRef.current) return
     event.preventDefault()
     const point = getPointFromEvent(event, mapFrameRef.current)
+    pinDraggingRef.current = true
     setPinDragging(true)
     setPinPosition(point)
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
   function handleMapPointerMove(event) {
-    if (!pinDragging || !mapFrameRef.current) return
+    if (!pinDraggingRef.current || !mapFrameRef.current) return
     setPinPosition(getPointFromEvent(event, mapFrameRef.current))
   }
 
   function handleMapPointerUp(event) {
-    if (!pinDragging || !mapFrameRef.current) return
+    if (!pinDraggingRef.current || !mapFrameRef.current) return
     const point = getPointFromEvent(event, mapFrameRef.current)
+    pinDraggingRef.current = false
     setPinDragging(false)
     setPinPosition(point)
     updatePinnedAddress(point)
@@ -359,7 +363,10 @@ export default function UserForm() {
                   onPointerDown={handleMapPointerDown}
                   onPointerMove={handleMapPointerMove}
                   onPointerUp={handleMapPointerUp}
-                  onPointerCancel={() => setPinDragging(false)}
+                  onPointerCancel={() => {
+                    pinDraggingRef.current = false
+                    setPinDragging(false)
+                  }}
                   role="button"
                   tabIndex={0}
                   aria-label="Move map pin"
@@ -375,9 +382,14 @@ export default function UserForm() {
                   <strong>{formData.currentLocation ? 'Location pinned' : 'Pin exact service location'}</strong>
                   <span>{formData.currentLocation ? 'Drag the pin to fine tune. Address below stays editable.' : 'Search your society/building, use GPS, or drag the pin on map.'}</span>
                 </div>
-                <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
-                  {locating ? 'Detecting...' : 'Use Current Location'}
-                </button>
+                <div className="map-action-row">
+                  <button type="button" className="map-expand-btn" onClick={() => setMapExpanded(true)}>
+                    Expand Map
+                  </button>
+                  <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
+                    {locating ? 'Detecting...' : 'Use Current Location'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -429,6 +441,51 @@ export default function UserForm() {
           </div>
         </form>
       </div>
+
+      {mapExpanded && (
+        <div className="map-modal" role="dialog" aria-modal="true" aria-label="Select exact map location">
+          <div className="map-modal-panel">
+            <div className="map-modal-header">
+              <div>
+                <strong>Select Exact Location</strong>
+                <span>Tap or drag the pin, then edit address below.</span>
+              </div>
+              <button type="button" className="map-close-btn" onClick={() => setMapExpanded(false)}>
+                Close
+              </button>
+            </div>
+            <div className="google-map-frame expanded" ref={mapFrameRef}>
+              <iframe
+                title="Expanded Google map selected service location"
+                src={googleMapUrl}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div
+                className={`map-drag-layer ${pinDragging ? 'dragging' : ''}`}
+                onPointerDown={handleMapPointerDown}
+                onPointerMove={handleMapPointerMove}
+                onPointerUp={handleMapPointerUp}
+                onPointerCancel={() => {
+                  pinDraggingRef.current = false
+                  setPinDragging(false)
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label="Move map pin"
+              >
+                <span
+                  className="draggable-map-pin"
+                  style={{ left: `${pinPosition.x}%`, top: `${pinPosition.y}%` }}
+                />
+              </div>
+            </div>
+            <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
+              {locating ? 'Detecting...' : 'Use Current Location'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

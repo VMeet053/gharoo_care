@@ -367,6 +367,30 @@
   line-height: 1.5;
 }
 
+.map-action-row {
+  display: grid;
+  gap: 10px;
+}
+
+.map-expand-btn {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid #dbe4ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.map-expand-btn:hover {
+  border-color: #24b57a;
+  background: #f0fdf4;
+  color: #047857;
+}
+
 .location-btn {
   min-height: 44px;
   padding: 0 16px;
@@ -390,6 +414,66 @@
 .location-btn:disabled {
   opacity: 0.68;
   cursor: wait;
+}
+
+.map-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.68);
+}
+
+.map-modal-panel {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 36px);
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.3);
+}
+
+.map-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.map-modal-header strong,
+.map-modal-header span {
+  display: block;
+}
+
+.map-modal-header strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.map-modal-header span {
+  color: #64748b;
+  font-size: 0.88rem;
+  margin-top: 2px;
+}
+
+.map-close-btn {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.google-map-frame.expanded,
+.google-map-frame.expanded iframe {
+  min-height: min(68vh, 620px);
 }
 
 .form-actions {
@@ -472,6 +556,29 @@
 
   .location-btn {
     width: 100%;
+  }
+
+  .map-modal {
+    padding: 10px;
+  }
+
+  .map-modal-panel {
+    max-height: calc(100vh - 20px);
+  }
+
+  .map-modal-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .map-close-btn,
+  .map-expand-btn {
+    width: 100%;
+  }
+
+  .google-map-frame.expanded,
+  .google-map-frame.expanded iframe {
+    min-height: 68vh;
   }
 
   .address-type-group {
