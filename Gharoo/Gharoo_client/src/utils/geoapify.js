@@ -15,15 +15,25 @@ function normalizeFeature(feature, source) {
   const properties = feature?.properties || {}
   const geometry = feature?.geometry || {}
   const [lon, lat] = Array.isArray(geometry.coordinates) ? geometry.coordinates : []
+  const city = properties.city || properties.town || properties.village || properties.municipality || ''
+  const area = properties.suburb ||
+    properties.neighbourhood ||
+    properties.city_district ||
+    properties.district ||
+    properties.state_district ||
+    properties.county ||
+    ''
+  const flatHouse = [properties.housenumber, properties.street].filter(Boolean).join(', ')
 
   return {
     id: `${source}-${properties.place_id || properties.osm_id || properties.formatted || properties.name}`,
     source,
     label: properties.formatted || properties.address_line1 || properties.name || '',
     name: properties.name || '',
+    flatHouse,
     address: properties.formatted || properties.address_line1 || properties.name || '',
-    area: properties.suburb || properties.district || properties.neighbourhood || properties.county || '',
-    city: properties.city || properties.county || properties.suburb || '',
+    area,
+    city,
     state: properties.state || '',
     pinCode: properties.postcode || '',
     lon,

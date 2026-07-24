@@ -123,10 +123,10 @@ export default function ServiceManRegistration() {
     setSelectedLocation({ lat: latitude, lon: longitude })
     setFormData(prev => ({
       ...prev,
-      address: suggestion?.address || prev.address,
-      city: suggestion?.city || prev.city,
-      state: suggestion?.state || prev.state,
-      pinCode: suggestion?.pinCode || prev.pinCode,
+      address: suggestion ? suggestion.address : prev.address,
+      city: suggestion ? suggestion.city : prev.city,
+      state: suggestion ? suggestion.state : prev.state,
+      pinCode: suggestion ? suggestion.pinCode : prev.pinCode,
       currentLocation: createMapLink(latitude, longitude)
     }))
   }

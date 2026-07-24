@@ -132,11 +132,11 @@ export default function UserForm() {
     setSelectedLocation({ lat: latitude, lon: longitude })
     setFormData({
       ...formData,
-      flatHouse: suggestion?.name || formData.flatHouse,
-      area: suggestion?.area || formData.area,
-      city: suggestion?.city || formData.city,
-      state: suggestion?.state || formData.state,
-      pincode: suggestion?.pinCode || formData.pincode,
+      flatHouse: suggestion ? suggestion.flatHouse : formData.flatHouse,
+      area: suggestion ? suggestion.area : formData.area,
+      city: suggestion ? suggestion.city : formData.city,
+      state: suggestion ? suggestion.state : formData.state,
+      pincode: suggestion ? suggestion.pinCode : formData.pincode,
       currentLocation: createMapLink(latitude, longitude)
     })
   }
