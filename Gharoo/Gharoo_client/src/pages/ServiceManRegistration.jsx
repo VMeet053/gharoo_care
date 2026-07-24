@@ -7,6 +7,18 @@ function createMapLink(latitude, longitude) {
   return `https://www.google.com/maps?q=${latitude},${longitude}`
 }
 
+function createGoogleMapEmbedUrl(location) {
+  if (!location) return 'https://maps.google.com/maps?q=Surat,Gujarat,India&z=12&output=embed'
+
+  const lat = Number(location.lat)
+  const lon = Number(location.lon)
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return 'https://maps.google.com/maps?q=Surat,Gujarat,India&z=12&output=embed'
+  }
+
+  return `https://maps.google.com/maps?q=${lat},${lon}&z=17&output=embed`
+}
+
 export default function ServiceManRegistration() {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -34,8 +46,10 @@ export default function ServiceManRegistration() {
   const [addressSuggestions, setAddressSuggestions] = useState([])
   const [addressLoading, setAddressLoading] = useState(false)
   const [locating, setLocating] = useState(false)
+  const [selectedLocation, setSelectedLocation] = useState(null)
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
   const skipAddressFetch = useRef(false)
+  const googleMapUrl = createGoogleMapEmbedUrl(selectedLocation)
 
   useEffect(() => {
     const address = formData.address.trim()
@@ -96,12 +110,16 @@ export default function ServiceManRegistration() {
       pinCode: feature.pinCode,
       currentLocation: hasLocation ? createMapLink(feature.lat, feature.lon) : prev.currentLocation
     }))
+    if (hasLocation) {
+      setSelectedLocation({ lat: feature.lat, lon: feature.lon })
+    }
     setAddressSuggestions([])
     setShowAddressSuggestions(false)
   }
 
   const applyResolvedAddress = (suggestion, latitude, longitude) => {
     skipAddressFetch.current = true
+    setSelectedLocation({ lat: latitude, lon: longitude })
     setFormData(prev => ({
       ...prev,
       address: suggestion?.address || prev.address,
@@ -244,6 +262,7 @@ export default function ServiceManRegistration() {
           state: '',
           pinCode: ''
         })
+        setSelectedLocation(null)
         setFrontImage(null)
         setBackImage(null)
         setFrontImagePreview(null)
@@ -435,14 +454,24 @@ export default function ServiceManRegistration() {
             />
           </div>
 
-          <div className="location-capture-card">
-            <div>
-              <strong>{formData.currentLocation ? 'Location added' : 'Add current location'}</strong>
-              <span>{formData.currentLocation ? 'Your map location is saved for admin verification.' : 'Select an address or use GPS to save your location.'}</span>
+          <div className="google-map-card">
+            <div className="google-map-frame">
+              <iframe
+                title="Google map selected service man location"
+                src={googleMapUrl}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
-            <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
-              {locating ? 'Detecting...' : 'Use Current Location'}
-            </button>
+            <div className="google-map-tools">
+              <div>
+                <strong>{formData.currentLocation ? 'Location pinned' : 'Pin exact work location'}</strong>
+                <span>{formData.currentLocation ? 'Google map location is saved for admin verification.' : 'Search your address or use GPS to save your location.'}</span>
+              </div>
+              <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
+                {locating ? 'Detecting...' : 'Use Current Location'}
+              </button>
+            </div>
           </div>
 
           {formData.idProofType && (

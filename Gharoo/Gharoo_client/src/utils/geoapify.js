@@ -49,7 +49,7 @@ export async function fetchGeoapifyAddressSuggestions(query, signal) {
   const autocompleteParams = new URLSearchParams({
     text,
     apiKey: GEOAPIFY_API_KEY,
-    limit: '5',
+    limit: '8',
     filter: 'countrycode:in'
   })
 
@@ -71,7 +71,7 @@ export async function fetchGeoapifyAddressSuggestions(query, signal) {
     bias: `proximity:${center.lon},${center.lat}`,
     name: text,
     apiKey: GEOAPIFY_API_KEY,
-    limit: '5'
+    limit: '8'
   })
 
   const placesResponse = await fetch(
@@ -81,7 +81,7 @@ export async function fetchGeoapifyAddressSuggestions(query, signal) {
   const placesData = await placesResponse.json()
   const placeSuggestions = (placesData.features || []).map((feature) => normalizeFeature(feature, 'places'))
 
-  return uniqueSuggestions([...autocompleteSuggestions, ...placeSuggestions]).slice(0, 8)
+  return uniqueSuggestions([...autocompleteSuggestions, ...placeSuggestions]).slice(0, 12)
 }
 
 export async function fetchGeoapifyReverseAddress(latitude, longitude, signal) {

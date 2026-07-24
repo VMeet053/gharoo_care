@@ -7,6 +7,18 @@ function createMapLink(latitude, longitude) {
   return `https://www.google.com/maps?q=${latitude},${longitude}`
 }
 
+function createGoogleMapEmbedUrl(location) {
+  if (!location) return 'https://maps.google.com/maps?q=Surat,Gujarat,India&z=12&output=embed'
+
+  const lat = Number(location.lat)
+  const lon = Number(location.lon)
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+    return 'https://maps.google.com/maps?q=Surat,Gujarat,India&z=12&output=embed'
+  }
+
+  return `https://maps.google.com/maps?q=${lat},${lon}&z=17&output=embed`
+}
+
 export default function UserForm() {
   const navigate = useNavigate()
 
@@ -43,6 +55,7 @@ export default function UserForm() {
   const [locating, setLocating] = useState(false)
   const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
   const skipAddressFetch = useRef(false)
+  const googleMapUrl = createGoogleMapEmbedUrl(selectedLocation)
 
   useEffect(() => {
     const query = addressQuery.trim()
@@ -249,14 +262,24 @@ export default function UserForm() {
               )}
             </div>
 
-            <div className="location-capture-card">
-              <div>
-                <strong>{formData.currentLocation ? 'Location added' : 'Add current location'}</strong>
-                <span>{formData.currentLocation ? 'Your map location is saved for the technician.' : 'Select an address or use GPS to save service location.'}</span>
+            <div className="google-map-card">
+              <div className="google-map-frame">
+                <iframe
+                  title="Google map selected service location"
+                  src={googleMapUrl}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
               </div>
-              <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
-                {locating ? 'Detecting...' : 'Use Current Location'}
-              </button>
+              <div className="google-map-tools">
+                <div>
+                  <strong>{formData.currentLocation ? 'Location pinned' : 'Pin exact service location'}</strong>
+                  <span>{formData.currentLocation ? 'Google map location is saved for the technician.' : 'Search your society/building or use GPS like shopping apps.'}</span>
+                </div>
+                <button type="button" className="location-btn" onClick={handleCurrentLocation} disabled={locating}>
+                  {locating ? 'Detecting...' : 'Use Current Location'}
+                </button>
+              </div>
             </div>
 
             <div className="form-group">
