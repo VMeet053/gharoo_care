@@ -33,6 +33,72 @@ function coalesce(...values) {
   return ''
 }
 
+function toFiniteNumber(value) {
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+function getCurrentPosition(options) {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, options)
+  })
+}
+
+function getAccurateCurrentPosition() {
+  const highAccuracyOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+
+  return new Promise((resolve, reject) => {
+    let settled = false
+    let bestPosition = null
+    let watchId = null
+
+    const finish = (position) => {
+      if (settled) return
+      settled = true
+      if (watchId != null) navigator.geolocation.clearWatch(watchId)
+      resolve(position)
+    }
+
+    const fail = (error) => {
+      if (settled) return
+      if (bestPosition) {
+        finish(bestPosition)
+        return
+      }
+      settled = true
+      if (watchId != null) navigator.geolocation.clearWatch(watchId)
+      reject(error)
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        bestPosition = position
+        if ((position.coords.accuracy || Infinity) <= 80) finish(position)
+      },
+      fail,
+      highAccuracyOptions
+    )
+
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        if (
+          !bestPosition ||
+          (position.coords.accuracy || Infinity) < (bestPosition.coords.accuracy || Infinity)
+        ) {
+          bestPosition = position
+        }
+        if ((position.coords.accuracy || Infinity) <= 50) finish(position)
+      },
+      fail,
+      highAccuracyOptions
+    )
+
+    window.setTimeout(() => {
+      if (bestPosition) finish(bestPosition)
+    }, 6500)
+  }).catch(() => getCurrentPosition(highAccuracyOptions))
+}
+
 const FIELD_DEFAULTS = {
   firstName: '',
   email: '',
@@ -74,8 +140,10 @@ export default function UserForm() {
   })
 
   const [selectedLocation, setSelectedLocation] = useState(() => {
-    if (Number.isFinite(savedData.latitude) && Number.isFinite(savedData.longitude)) {
-      return { lat: savedData.latitude, lon: savedData.longitude }
+    const savedLatitude = toFiniteNumber(savedData.latitude)
+    const savedLongitude = toFiniteNumber(savedData.longitude)
+    if (savedLatitude != null && savedLongitude != null) {
+      return { lat: savedLatitude, lon: savedLongitude }
     }
     return null
   })
@@ -223,13 +291,16 @@ export default function UserForm() {
       } catch (err) {
         console.warn('Reverse geocode failed for pin failed:', err)
       } finally {
-          if (nonce === lastPinNonceRef.current) setReverseResolving(false)
+        if (nonce === lastPinNonceRef.current) {
+          setReverseResolving(false)
+          setLocating(false)
         }
+      }
     }, 300)
   }
 
   async function updatePinnedAddress(location) {
-    const nonce = ++lastPinNonceRef.current + 1
+    const nonce = lastPinNonceRef.current + 1
     lastPinNonceRef.current = nonce
     setLocating(true)
     try {
@@ -247,32 +318,19 @@ export default function UserForm() {
       return
     }
 
-    const nonce = ++lastPinNonceRef.current + 1
+    const nonce = lastPinNonceRef.current + 1
     lastPinNonceRef.current = nonce
     setLocating(true)
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords
-        try {
-          updatePinnedAddressHandler({ lat: latitude, lon: longitude }, nonce)
-          const suggestion = await fetchReverseAddress(latitude, longitude)
-          if (nonce !== lastPinNonceRef.current) return
-          if (suggestion) {
-            applyResolvedSuggestion(suggestion, latitude, longitude)
-          }
-        } catch (err) {
-          console.warn('Reverse geocode for current location failed:', err)
-        } finally {
-          if (nonce === lastPinNonceRef.current) setLocating(false)
-        }
-      },
-      (error) => {
-        if (nonce === lastPinNonceRef.current) setLocating(false)
-        alert(getLocationErrorMessage(error))
-      },
-      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
-    )
+    try {
+      const position = await getAccurateCurrentPosition()
+      const { latitude, longitude } = position.coords
+      if (nonce !== lastPinNonceRef.current) return
+      updatePinnedAddressHandler({ lat: latitude, lon: longitude }, nonce)
+    } catch (error) {
+      if (nonce === lastPinNonceRef.current) setLocating(false)
+      alert(getLocationErrorMessage(error))
+    }
   }
 
   function handleSubmit(e) {
