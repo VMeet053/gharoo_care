@@ -3,13 +3,10 @@ node_modules
 */node_modules
 
 # Environment Variables
-.env
-.env.local
 .env.*.local
 
 # IDE
 .idea
-.vscode
 *.swp
 
 # OS Files
@@ -21,3 +18,4 @@ Thumbs.db
 
 # Corrupted old git
 .git-old
+config.bat

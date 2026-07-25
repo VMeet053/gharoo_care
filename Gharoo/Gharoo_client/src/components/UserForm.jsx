@@ -2,13 +2,13 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './UserForm.css'
 import DraggableAddressMap, {
-  fetchGoogleAddressSuggestions,
-  fetchGooglePlaceDetails,
-  fetchGoogleReverseAddress
+  fetchAddressSuggestions,
+  fetchPlaceDetails,
+  fetchReverseAddress
 } from './DraggableAddressMap'
 
 function createMapLink(latitude, longitude) {
-  return `https://www.google.com/maps?q=${latitude},${longitude}`
+  return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
 }
 
 function getLocationErrorMessage(error) {
@@ -24,167 +24,251 @@ function getLocationErrorMessage(error) {
   return 'Could not get current location. Please allow location permission and try again.'
 }
 
+function coalesce(...values) {
+  for (const v of values) {
+    if (typeof v === 'string' ? v.trim() !== '' : v != null) {
+      return typeof v === 'string' ? v.trim() : v
+    }
+  }
+  return ''
+}
+
+const FIELD_DEFAULTS = {
+  firstName: '',
+  email: '',
+  contactNumber: '',
+  altContact: '',
+  flatHouse: '',
+  area: '',
+  city: '',
+  state: '',
+  pincode: '',
+  currentLocation: '',
+  addressType: 'Home'
+}
+
 export default function UserForm() {
   const navigate = useNavigate()
 
   const savedData = (() => {
-    try { return JSON.parse(localStorage.getItem('userFormData')) || {} } catch { return {} }
+    try {
+      return JSON.parse(localStorage.getItem('userFormData')) || {}
+    } catch {
+      return {}
+    }
   })()
 
   const selectedPlan = (() => {
-    try { return JSON.parse(localStorage.getItem('selectedPlan')) || null } catch { return null }
+    try {
+      return JSON.parse(localStorage.getItem('selectedPlan')) || null
+    } catch {
+      return null
+    }
   })()
 
   const [formData, setFormData] = useState({
-    firstName: savedData.firstName || '',
-    email: savedData.email || '',
-    contactNumber: savedData.contactNumber || '',
-    altContact: savedData.altContact || '',
-    flatHouse: savedData.flatHouse || '',
-    area: savedData.area || '',
-    city: savedData.city || '',
-    state: savedData.state || '',
-    pincode: savedData.pincode || '',
-    currentLocation: savedData.currentLocation || '',
-    addressType: savedData.addressType || 'Home',
+    ...FIELD_DEFAULTS,
+    ...Object.fromEntries(
+      Object.entries(FIELD_DEFAULTS).map(([k]) => [k, savedData[k] ?? FIELD_DEFAULTS[k]])
+    )
   })
-  const [localityQuery, setLocalityQuery] = useState(savedData.area || '')
+
   const [selectedLocation, setSelectedLocation] = useState(() => {
     if (Number.isFinite(savedData.latitude) && Number.isFinite(savedData.longitude)) {
       return { lat: savedData.latitude, lon: savedData.longitude }
     }
     return null
   })
+
+  const [localityQuery, setLocalityQuery] = useState(savedData.area || '')
   const [localitySuggestions, setLocalitySuggestions] = useState([])
   const [localityLoading, setLocalityLoading] = useState(false)
   const [locating, setLocating] = useState(false)
+  const [reverseResolving, setReverseResolving] = useState(false)
   const [showLocalitySuggestions, setShowLocalitySuggestions] = useState(false)
   const skipLocalityFetch = useRef(false)
+  const debounceIdRef = useRef(null)
+  const reverseIdRef = useRef(null)
+  const lastPinNonceRef = useRef(0)
 
   useEffect(() => {
-    const query = localityQuery.trim()
-    if (skipLocalityFetch.current) {
-      skipLocalityFetch.current = false
-      return
-    }
-    if (query.length < 3) {
-      return
-    }
-
-    const controller = new AbortController()
-    const timeoutId = window.setTimeout(async () => {
-      setLocalityLoading(true)
-      try {
-        setLocalitySuggestions(await fetchGoogleAddressSuggestions(query, { localityOnly: true }))
-      } catch (err) {
-        if (err.name !== 'AbortError') {
-          setLocalitySuggestions([])
-        }
-      } finally {
-        setLocalityLoading(false)
-      }
-    }, 350)
-
     return () => {
-      controller.abort()
-      window.clearTimeout(timeoutId)
+      if (debounceIdRef.current) window.clearTimeout(debounceIdRef.current)
+      if (reverseIdRef.current) window.clearTimeout(reverseIdRef.current)
     }
-  }, [localityQuery])
+  }, [])
 
   function handleChange(e) {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   function handleLocalityQueryChange(e) {
     const value = e.target.value
     setLocalityQuery(value)
     setShowLocalitySuggestions(true)
-    if (value.trim().length < 3) {
+    if (debounceIdRef.current) {
+      window.clearTimeout(debounceIdRef.current)
+      debounceIdRef.current = null
+    }
+
+    const trimmed = value.trim()
+    if (trimmed.length < 3) {
       setLocalitySuggestions([])
       setLocalityLoading(false)
+      return
+    }
+
+    setLocalityLoading(true)
+    debounceIdRef.current = window.setTimeout(async () => {
+      try {
+        const suggestions = await fetchAddressSuggestions(trimmed, { localityOnly: true })
+        setLocalitySuggestions(suggestions)
+      } catch (err) {
+      } finally {
+        setLocalityLoading(false)
+      }
+    }, 380)
+  }
+
+  async function applyResolvedSuggestion(suggestion, latitude, longitude) {
+    if (skipLocalityFetch.current) skipLocalityFetch.current = false
+
+    const hasCoords = Number.isFinite(latitude) && Number.isFinite(longitude)
+    const mapLink = hasCoords ? createMapLink(latitude, longitude) : formData.currentLocation
+
+    setFormData((prev) => {
+      const nextArea = coalesce(suggestion?.area, prev.area)
+      const nextCity = coalesce(suggestion?.city, prev.city)
+      const nextState = coalesce(suggestion?.state, prev.state)
+      const nextPin = coalesce(suggestion?.pinCode, prev.pincode)
+      const nextFlatHouse = coalesce(suggestion?.flatHouse, prev.flatHouse)
+
+      setLocalityQuery((prevQuery) => {
+        const queryLabel = suggestion?.area || suggestion?.label
+        if (!prevQuery && !queryLabel) return prevQuery
+        const best = coalesce(queryLabel, prevQuery)
+        return best
+      })
+
+      return {
+        ...prev,
+        flatHouse: nextFlatHouse,
+        area: nextArea,
+        city: nextCity,
+        state: nextState,
+        pincode: nextPin,
+        currentLocation: mapLink || prev.currentLocation
+      }
+    })
+
+    if (hasCoords) {
+      setSelectedLocation({ lat: latitude, lon: longitude })
     }
   }
 
   async function handleLocalitySelect(suggestion) {
-    skipLocalityFetch.current = true
-    setLocalityQuery(suggestion.label)
-    const googleAddress = suggestion.placeId ? await fetchGooglePlaceDetails(suggestion.placeId) : suggestion
-    const hasLocation = Number.isFinite(googleAddress?.lat) && Number.isFinite(googleAddress?.lon)
-    setFormData({
-      ...formData,
-      area: googleAddress?.area || formData.area,
-      city: googleAddress?.city || formData.city,
-      state: googleAddress?.state || formData.state,
-      pincode: googleAddress?.pinCode || formData.pincode,
-      currentLocation: hasLocation ? createMapLink(googleAddress.lat, googleAddress.lon) : formData.currentLocation
-    })
-    if (hasLocation) {
-      setSelectedLocation({ lat: googleAddress.lat, lon: googleAddress.lon })
-      setLocalityQuery(googleAddress.area || googleAddress.label || suggestion.label)
-    }
-    setLocalitySuggestions([])
     setShowLocalitySuggestions(false)
+    setLocalitySuggestions([])
+    if (debounceIdRef.current) {
+      window.clearTimeout(debounceIdRef.current)
+      debounceIdRef.current = null
+    }
+
+    const fastCoordinates =
+      Number.isFinite(suggestion?.lat) && Number.isFinite(suggestion?.lon)
+        ? { lat: suggestion.lat, lon: suggestion.lon }
+        : null
+
+    if (fastCoordinates) {
+      applyResolvedSuggestion(suggestion, fastCoordinates.lat, fastCoordinates.lon)
+    }
+
+    try {
+      const details = await fetchPlaceDetails(suggestion)
+      if (!details) {
+        if (!fastCoordinates) {
+          alert('Could not load full address details. Please try another suggestion or drag the map pin.')
+        }
+        return
+      }
+
+      applyResolvedSuggestion(
+        details,
+        Number.isFinite(details.lat) ? details.lat : fastCoordinates?.lat,
+        Number.isFinite(details.lon) ? details.lon : fastCoordinates?.lon
+      )
+    } catch (err) {
+      console.warn('Place details failed:', err)
+      if (!fastCoordinates) {
+        alert('Could not load full address details. Please try another suggestion or drag the map pin.')
+      }
+    }
   }
 
-  function handleAddressType(type) {
-    setFormData({ ...formData, addressType: type })
-  }
+  function updatePinnedAddressHandler(location, nonce) {
+    applyResolvedSuggestion(null, location.lat, location.lon)
+    setReverseResolving(true)
 
-  function applyResolvedAddress(suggestion, latitude, longitude) {
-    skipLocalityFetch.current = true
-    setLocalityQuery(suggestion?.area || suggestion?.label || `Pinned location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`)
-    setSelectedLocation({ lat: latitude, lon: longitude })
-    setFormData({
-      ...formData,
-      area: suggestion ? suggestion.area : formData.area,
-      city: suggestion ? suggestion.city : formData.city,
-      state: suggestion ? suggestion.state : formData.state,
-      pincode: suggestion ? suggestion.pinCode : formData.pincode,
-      currentLocation: createMapLink(latitude, longitude)
-    })
+    if (reverseIdRef.current) {
+      window.clearTimeout(reverseIdRef.current)
+    }
+
+    reverseIdRef.current = window.setTimeout(async () => {
+      try {
+        const suggestion = await fetchReverseAddress(location.lat, location.lon)
+        if (nonce !== lastPinNonceRef.current) return
+        if (suggestion) {
+          applyResolvedSuggestion(suggestion, location.lat, location.lon)
+        }
+      } catch (err) {
+        console.warn('Reverse geocode failed for pin failed:', err)
+      } finally {
+          if (nonce === lastPinNonceRef.current) setReverseResolving(false)
+        }
+    }, 300)
   }
 
   async function updatePinnedAddress(location) {
+    const nonce = ++lastPinNonceRef.current + 1
+    lastPinNonceRef.current = nonce
     setLocating(true)
-    applyResolvedAddress(null, location.lat, location.lon)
-
     try {
-      const suggestion = await fetchGoogleReverseAddress(location.lat, location.lon)
-      if (suggestion) {
-        applyResolvedAddress(suggestion, location.lat, location.lon)
-      }
-    } catch {
-      applyResolvedAddress(null, location.lat, location.lon)
+      updatePinnedAddressHandler(location, nonce)
     } finally {
-      setLocating(false)
+      setTimeout(() => {
+        if (nonce === lastPinNonceRef.current) setLocating(false)
+      }, 420)
     }
   }
 
-  function handleCurrentLocation() {
+  async function handleCurrentLocation() {
     if (!navigator.geolocation) {
       alert('Current location is not supported in this browser.')
       return
     }
 
+    const nonce = ++lastPinNonceRef.current + 1
+    lastPinNonceRef.current = nonce
     setLocating(true)
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords
-        applyResolvedAddress(null, latitude, longitude)
-
         try {
-          const suggestion = await fetchGoogleReverseAddress(latitude, longitude)
+          updatePinnedAddressHandler({ lat: latitude, lon: longitude }, nonce)
+          const suggestion = await fetchReverseAddress(latitude, longitude)
+          if (nonce !== lastPinNonceRef.current) return
           if (suggestion) {
-            applyResolvedAddress(suggestion, latitude, longitude)
+            applyResolvedSuggestion(suggestion, latitude, longitude)
           }
-        } catch {
-          applyResolvedAddress(null, latitude, longitude)
+        } catch (err) {
+          console.warn('Reverse geocode for current location failed:', err)
         } finally {
-          setLocating(false)
+          if (nonce === lastPinNonceRef.current) setLocating(false)
         }
       },
       (error) => {
-        setLocating(false)
+        if (nonce === lastPinNonceRef.current) setLocating(false)
         alert(getLocationErrorMessage(error))
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
@@ -193,32 +277,42 @@ export default function UserForm() {
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (!formData.currentLocation.trim()) {
-      alert('Please add current location before payment.')
+    const hasPin = selectedLocation && formData.currentLocation.trim()
+    if (!hasPin) {
+      alert('Please add current location before payment. Use "Use Current Location" or tap on the map to drop a pin.')
       return
     }
-    const fullAddress = `${formData.flatHouse}, ${formData.area}, ${formData.city}, ${formData.state} - ${formData.pincode}`
+    const fullAddressParts = [
+      formData.flatHouse?.trim(),
+      formData.area?.trim(),
+      formData.city?.trim(),
+      formData.state?.trim(),
+      formData.pincode?.trim()
+    ].filter(Boolean)
+    const fullAddress = fullAddressParts.join(', ')
     const dataToSave = {
       ...formData,
       fullAddress,
-      latitude: selectedLocation?.lat || '',
-      longitude: selectedLocation?.lon || ''
+      latitude: selectedLocation?.lat ?? savedData.latitude ?? '',
+      longitude: selectedLocation?.lon ?? savedData.longitude ?? ''
     }
     localStorage.setItem('userFormData', JSON.stringify(dataToSave))
     navigate('/payment')
+  }
+
+  function openCurrentLocationInGoogleMaps() {
+    if (!selectedLocation) return
+    const url = createMapLink(selectedLocation.lat, selectedLocation.lon)
+    window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   return (
     <div className="form-container">
       <div className="form-card">
         <aside className="booking-summary">
-          <button
-            type="button"
-            className="form-back-btn"
-            onClick={() => navigate('/pricing')}
-          >
-            Back to Plans
-          </button>
+          <button type="button" className="form-back-btn" onClick={() => navigate('/pricing')}>
+          Back to Plans
+        </button>
           <span className="booking-kicker">Selected Plan</span>
           <h2>{selectedPlan?.name || 'Book Your Plan'}</h2>
           <div className="booking-price">{selectedPlan?.price || 'Choose a plan'}</div>
@@ -261,75 +355,156 @@ export default function UserForm() {
 
             <div className="form-group address-search-group">
               <label>Search Area / Locality <span className="required">*</span></label>
-              <input
-                type="text"
-                name="localitySearch"
-                value={localityQuery}
-                onChange={handleLocalityQueryChange}
-                onFocus={() => setShowLocalitySuggestions(true)}
-                onBlur={() => window.setTimeout(() => setShowLocalitySuggestions(false), 150)}
-                required
-                placeholder="Search area, locality or landmark"
-              />
+              <div className="address-search-wrap">
+                <input
+                  type="text"
+                  name="localitySearch"
+                  value={localityQuery}
+                  onChange={handleLocalityQueryChange}
+                  onFocus={() => setShowLocalitySuggestions(true)}
+                  onBlur={() => window.setTimeout(() => setShowLocalitySuggestions(false), 180)}
+                  required
+                  placeholder="Search area, locality or landmark (e.g. Nana Varachha, Vesu, Pal Road)"
+                  autoComplete="off"
+                />
+                {localityLoading && <span className="search-spinner" aria-hidden="true" />}
+              </div>
               {showLocalitySuggestions && (localityLoading || localitySuggestions.length > 0) && (
                 <div className="address-suggestions" role="listbox">
-                  {localityLoading && <div className="address-suggestion muted">Searching locality...</div>}
-                  {!localityLoading && localitySuggestions.map((suggestion) => (
-                    <button type="button" className="address-suggestion" key={suggestion.id} onMouseDown={() => handleLocalitySelect(suggestion)}>
-                      <span className="address-source-badge">Locality</span>
-                      <span>{suggestion.label}</span>
-                    </button>
-                  ))}
+                  {localityLoading && <div className="address-suggestion muted">Searching nearby areas...</div>}
+                  {!localityLoading &&
+                    localitySuggestions.map((suggestion) => (
+                      <button
+                        type="button"
+                        className="address-suggestion"
+                        key={suggestion.id}
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          handleLocalitySelect(suggestion)
+                        }}
+                        onTouchStart={() => handleLocalitySelect(suggestion)}
+                      >
+                        <span className="address-source-badge">
+                          {suggestion.source === 'google' ? 'Google' : 'Area'}
+                        </span>
+                        <span>{suggestion.label}</span>
+                      </button>
+                    ))}
                 </div>
               )}
             </div>
 
             <DraggableAddressMap
               location={selectedLocation}
-              locating={locating}
+              locating={locating || reverseResolving}
               onSelect={updatePinnedAddress}
               onUseCurrent={handleCurrentLocation}
               title="Location pinned"
-              idleText="Search area/locality, use GPS, or tap the map."
-              pinnedText="Move the pin to fine tune. Flat/building address stays manual."
+              idleText="Search area/locality above, use GPS, or tap the map to drop a pin."
+              pinnedText="Move the pin to fine-tune the exact spot. Flat/building stays manual."
             />
 
             <div className="form-group">
-              <label>Flat / House / Building <span className="required">*</span></label>
-              <input type="text" name="flatHouse" value={formData.flatHouse} onChange={handleChange} required placeholder="C 202, Maruti Residency" />
+              <label>
+                Flat / House / Building <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                name="flatHouse"
+                value={formData.flatHouse}
+                onChange={handleChange}
+                required
+                placeholder="C 202, Maruti Residency"
+              />
             </div>
 
             <div className="form-group">
-              <label>Area / Locality <span className="required">*</span></label>
-              <input type="text" name="area" value={formData.area} onChange={handleChange} required placeholder="Nana Varachha, Near XYZ" />
+              <label>
+                Area / Locality <span className="required">*</span>
+              </label>
+              <div className="field-with-action">
+                <input
+                  type="text"
+                  name="area"
+                  value={formData.area}
+                  onChange={handleChange}
+                  required
+                  placeholder="Auto-filled when you select area above or drop a pin"
+                />
+                {formData.currentLocation && (
+                  <button
+                  type="button"
+                  className="field-action-btn"
+                  onClick={openCurrentLocationInGoogleMaps}
+                  title="Open pinned location in Google Maps"
+                >
+                  📍 View
+                </button>
+              )}
+              </div>
             </div>
 
             <div className="form-group">
               <label>City <span className="required">*</span></label>
-              <input type="text" name="city" value={formData.city} onChange={handleChange} required placeholder="Surat" />
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                required
+                placeholder="Surat (auto-filled from pin/area)"
+              />
             </div>
 
             <div className="form-group">
               <label>State <span className="required">*</span></label>
-              <input type="text" name="state" value={formData.state} onChange={handleChange} required placeholder="Gujarat" />
+              <input
+                type="text"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                required
+                placeholder="Gujarat (auto-filled from pin/area)"
+              />
             </div>
 
             <div className="form-group">
               <label>Pincode <span className="required">*</span></label>
-              <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} required placeholder="6-digit pincode" maxLength={6} pattern="[0-9]{6}" />
+              <input
+                type="text"
+                name="pincode"
+                value={formData.pincode}
+                onChange={handleChange}
+                required
+                placeholder="6-digit pincode (auto-filled)"
+                maxLength={6}
+                pattern="[0-9]{6}"
+              />
             </div>
 
             <div className="form-group">
               <label>Type of Address</label>
               <div className="address-type-group">
-                <button type="button" className={`address-type-btn ${formData.addressType === 'Home' ? 'active' : ''}`} onClick={() => handleAddressType('Home')}>
-                  Home
+                <button
+                  type="button"
+                  className={`address-type-btn ${formData.addressType === 'Home' ? 'active' : ''}`}
+                  onClick={() => handleAddressType('Home')}
+                >
+                  🏠 Home
                 </button>
-                <button type="button" className={`address-type-btn ${formData.addressType === 'Work' ? 'active' : ''}`} onClick={() => handleAddressType('Work')}>
-                  Work
+                <button
+                  type="button"
+                  className={`address-type-btn ${formData.addressType === 'Work' ? 'active' : ''}`}
+                  onClick={() => handleAddressType('Work')}
+                >
+                  💼 Work
                 </button>
-                <button type="button" className={`address-type-btn ${formData.addressType === 'Other' ? 'active' : ''}`} onClick={() => handleAddressType('Other')}>
-                  Other
+                <button
+                  type="button"
+                  className={`address-type-btn ${formData.addressType === 'Other' ? 'active' : ''}`}
+                  onClick={() => handleAddressType('Other')}
+                >
+                  📍 Other
                 </button>
               </div>
             </div>
@@ -337,12 +512,15 @@ export default function UserForm() {
 
           <div className="form-actions">
             <button type="submit" className="btn primary btn-shine submit-btn">
-              Proceed to Payment
+              Proceed to Payment →
             </button>
           </div>
         </form>
       </div>
-
     </div>
   )
+
+  function handleAddressType(type) {
+    setFormData((prev) => ({ ...prev, addressType: type }))
+  }
 }
