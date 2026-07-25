@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { electronicsServices } from '../constants/services';
 import '../styles/leads.css';
 
@@ -12,6 +12,12 @@ const cityAreas = {
 };
 
 const leadCities = ['Surat', 'Navsari', 'Ankleshwar'];
+const localitySuggestions = Object.entries(cityAreas)
+  .filter(([city]) => city !== 'All')
+  .flatMap(([city, areas]) => areas
+    .filter((area) => area !== 'All')
+    .map((area) => `${area}, ${city}`));
+
 const emptyLeadForm = {
   name: '',
   email: '',
@@ -24,6 +30,33 @@ const emptyLeadForm = {
   city: '',
   area: ''
 };
+
+const GOOGLE_MAPS_BASE = 'https://www.google.com/maps/search/?api=1&query=';
+const GOOGLE_MAPS_EMBED_BASE = 'https://maps.google.com/maps?output=embed&q=';
+const DEFAULT_MAP_QUERY = 'Surat, Gujarat, India';
+
+const buildGoogleMapsLink = (query) => `${GOOGLE_MAPS_BASE}${encodeURIComponent(query || DEFAULT_MAP_QUERY)}`;
+const buildGoogleMapsEmbedLink = (query) => `${GOOGLE_MAPS_EMBED_BASE}${encodeURIComponent(query || DEFAULT_MAP_QUERY)}`;
+
+const getLocationQuery = (form, fallback = DEFAULT_MAP_QUERY) => {
+  const query = [
+    form.houseNumber,
+    form.address,
+    form.area,
+    form.city,
+    'Gujarat',
+    'India'
+  ].filter(Boolean).join(', ');
+
+  return query || fallback;
+};
+
+const detectCityFromLocality = (value) => leadCities.find((city) => new RegExp(`\\b${city}\\b`, 'i').test(value));
+const detectAreaFromLocality = (value, city) => {
+  const sourceAreas = city ? cityAreas[city] || [] : Object.values(cityAreas).flat();
+  return sourceAreas.find((area) => area !== 'All' && new RegExp(`\\b${area}\\b`, 'i').test(value));
+};
+const getTypedLocalityArea = (value) => value.split(',')[0]?.trim() || value.trim();
 
 const toTitleCase = (value) => value
   .toLowerCase()
@@ -73,6 +106,8 @@ export default function Leads() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [addForm, setAddForm] = useState(emptyLeadForm);
+  const [locationSearch, setLocationSearch] = useState('');
+  const [mapQuery, setMapQuery] = useState(DEFAULT_MAP_QUERY);
   const [editingId, setEditingId] = useState(null);
   const [tempAssigned, setTempAssigned] = useState('');
   const [selectedLeads, setSelectedLeads] = useState([]);
@@ -165,6 +200,15 @@ export default function Leads() {
   };
 
   const addLeadAreas = cityAreas[addForm.city] || [];
+  const mapEmbedUrl = useMemo(() => buildGoogleMapsEmbedLink(mapQuery), [mapQuery]);
+  const updateLeadLocation = (nextForm) => {
+    const query = getLocationQuery(nextForm);
+    setAddForm({
+      ...nextForm,
+      currentLocation: buildGoogleMapsLink(query)
+    });
+    setMapQuery(query);
+  };
 
   const handleAddLead = async (e) => {
     e.preventDefault();
@@ -182,6 +226,8 @@ export default function Leads() {
       if (data.success) {
         setLeads((prev) => [data.lead, ...prev]);
         setAddForm(emptyLeadForm);
+        setLocationSearch('');
+        setMapQuery(DEFAULT_MAP_QUERY);
         setShowAddForm(false);
       }
     } catch (err) {
@@ -198,16 +244,33 @@ export default function Leads() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        const coordinateQuery = `${latitude},${longitude}`;
         setAddForm((prev) => ({
           ...prev,
-          currentLocation: `https://www.google.com/maps?q=${latitude},${longitude}`
+          currentLocation: buildGoogleMapsLink(coordinateQuery)
         }));
+        setMapQuery(coordinateQuery);
       },
       () => {
         alert('Could not get current location. Please allow location permission or paste a map link.');
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  };
+
+  const handleLocationSearch = () => {
+    const trimmedSearch = locationSearch.trim();
+    const nextCity = detectCityFromLocality(trimmedSearch) || addForm.city || 'Surat';
+    const nextArea = detectAreaFromLocality(trimmedSearch, nextCity) || addForm.area || getTypedLocalityArea(trimmedSearch);
+    const nextForm = {
+      ...addForm,
+      city: nextCity,
+      area: nextArea,
+    };
+    const query = getLocationQuery(nextForm, trimmedSearch || DEFAULT_MAP_QUERY);
+
+    setAddForm({ ...nextForm, currentLocation: buildGoogleMapsLink(query) });
+    setMapQuery(query);
   };
 
   // Get available areas based on selected city
@@ -486,24 +549,73 @@ export default function Leads() {
               </div>
               <div className="col-md-3">
                 <label className="form-label" htmlFor="leadHouseNumber">House / Flat Number</label>
-                <input className="form-control" id="leadHouseNumber" value={addForm.houseNumber} onChange={(e) => setAddForm({ ...addForm, houseNumber: e.target.value })} placeholder="House, flat, floor" />
+                <input
+                  className="form-control"
+                  id="leadHouseNumber"
+                  value={addForm.houseNumber}
+                  onChange={(e) => {
+                    const nextForm = { ...addForm, houseNumber: e.target.value };
+                    updateLeadLocation(nextForm);
+                  }}
+                  placeholder="House, flat, floor"
+                />
               </div>
               <div className="col-md-6">
                 <label className="form-label" htmlFor="leadAddress">Address</label>
-                <input className="form-control" id="leadAddress" required value={addForm.address} onChange={(e) => setAddForm({ ...addForm, address: e.target.value })} placeholder="Full customer address" />
+                <input
+                  className="form-control"
+                  id="leadAddress"
+                  required
+                  value={addForm.address}
+                  onChange={(e) => {
+                    const nextForm = { ...addForm, address: e.target.value };
+                    updateLeadLocation(nextForm);
+                  }}
+                  placeholder="Full customer address"
+                />
               </div>
-              <div className="col-md-3">
-                <label className="form-label" htmlFor="leadCurrentLocation">Current Location</label>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="leadLocationSearch">Search Area / Locality</label>
                 <div className="input-group">
-                  <input className="form-control" id="leadCurrentLocation" required value={addForm.currentLocation} onChange={(e) => setAddForm({ ...addForm, currentLocation: e.target.value })} placeholder="Maps link or live location" />
-                  <button className="btn btn-outline-primary" type="button" onClick={fillCurrentLocation}>
+                  <input
+                    className="form-control"
+                    id="leadLocationSearch"
+                    list="leadLocalitySuggestions"
+                    value={locationSearch}
+                    onChange={(e) => setLocationSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleLocationSearch();
+                      }
+                    }}
+                    placeholder="Search area, locality, landmark"
+                  />
+                  <button className="btn btn-outline-primary" type="button" onClick={handleLocationSearch}>
+                    <i className="bi bi-search"></i>
+                  </button>
+                  <button className="btn btn-outline-primary" type="button" onClick={fillCurrentLocation} title="Use current location">
                     <i className="bi bi-crosshair"></i>
                   </button>
                 </div>
+                <datalist id="leadLocalitySuggestions">
+                  {localitySuggestions.map((locality) => (
+                    <option key={locality} value={locality} />
+                  ))}
+                </datalist>
               </div>
               <div className="col-md-3">
                 <label className="form-label" htmlFor="leadCity">City</label>
-                <select className="form-select" id="leadCity" required value={addForm.city} onChange={(e) => setAddForm({ ...addForm, city: e.target.value, area: '' })}>
+                <select
+                  className="form-select"
+                  id="leadCity"
+                  required
+                  value={addForm.city}
+                  onChange={(e) => {
+                    const nextForm = { ...addForm, city: e.target.value, area: '' };
+                    updateLeadLocation(nextForm);
+                  }}
+                >
                   <option value="">Choose city</option>
                   {leadCities.map((city) => (
                     <option key={city} value={city}>{city}</option>
@@ -512,14 +624,62 @@ export default function Leads() {
               </div>
               <div className="col-md-3">
                 <label className="form-label" htmlFor="leadArea">Area</label>
-                <select className="form-select" id="leadArea" required value={addForm.area} onChange={(e) => setAddForm({ ...addForm, area: e.target.value })} disabled={!addForm.city}>
-                  <option value="">Choose area</option>
+                <input
+                  className="form-control"
+                  id="leadArea"
+                  list="leadAreaSuggestions"
+                  required
+                  value={addForm.area}
+                  onChange={(e) => {
+                    const nextForm = { ...addForm, area: e.target.value };
+                    updateLeadLocation(nextForm);
+                  }}
+                  disabled={!addForm.city}
+                  placeholder="Area or locality"
+                />
+                <datalist id="leadAreaSuggestions">
                   {addLeadAreas.filter((area) => area !== 'All').map((area) => (
-                    <option key={area} value={area}>{area}</option>
+                    <option key={area} value={area} />
                   ))}
-                </select>
+                </datalist>
               </div>
-              <div className="col-md-3 d-flex align-items-end gap-2">
+              <div className="col-12">
+                <label className="form-label" htmlFor="leadCurrentLocation">Google Map Link</label>
+                <input
+                  className="form-control"
+                  id="leadCurrentLocation"
+                  required
+                  value={addForm.currentLocation}
+                  onChange={(e) => {
+                    setAddForm({ ...addForm, currentLocation: e.target.value });
+                    setMapQuery(e.target.value || getLocationQuery(addForm));
+                  }}
+                  placeholder="Google Maps link"
+                />
+              </div>
+              <div className="col-12">
+                <div className="lead-map-picker">
+                  <iframe
+                    title="Lead location map"
+                    src={mapEmbedUrl}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  ></iframe>
+                  <div className="lead-map-actions">
+                    <a className="btn btn-outline-primary btn-sm" href={buildGoogleMapsLink(mapQuery)} target="_blank" rel="noreferrer">
+                      <i className="bi bi-map"></i>Open Google Map
+                    </a>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      type="button"
+                      onClick={() => setAddForm({ ...addForm, currentLocation: buildGoogleMapsLink(mapQuery) })}
+                    >
+                      <i className="bi bi-geo-alt"></i>Use This Location
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="col-12 d-flex justify-content-end gap-2">
                 <button type="button" className="btn btn-outline-secondary" onClick={() => setShowAddForm(false)}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Save Lead</button>
               </div>

@@ -189,37 +189,12 @@
   background: #eef2f7;
 }
 
-.leaflet-map-canvas {
+.google-map-canvas {
   display: block;
   width: 100%;
   height: 220px;
   min-height: 220px;
   z-index: 1;
-}
-
-.leaflet-draggable-pin {
-  display: block;
-  width: 24px;
-  height: 24px;
-  border-radius: 50% 50% 50% 0;
-  background: #ef4444;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
-  transform: rotate(-45deg);
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.leaflet-draggable-pin::after {
-  content: "";
-  position: absolute;
-  inset: 7px;
-  border-radius: 50%;
-  background: #ffffff;
-}
-
-.leaflet-marker-draggable:hover .leaflet-draggable-pin,
-.leaflet-marker-draggable:active .leaflet-draggable-pin {
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.34);
-  transform: rotate(-45deg) scale(1.08);
 }
 
 .google-map-tools {
@@ -268,6 +243,11 @@
   border-color: #24b57a;
   background: #f0fdf4;
   color: #047857;
+}
+
+.map-expand-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .location-btn {
@@ -351,7 +331,7 @@
 }
 
 .google-map-frame.expanded,
-.google-map-frame.expanded .leaflet-map-canvas {
+.google-map-frame.expanded .google-map-canvas {
   min-height: min(68vh, 620px);
   height: min(68vh, 620px);
 }
@@ -474,7 +454,7 @@
   }
 
   .google-map-frame,
-  .leaflet-map-canvas {
+  .google-map-canvas {
     min-height: 260px;
     height: 260px;
   }
@@ -502,7 +482,7 @@
   }
 
   .google-map-frame.expanded,
-  .google-map-frame.expanded .leaflet-map-canvas {
+  .google-map-frame.expanded .google-map-canvas {
     min-height: 68vh;
     height: 68vh;
   }

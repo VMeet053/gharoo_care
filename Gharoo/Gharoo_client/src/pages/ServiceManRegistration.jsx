@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import './ServiceManRegistration.css'
-import DraggableAddressMap from '../components/DraggableAddressMap'
-import { fetchGeoapifyAddressSuggestions, fetchGeoapifyReverseAddress } from '../utils/geoapify'
+import DraggableAddressMap, {
+  fetchGoogleAddressSuggestions,
+  fetchGooglePlaceDetails,
+  fetchGoogleReverseAddress
+} from '../components/DraggableAddressMap'
 
 function createMapLink(latitude, longitude) {
   return `https://www.google.com/maps?q=${latitude},${longitude}`
@@ -66,7 +69,7 @@ export default function ServiceManRegistration() {
     const timeoutId = window.setTimeout(async () => {
       setAddressLoading(true)
       try {
-        setAddressSuggestions(await fetchGeoapifyAddressSuggestions(address, controller.signal))
+        setAddressSuggestions(await fetchGoogleAddressSuggestions(address))
       } catch (err) {
         if (err.name !== 'AbortError') {
           setAddressSuggestions([])
@@ -99,20 +102,21 @@ export default function ServiceManRegistration() {
     }
   }
 
-  const handleAddressSelect = (feature) => {
+  const handleAddressSelect = async (feature) => {
     skipAddressFetch.current = true
-    const hasLocation = Number.isFinite(feature.lat) && Number.isFinite(feature.lon)
+    const googleAddress = feature.placeId ? await fetchGooglePlaceDetails(feature.placeId) : feature
+    const hasLocation = Number.isFinite(googleAddress?.lat) && Number.isFinite(googleAddress?.lon)
     setFormData(prev => ({
       ...prev,
-      address: feature.address,
+      address: googleAddress?.address || feature.label || prev.address,
       houseNumber: prev.houseNumber,
-      city: feature.city,
-      state: feature.state,
-      pinCode: feature.pinCode,
-      currentLocation: hasLocation ? createMapLink(feature.lat, feature.lon) : prev.currentLocation
+      city: googleAddress?.city || prev.city,
+      state: googleAddress?.state || prev.state,
+      pinCode: googleAddress?.pinCode || prev.pinCode,
+      currentLocation: hasLocation ? createMapLink(googleAddress.lat, googleAddress.lon) : prev.currentLocation
     }))
     if (hasLocation) {
-      setSelectedLocation({ lat: feature.lat, lon: feature.lon })
+      setSelectedLocation({ lat: googleAddress.lat, lon: googleAddress.lon })
     }
     setAddressSuggestions([])
     setShowAddressSuggestions(false)
@@ -138,7 +142,7 @@ export default function ServiceManRegistration() {
     const controller = new AbortController()
     const timeoutId = window.setTimeout(() => controller.abort(), 7000)
     try {
-      const suggestion = await fetchGeoapifyReverseAddress(location.lat, location.lon, controller.signal)
+      const suggestion = await fetchGoogleReverseAddress(location.lat, location.lon)
       if (suggestion) {
         applyResolvedAddress(suggestion, location.lat, location.lon)
       }
@@ -165,7 +169,7 @@ export default function ServiceManRegistration() {
         const timeoutId = window.setTimeout(() => controller.abort(), 7000)
 
         try {
-          const suggestion = await fetchGeoapifyReverseAddress(latitude, longitude, controller.signal)
+          const suggestion = await fetchGoogleReverseAddress(latitude, longitude)
           if (suggestion) {
             applyResolvedAddress(suggestion, latitude, longitude)
           }

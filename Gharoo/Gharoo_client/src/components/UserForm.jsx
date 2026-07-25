@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './UserForm.css'
-import DraggableAddressMap from './DraggableAddressMap'
-import { fetchGeoapifyAddressSuggestions, fetchGeoapifyReverseAddress } from '../utils/geoapify'
+import DraggableAddressMap, {
+  fetchGoogleAddressSuggestions,
+  fetchGooglePlaceDetails,
+  fetchGoogleReverseAddress
+} from './DraggableAddressMap'
 
 function createMapLink(latitude, longitude) {
   return `https://www.google.com/maps?q=${latitude},${longitude}`
@@ -45,23 +48,23 @@ export default function UserForm() {
     currentLocation: savedData.currentLocation || '',
     addressType: savedData.addressType || 'Home',
   })
-  const [addressQuery, setAddressQuery] = useState(savedData.fullAddress || '')
+  const [localityQuery, setLocalityQuery] = useState(savedData.area || '')
   const [selectedLocation, setSelectedLocation] = useState(() => {
     if (Number.isFinite(savedData.latitude) && Number.isFinite(savedData.longitude)) {
       return { lat: savedData.latitude, lon: savedData.longitude }
     }
     return null
   })
-  const [addressSuggestions, setAddressSuggestions] = useState([])
-  const [addressLoading, setAddressLoading] = useState(false)
+  const [localitySuggestions, setLocalitySuggestions] = useState([])
+  const [localityLoading, setLocalityLoading] = useState(false)
   const [locating, setLocating] = useState(false)
-  const [showAddressSuggestions, setShowAddressSuggestions] = useState(false)
-  const skipAddressFetch = useRef(false)
+  const [showLocalitySuggestions, setShowLocalitySuggestions] = useState(false)
+  const skipLocalityFetch = useRef(false)
 
   useEffect(() => {
-    const query = addressQuery.trim()
-    if (skipAddressFetch.current) {
-      skipAddressFetch.current = false
+    const query = localityQuery.trim()
+    if (skipLocalityFetch.current) {
+      skipLocalityFetch.current = false
       return
     }
     if (query.length < 3) {
@@ -70,15 +73,15 @@ export default function UserForm() {
 
     const controller = new AbortController()
     const timeoutId = window.setTimeout(async () => {
-      setAddressLoading(true)
+      setLocalityLoading(true)
       try {
-        setAddressSuggestions(await fetchGeoapifyAddressSuggestions(query, controller.signal))
+        setLocalitySuggestions(await fetchGoogleAddressSuggestions(query, { localityOnly: true }))
       } catch (err) {
         if (err.name !== 'AbortError') {
-          setAddressSuggestions([])
+          setLocalitySuggestions([])
         }
       } finally {
-        setAddressLoading(false)
+        setLocalityLoading(false)
       }
     }, 350)
 
@@ -86,40 +89,41 @@ export default function UserForm() {
       controller.abort()
       window.clearTimeout(timeoutId)
     }
-  }, [addressQuery])
+  }, [localityQuery])
 
   function handleChange(e) {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  function handleAddressQueryChange(e) {
+  function handleLocalityQueryChange(e) {
     const value = e.target.value
-    setAddressQuery(value)
-    setShowAddressSuggestions(true)
+    setLocalityQuery(value)
+    setShowLocalitySuggestions(true)
     if (value.trim().length < 3) {
-      setAddressSuggestions([])
-      setAddressLoading(false)
+      setLocalitySuggestions([])
+      setLocalityLoading(false)
     }
   }
 
-  function handleAddressSelect(suggestion) {
-    skipAddressFetch.current = true
-    setAddressQuery(suggestion.label)
-    const hasLocation = Number.isFinite(suggestion.lat) && Number.isFinite(suggestion.lon)
+  async function handleLocalitySelect(suggestion) {
+    skipLocalityFetch.current = true
+    setLocalityQuery(suggestion.label)
+    const googleAddress = suggestion.placeId ? await fetchGooglePlaceDetails(suggestion.placeId) : suggestion
+    const hasLocation = Number.isFinite(googleAddress?.lat) && Number.isFinite(googleAddress?.lon)
     setFormData({
       ...formData,
-      flatHouse: suggestion.name || suggestion.address,
-      area: suggestion.area,
-      city: suggestion.city,
-      state: suggestion.state,
-      pincode: suggestion.pinCode,
-      currentLocation: hasLocation ? createMapLink(suggestion.lat, suggestion.lon) : formData.currentLocation
+      area: googleAddress?.area || formData.area,
+      city: googleAddress?.city || formData.city,
+      state: googleAddress?.state || formData.state,
+      pincode: googleAddress?.pinCode || formData.pincode,
+      currentLocation: hasLocation ? createMapLink(googleAddress.lat, googleAddress.lon) : formData.currentLocation
     })
     if (hasLocation) {
-      setSelectedLocation({ lat: suggestion.lat, lon: suggestion.lon })
+      setSelectedLocation({ lat: googleAddress.lat, lon: googleAddress.lon })
+      setLocalityQuery(googleAddress.area || googleAddress.label || suggestion.label)
     }
-    setAddressSuggestions([])
-    setShowAddressSuggestions(false)
+    setLocalitySuggestions([])
+    setShowLocalitySuggestions(false)
   }
 
   function handleAddressType(type) {
@@ -127,12 +131,11 @@ export default function UserForm() {
   }
 
   function applyResolvedAddress(suggestion, latitude, longitude) {
-    skipAddressFetch.current = true
-    setAddressQuery(suggestion?.label || `Pinned location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`)
+    skipLocalityFetch.current = true
+    setLocalityQuery(suggestion?.area || suggestion?.label || `Pinned location: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`)
     setSelectedLocation({ lat: latitude, lon: longitude })
     setFormData({
       ...formData,
-      flatHouse: suggestion ? suggestion.flatHouse : formData.flatHouse,
       area: suggestion ? suggestion.area : formData.area,
       city: suggestion ? suggestion.city : formData.city,
       state: suggestion ? suggestion.state : formData.state,
@@ -145,17 +148,14 @@ export default function UserForm() {
     setLocating(true)
     applyResolvedAddress(null, location.lat, location.lon)
 
-    const controller = new AbortController()
-    const timeoutId = window.setTimeout(() => controller.abort(), 7000)
     try {
-      const suggestion = await fetchGeoapifyReverseAddress(location.lat, location.lon, controller.signal)
+      const suggestion = await fetchGoogleReverseAddress(location.lat, location.lon)
       if (suggestion) {
         applyResolvedAddress(suggestion, location.lat, location.lon)
       }
     } catch {
       applyResolvedAddress(null, location.lat, location.lon)
     } finally {
-      window.clearTimeout(timeoutId)
       setLocating(false)
     }
   }
@@ -171,18 +171,15 @@ export default function UserForm() {
       async (position) => {
         const { latitude, longitude } = position.coords
         applyResolvedAddress(null, latitude, longitude)
-        const controller = new AbortController()
-        const timeoutId = window.setTimeout(() => controller.abort(), 7000)
 
         try {
-          const suggestion = await fetchGeoapifyReverseAddress(latitude, longitude, controller.signal)
+          const suggestion = await fetchGoogleReverseAddress(latitude, longitude)
           if (suggestion) {
             applyResolvedAddress(suggestion, latitude, longitude)
           }
         } catch {
           applyResolvedAddress(null, latitude, longitude)
         } finally {
-          window.clearTimeout(timeoutId)
           setLocating(false)
         }
       },
@@ -263,23 +260,23 @@ export default function UserForm() {
             <div className="address-section-label">Delivery Address</div>
 
             <div className="form-group address-search-group">
-              <label>Search Address / Place <span className="required">*</span></label>
+              <label>Search Area / Locality <span className="required">*</span></label>
               <input
                 type="text"
-                name="addressSearch"
-                value={addressQuery}
-                onChange={handleAddressQueryChange}
-                onFocus={() => setShowAddressSuggestions(true)}
-                onBlur={() => window.setTimeout(() => setShowAddressSuggestions(false), 150)}
+                name="localitySearch"
+                value={localityQuery}
+                onChange={handleLocalityQueryChange}
+                onFocus={() => setShowLocalitySuggestions(true)}
+                onBlur={() => window.setTimeout(() => setShowLocalitySuggestions(false), 150)}
                 required
-                placeholder="Search society, building, shop or full address"
+                placeholder="Search area, locality or landmark"
               />
-              {showAddressSuggestions && (addressLoading || addressSuggestions.length > 0) && (
+              {showLocalitySuggestions && (localityLoading || localitySuggestions.length > 0) && (
                 <div className="address-suggestions" role="listbox">
-                  {addressLoading && <div className="address-suggestion muted">Searching address...</div>}
-                  {!addressLoading && addressSuggestions.map((suggestion) => (
-                    <button type="button" className="address-suggestion" key={suggestion.id} onMouseDown={() => handleAddressSelect(suggestion)}>
-                      <span className="address-source-badge">{suggestion.source === 'places' ? 'Place' : 'Address'}</span>
+                  {localityLoading && <div className="address-suggestion muted">Searching locality...</div>}
+                  {!localityLoading && localitySuggestions.map((suggestion) => (
+                    <button type="button" className="address-suggestion" key={suggestion.id} onMouseDown={() => handleLocalitySelect(suggestion)}>
+                      <span className="address-source-badge">Locality</span>
                       <span>{suggestion.label}</span>
                     </button>
                   ))}
@@ -293,8 +290,8 @@ export default function UserForm() {
               onSelect={updatePinnedAddress}
               onUseCurrent={handleCurrentLocation}
               title="Location pinned"
-              idleText="Search your society/building, use GPS, or tap the map."
-              pinnedText="Move the pin to fine tune. Address below stays editable."
+              idleText="Search area/locality, use GPS, or tap the map."
+              pinnedText="Move the pin to fine tune. Flat/building address stays manual."
             />
 
             <div className="form-group">
