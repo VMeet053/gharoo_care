@@ -9,7 +9,6 @@ const DEFAULT_LOCATION = { lat: 21.1702, lon: 72.8311 }
 const GOOGLE_MAPS_API_KEY = (import.meta.env && import.meta.env.VITE_GOOGLE_MAPS_API_KEY) || ''
 
 let googleMapsPromise
-let leafletPromise
 
 function useHasGoogleKey() {
   return Boolean(GOOGLE_MAPS_API_KEY)
@@ -45,34 +44,6 @@ function loadGoogleMaps() {
   })
 
   return googleMapsPromise
-}
-
-function loadLeaflet() {
-  if (window.L) return Promise.resolve(window.L)
-  if (leafletPromise) return leafletPromise
-
-  leafletPromise = new Promise((resolve, reject) => {
-    const css = document.createElement('link')
-    css.rel = 'stylesheet'
-    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
-    css.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY='
-    css.crossOrigin = ''
-
-    const script = document.createElement('script')
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo='
-    script.crossOrigin = ''
-    script.async = false
-
-    css.onerror = () => reject(new Error('Leaflet CSS failed to load'))
-    script.onerror = () => reject(new Error('Leaflet JS failed to load'))
-    script.onload = () => resolve(window.L)
-
-    document.head.appendChild(css)
-    document.head.appendChild(script)
-  })
-
-  return leafletPromise
 }
 
 function getAddressPart(components, types) {
@@ -221,110 +192,21 @@ function GoogleMapCanvas({ expanded = false, location, onSelect, mapsApi }) {
   return <div className={`google-map-canvas ${expanded ? 'expanded' : ''}`} ref={containerRef} />
 }
 
-function LeafletMapCanvas({ expanded = false, location, onSelect }) {
-  const containerRef = useRef(null)
-  const mapRef = useRef(null)
-  const markerRef = useRef(null)
+function GoogleMapEmbed({ expanded = false, location }) {
   const center = location || DEFAULT_LOCATION
-
-  useEffect(() => {
-    let cancelled = false
-    if (!containerRef.current || mapRef.current) return
-
-    loadLeaflet()
-      .then((L) => {
-        if (cancelled || !containerRef.current) return
-        const tileUrl =
-          'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
-        const map = L.map(containerRef.current, {
-          center: [center.lat, center.lon],
-          zoom: location ? 18 : 12,
-          zoomControl: true,
-          attributionControl: false
-        })
-        L.tileLayer(tileUrl, {
-          maxZoom: 20,
-          subdomains: 'abcd',
-          attribution: '© OpenStreetMap © CARTO'
-        }).addTo(map)
-
-        const icon = L.divIcon({
-          className: 'gharoo-map-marker',
-          html: `<div style="transform:translate(-50%,-100%);">
-            <svg viewBox="0 0 32 40" width="36" height="44" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,.25));">
-              <path d="M16 1C9 1 4 6 4 13 C4 21 16 38 16 38 C16 38 28 21 28 13 C28 6 23 1 16 1 Z" fill="#166534" stroke="white" stroke-width="1.5"/>
-              <circle cx="16" cy="13" r="4.5" fill="white"/>
-              <circle cx="16" cy="13" r="2.3" fill="#166534"/>
-            </svg>
-          </div>`,
-          iconSize: [36, 44],
-          iconAnchor: [18, 44]
-        })
-
-        const marker = L.marker([center.lat, center.lon], {
-          draggable: true,
-          icon,
-          autoPan: true
-        }).addTo(map)
-
-        marker.on('dragend', () => {
-          const pos = marker.getLatLng()
-          onSelect({ lat: pos.lat, lon: pos.lng })
-        })
-        map.on('click', (e) => {
-          marker.setLatLng(e.latlng)
-          onSelect({ lat: e.latlng.lat, lon: e.latlng.lng })
-        })
-
-        mapRef.current = map
-        markerRef.current = marker
-      })
-      .catch((err) => {
-        console.error('Leaflet load error:', err)
-      })
-
-    return () => {
-      cancelled = true
-      if (mapRef.current) {
-        try {
-          mapRef.current.remove()
-        } catch {}
-        mapRef.current = null
-        markerRef.current = null
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!mapRef.current || !markerRef.current) return
-    const nextCenter = location || DEFAULT_LOCATION
-    const nextLatLng = [nextCenter.lat, nextCenter.lon]
-    markerRef.current.setLatLng(nextLatLng)
-    mapRef.current.setView(nextLatLng, location ? 18 : 12)
-  }, [location?.lat, location?.lon])
-
-  useEffect(() => {
-    setTimeout(() => {
-      if (mapRef.current) {
-        mapRef.current.invalidateSize({ animate: false })
-        const nextCenter = location || DEFAULT_LOCATION
-        mapRef.current.setView([nextCenter.lat, nextCenter.lon])
-      }
-    }, 160)
-  }, [expanded])
+  const query = `${center.lat},${center.lon}`
+  const src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=${location ? 17 : 12}&output=embed`
 
   return (
-    <>
-      <style>{`
-        .google-map-canvas.leaflet-container-expanded { position: relative; }
-        .leaflet-container { background: #e6eef8; }
-        .gharoo-map-marker { background: transparent; border: 0; }
-      `}</style>
-      <div className={`google-map-canvas ${expanded ? 'expanded' : ''}`} ref={containerRef} />
-    </>
+    <iframe
+      className={`google-map-canvas google-map-embed ${expanded ? 'expanded' : ''}`}
+      title="Google map location"
+      src={src}
+      loading="lazy"
+      referrerPolicy="no-referrer-when-downgrade"
+    />
   )
 }
-
 export async function fetchAddressSuggestions(query, options = {}) {
   const text = (query || '').trim()
   if (text.length < 3) return []
@@ -490,7 +372,6 @@ export default function DraggableAddressMap({
 }) {
   const [expanded, setExpanded] = useState(false)
   const [mapsApi, setMapsApi] = useState(null)
-  const [useLeaflet, setUseLeaflet] = useState(false)
   const [mapError, setMapError] = useState('')
   const hasGoogleKey = useHasGoogleKey()
 
@@ -504,11 +385,10 @@ export default function DraggableAddressMap({
         })
         .catch(() => {
           if (cancelled) return
-          setUseLeaflet(true)
-          setMapError('')
+          setMapError('Google Maps interactive mode failed. Showing Google map preview.')
         })
     } else {
-      setUseLeaflet(true)
+      setMapError('Google Maps API key missing. Showing Google map preview.')
     }
     return () => {
       cancelled = true
@@ -525,12 +405,10 @@ export default function DraggableAddressMap({
   return (
     <div className="google-map-card">
       <div className="google-map-frame">
-        {useLeaflet ? (
-          <LeafletMapCanvas expanded={expanded} location={location} onSelect={onSelect} />
-        ) : mapsApi ? (
+        {mapsApi ? (
           <GoogleMapCanvas expanded={expanded} location={location} onSelect={onSelect} mapsApi={mapsApi} />
         ) : (
-          <div className="google-map-error">{mapError || 'Loading Map...'}</div>
+          <GoogleMapEmbed expanded={expanded} location={location} />
         )}
       </div>
       <div className="google-map-tools">
@@ -539,16 +417,14 @@ export default function DraggableAddressMap({
           <span>{location ? pinnedText : idleText}</span>
         </div>
         <div className="map-action-row">
-          {!useLeaflet && (
-            <button
-              type="button"
-              className="map-expand-btn secondary"
-              onClick={openGoogleMapsInNewTab}
-              title="Open in Google Maps"
-            >
-              Open in Google Maps
-            </button>
-          )}
+          <button
+            type="button"
+            className="map-expand-btn secondary"
+            onClick={openGoogleMapsInNewTab}
+            title="Open in Google Maps"
+          >
+            Open in Google Maps
+          </button>
           <button type="button" className="map-expand-btn" onClick={() => setExpanded(true)}>
             Expand Map
           </button>
@@ -557,8 +433,9 @@ export default function DraggableAddressMap({
           </button>
         </div>
       </div>
+      {mapError && <div className="google-map-note">{mapError}</div>}
 
-      {expanded && (useLeaflet || mapsApi) && (
+      {expanded && (
         <div className="map-modal" role="dialog" aria-modal="true" aria-label="Select exact map location">
           <div className="map-modal-panel">
             <div className="map-modal-header">
@@ -581,10 +458,10 @@ export default function DraggableAddressMap({
               </div>
             </div>
             <div className="google-map-frame expanded">
-              {useLeaflet ? (
-                <LeafletMapCanvas expanded location={location} onSelect={onSelect} />
-              ) : (
+              {mapsApi ? (
                 <GoogleMapCanvas expanded location={location} onSelect={onSelect} mapsApi={mapsApi} />
+              ) : (
+                <GoogleMapEmbed expanded location={location} />
               )}
             </div>
             <div className="map-modal-footer">
