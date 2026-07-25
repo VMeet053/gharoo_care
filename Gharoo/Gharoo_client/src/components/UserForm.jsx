@@ -300,12 +300,6 @@ export default function UserForm() {
     navigate('/payment')
   }
 
-  function openCurrentLocationInGoogleMaps() {
-    if (!selectedLocation) return
-    const url = createMapLink(selectedLocation.lat, selectedLocation.lon)
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
-
   return (
     <div className="form-container">
       <div className="form-card">
@@ -422,26 +416,14 @@ export default function UserForm() {
               <label>
                 Area / Locality <span className="required">*</span>
               </label>
-              <div className="field-with-action">
-                <input
-                  type="text"
-                  name="area"
-                  value={formData.area}
-                  onChange={handleChange}
-                  required
-                  placeholder="Auto-filled when you select area above or drop a pin"
-                />
-                {formData.currentLocation && (
-                  <button
-                  type="button"
-                  className="field-action-btn"
-                  onClick={openCurrentLocationInGoogleMaps}
-                  title="Open pinned location in Google Maps"
-                >
-                  📍 View
-                </button>
-              )}
-              </div>
+              <input
+                type="text"
+                name="area"
+                value={formData.area}
+                onChange={handleChange}
+                required
+                placeholder="Auto-filled when you select area above or drop a pin"
+              />
             </div>
 
             <div className="form-group">
