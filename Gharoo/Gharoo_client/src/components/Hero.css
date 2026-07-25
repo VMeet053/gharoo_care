@@ -2,7 +2,7 @@
   position: relative;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   background: #ffffff;
 }
 
@@ -25,15 +25,12 @@
   display: block;
   width: 100%;
   height: auto;
-  min-height: 320px;
-  max-height: calc(100vh - 84px);
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
 }
 
 @media (max-width: 640px) {
   .hero-banner-image {
-    min-height: 240px;
     object-position: center;
   }
 }
