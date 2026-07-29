@@ -10,6 +10,8 @@ const ServicesPage = lazy(() => import('./pages/ServicesPage'))
 const ProjectsPage = lazy(() => import('./pages/ProjectsPage'))
 const PricingPage = lazy(() => import('./pages/PricingPage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
+const TermsAndConditionsPage = lazy(() => import('./pages/TermsAndConditionsPage'))
+const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage'))
 const UserForm = lazy(() => import('./components/UserForm'))
 const PaymentPage = lazy(() => import('./components/PaymentPage'))
 const ServiceManRegistration = lazy(() => import('./pages/ServiceManRegistration'))
@@ -65,6 +67,9 @@ export default function App() {
           <Route path="/projects" element={<ProjectsPage settings={settings} />} />
           <Route path="/pricing" element={<PricingPage settings={settings} />} />
           <Route path="/privacy" element={<PrivacyPage settings={settings} />} />
+          <Route path="/privacy-policy" element={<PrivacyPage settings={settings} />} />
+          <Route path="/terms-and-conditions" element={<TermsAndConditionsPage settings={settings} />} />
+          <Route path="/refund-policy" element={<RefundPolicyPage settings={settings} />} />
           <Route path="/booking" element={<UserForm />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/service-man/register" element={<ServiceManRegistration />} />

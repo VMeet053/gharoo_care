@@ -78,7 +78,9 @@ export default function Footer({ settings }) {
         <div className="container footer-bottom-inner">
           <span>{footer.copyright}</span>
           <div className="footer-bottom-links">
-            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/terms-and-conditions">Terms and Conditions</Link>
+            <Link to="/refund-policy">Refund Policy</Link>
+            <Link to="/privacy-policy">Privacy Policy</Link>
           </div>
         </div>
       </div>
