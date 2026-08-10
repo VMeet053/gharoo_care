@@ -1,14 +1,17 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import './Hero.css'
-import acAmcBanner from '../assets/ac-amc-plan-banner.jpeg'
 
 export default function Hero({ settings }) {
   const navigate = useNavigate()
 
-  const bannerImage = settings?.heroBanner?.image || acAmcBanner
+  const bannerImage = settings?.heroBanner?.image
   const redirectUrl = settings?.heroBanner?.redirectUrl || '/booking'
   const altText = settings?.heroBanner?.altText || 'Gharoo Care banner'
+
+  if (!bannerImage) {
+    return null
+  }
 
   function handleBannerClick() {
     if (redirectUrl.startsWith('http://') || redirectUrl.startsWith('https://')) {
