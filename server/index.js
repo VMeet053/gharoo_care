@@ -355,7 +355,13 @@ app.post('/api/upload-image', (req, res) => {
             provider: 'cloudinary'
           });
         } catch (cErr) {
-          console.warn('Cloudinary failed, falling back to disk. Error:', cErr.message);
+          console.error('Cloudinary upload failed:', cErr.message);
+          if (process.env.VERCEL) {
+            return res.status(cErr.http_code || 502).json({
+              success: false,
+              message: 'Cloudinary upload failed: ' + cErr.message
+            });
+          }
         }
       }
 
