@@ -109,7 +109,24 @@
   gap: 6px;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: gap 0.25s;
+  transition: gap 0.25s, color 0.25s;
+  text-decoration: none;
+  outline: none;
+  user-select: none;
+}
+
+.service-link:hover,
+.service-link:focus-visible {
+  color: #1da76d;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.service-link:focus-visible {
+  box-shadow: 0 0 0 3px rgba(36, 181, 122, 0.25);
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px;
 }
 
 .service-card:hover .service-link {

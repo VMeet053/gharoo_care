@@ -82,7 +82,24 @@
   font-size: 0.85rem;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: gap 0.25s;
+  transition: gap 0.25s, color 0.25s, transform 0.25s;
+  outline: none;
+  user-select: none;
+}
+
+.feature-link:hover,
+.feature-link:focus-visible {
+  gap: 14px;
+  color: #1da76d;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.feature-link:focus-visible {
+  box-shadow: 0 0 0 3px rgba(36, 181, 122, 0.25);
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px;
 }
 
 @media (max-width: 1024px) {

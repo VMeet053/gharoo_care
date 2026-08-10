@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const crypto = require('crypto');
 const User = require('./models/User');
 const PanelSettings = require('./models/PanelSettings');
 const WorkOrder = require('./models/WorkOrder');
@@ -13,16 +15,54 @@ const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const path = require('path');
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
+// Cloudinary configuration + flag if config present
+const cloudinaryConfigured = !!(
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+);
+
+if (cloudinaryConfigured) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+  console.log('☁️  Cloudinary configured:', process.env.CLOUDINARY_CLOUD_NAME);
+} else {
+  console.warn('⚠️  Cloudinary env vars missing. Using disk upload fallback.');
+}
+
+// Local uploads directory
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+try {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  console.log('💾 Uploads directory ready:', UPLOADS_DIR);
+} catch (e) {
+  console.warn('Could not create uploads dir:', e.message);
+}
+
+// Configure Multer - memory storage so same upload works for both Cloudinary + disk
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']);
+const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8MB
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: MAX_FILE_BYTES, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_MIME.has(file.mimetype)) return cb(null, true);
+    cb(new Error(`Unsupported file type: ${file.mimetype}. Allowed: JPEG, PNG, WEBP, GIF, SVG.`));
+  }
 });
 
-// Configure Multer for memory storage (upload to Cloudinary directly)
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+// Utility: save buffer to local disk, returns public URL path
+function saveBufferToDisk(fileBuffer, originalName) {
+  const safeExt = (path.extname(originalName || '') || '.png').toLowerCase().replace(/[^a-z0-9.]/g, '');
+  const safeName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${safeExt}`;
+  const fullPath = path.join(UPLOADS_DIR, safeName);
+  fs.writeFileSync(fullPath, fileBuffer);
+  return `/uploads/${safeName}`;
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -43,6 +83,9 @@ console.log('Service man path:', path.join(__dirname, '../service-man-client/dis
 
 // Serve user site at root
 app.use(express.static(path.join(__dirname, '../Gharoo/Gharoo_client/dist')));
+
+// Serve uploaded images at /uploads
+app.use('/uploads', express.static(UPLOADS_DIR, { fallthrough: false, maxAge: '30d' }));
 
 // Serve admin panel at /admin
 app.use('/admin', express.static(path.join(__dirname, '../client/dist')));
@@ -102,6 +145,17 @@ const getDefaultSettings = () => ({
   heroBanners: {
     items: [
       { image: '', redirectUrl: '/booking', altText: 'Gharoo Care complete AC care AMC plan' }
+    ]
+  },
+  heroBanner: { image: '', redirectUrl: '/booking', altText: 'Gharoo Care hero banner' },
+  heroSection: {
+    backgroundImage: '',
+    eyebrow: 'Gharoo Care',
+    title: 'AC Service & AMC Plans',
+    subtitle: 'Doorstep service • 24/7 support',
+    floatingPlanCards: [
+      { image: '', price: '₹1249', planName: 'AC AMC Plan - Basic', redirectUrl: '/booking', altText: 'AC AMC Basic plan ₹1249' },
+      { image: '', price: '₹499', planName: 'AC One Time Service', redirectUrl: '/booking', altText: 'AC One Time Service ₹499' }
     ]
   },
   about: {
@@ -252,31 +306,76 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running smoothly!', mongoConnected: isMongoConnected });
 });
 
-// Image upload to Cloudinary
-app.post('/api/upload-image', upload.single('image'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No image file provided' });
+// Image upload — Cloudinary first, fallback to disk
+app.post('/api/upload-image', (req, res) => {
+  upload.single('image')(req, res, async (multerErr) => {
+    // Explicit Multer error handling (size limit, filter, etc.)
+    if (multerErr) {
+      console.error('Multer upload error:', multerErr.message);
+      const statusCode =
+        multerErr.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+      const userMessage =
+        multerErr.code === 'LIMIT_FILE_SIZE'
+          ? `File too large. Maximum allowed size is ${(MAX_FILE_BYTES / 1024 / 1024).toFixed(0)}MB.`
+          : multerErr.message;
+      return res.status(statusCode).json({
+        success: false,
+        message: userMessage
+      });
     }
 
-    // Convert buffer to base64 for Cloudinary upload
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No image file provided. Make sure form field name is "image".'
+        });
+      }
 
-    // Upload to Cloudinary
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder: 'gharoocare'
-    });
+      const { buffer, mimetype, originalname, size } = req.file;
+      if (!buffer || buffer.length === 0) {
+        return res.status(400).json({ success: false, message: 'Empty upload buffer.' });
+      }
 
-    res.json({
-      success: true,
-      url: result.secure_url,
-      public_id: result.public_id
-    });
-  } catch (err) {
-    console.error('Image upload error:', err);
-    res.status(500).json({ success: false, message: 'Failed to upload image' });
-  }
+      // Try Cloudinary if configured
+      if (cloudinaryConfigured) {
+        try {
+          const b64 = Buffer.from(buffer).toString('base64');
+          const dataURI = `data:${mimetype};base64,${b64}`;
+          const result = await cloudinary.uploader.upload(dataURI, {
+            folder: 'gharoocare',
+            timeout: 60000,
+            resource_type: 'auto'
+          });
+          console.log('☁️  Cloudinary upload OK ->', result.secure_url, `(${(size/1024).toFixed(0)}KB)`);
+          return res.json({
+            success: true,
+            url: result.secure_url,
+            public_id: result.public_id,
+            provider: 'cloudinary'
+          });
+        } catch (cErr) {
+          console.warn('Cloudinary failed, falling back to disk. Error:', cErr.message);
+        }
+      }
+
+      // Fallback: save to local disk
+      const publicPath = saveBufferToDisk(buffer, originalname);
+      console.log('💾 Disk fallback OK ->', publicPath, `(${(size/1024).toFixed(0)}KB)`);
+      return res.json({
+        success: true,
+        url: publicPath,
+        provider: 'disk'
+      });
+
+    } catch (err) {
+      console.error('Image upload fatal error:', err);
+      return res.status(500).json({
+        success: false,
+        message: err.message || 'Failed to upload image'
+      });
+    }
+  });
 });
 
 // Get all users (if MongoDB connected, else use in-memory)
@@ -1149,10 +1248,69 @@ app.get('/api/panel-settings', async (req, res) => {
       rawSettings = inMemorySettings;
     }
     const defaults = getDefaultSettings();
+    const rawObj = (rawSettings?.toObject ? rawSettings.toObject() : rawSettings || {});
+
+    const mergeItemArray = (savedItems, defaultItems) => {
+      const savedArr = Array.isArray(savedItems) ? savedItems : [];
+      if (savedArr.length === 0) return defaultItems;
+      return savedArr.map((item, i) => ({
+        ...(defaultItems[i] || {}),
+        ...(item || {}),
+        keyPoints: (item && Array.isArray(item.keyPoints) && item.keyPoints.length)
+          ? item.keyPoints
+          : ((defaultItems[i] && defaultItems[i].keyPoints) || [])
+      }));
+    };
+
     const merged = {
       ...defaults,
-      ...(rawSettings?.toObject ? rawSettings.toObject() : rawSettings || {}),
-      heroBanner: { ...defaults.heroBanner, ...((rawSettings?.toObject ? rawSettings.toObject() : rawSettings || {}).heroBanner || {}) }
+      ...rawObj,
+      heroBanner: { ...defaults.heroBanner, ...(rawObj.heroBanner || {}) },
+      heroSection: {
+        ...defaults.heroSection,
+        ...(rawObj.heroSection || {}),
+        floatingPlanCards: (rawObj.heroSection && Array.isArray(rawObj.heroSection.floatingPlanCards) && rawObj.heroSection.floatingPlanCards.length)
+          ? rawObj.heroSection.floatingPlanCards.map((card, i) => ({ ...(defaults.heroSection.floatingPlanCards[i] || {}), ...card }))
+          : defaults.heroSection.floatingPlanCards
+      },
+      about: {
+        ...defaults.about,
+        ...(rawObj.about || {}),
+        features: mergeItemArray(rawObj.about?.features, defaults.about.features)
+      },
+      services: {
+        ...defaults.services,
+        ...(rawObj.services || {}),
+        items: mergeItemArray(rawObj.services?.items, defaults.services.items)
+      },
+      newSection: {
+        ...defaults.newSection,
+        ...(rawObj.newSection || {}),
+        features: mergeItemArray(rawObj.newSection?.features, defaults.newSection.features)
+      },
+      whyChoose: {
+        ...defaults.whyChoose,
+        ...(rawObj.whyChoose || {}),
+        cards: mergeItemArray(rawObj.whyChoose?.cards, defaults.whyChoose.cards)
+      },
+      completedProjects: {
+        ...defaults.completedProjects,
+        ...(rawObj.completedProjects || {}),
+        projects: Array.isArray(rawObj.completedProjects?.projects) && rawObj.completedProjects.projects.length
+          ? rawObj.completedProjects.projects.map((p, i) => ({
+              ...(defaults.completedProjects.projects[i] || {}),
+              ...p,
+              keyPoints: (p && Array.isArray(p.keyPoints) && p.keyPoints.length)
+                ? p.keyPoints
+                : ((defaults.completedProjects.projects[i] && defaults.completedProjects.projects[i].keyPoints) || [])
+            }))
+          : defaults.completedProjects.projects
+      },
+      serviceSlider: {
+        ...defaults.serviceSlider,
+        ...(rawObj.serviceSlider || {}),
+        services: mergeItemArray(rawObj.serviceSlider?.services, defaults.serviceSlider.services)
+      }
     };
     res.json({ success: true, data: merged });
   } catch (err) {

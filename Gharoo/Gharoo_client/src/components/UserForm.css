@@ -430,6 +430,112 @@
   cursor: wait;
 }
 
+.field-with-action {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.field-with-action .form-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.field-view-action {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid #dbe4ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.field-view-action:hover:not(:disabled) {
+  border-color: #24b57a;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.field-view-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.locality-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.locality-search-wrap .form-input {
+  padding-right: 44px;
+}
+
+.locality-search-spinner {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid #dbe4ee;
+  border-top-color: #24b57a;
+  border-radius: 50%;
+  animation: locality-spin 0.75s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes locality-spin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+
+.address-type-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 10px;
+  line-height: 1.1;
+}
+
+.google-map-canvas.leaflet-map {
+  background: #eef2f7;
+}
+
+.map-hint-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding-top: 4px;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.map-hint-row code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.78rem;
+}
+
+.map-action-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.map-action-row.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .map-modal {
   position: fixed;
   inset: 0;

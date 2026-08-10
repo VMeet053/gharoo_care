@@ -1,7 +1,9 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import './NewSection.css'
 import { IconWrench, IconClock, IconShield, IconArrow } from './Icons'
 import Reveal from './Reveal'
+import { slugify } from '../utils/slug'
 
 const defaultFeatures = [
   {
@@ -28,10 +30,24 @@ const IconMap = {
 }
 
 export default function NewSection({ settings }) {
+  const navigate = useNavigate()
   const features = settings?.newSection?.features?.length > 0 ? settings.newSection.features : defaultFeatures
 
   const getIcon = (iconKey) => {
     return IconMap[iconKey] || IconWrench
+  }
+
+  const handleReadMore = (feature) => {
+    const href = feature.link?.trim()
+    if (href) {
+      if (/^https?:\/\//i.test(href)) {
+        window.open(href, '_blank', 'noopener,noreferrer')
+      } else {
+        navigate(href.startsWith('/') ? href : `/${href}`)
+      }
+      return
+    }
+    navigate(`/feature/${encodeURIComponent(slugify(feature.title) || '1')}`)
   }
 
   return (
@@ -49,7 +65,8 @@ export default function NewSection({ settings }) {
               <div className="feature-copy">
                 <h4>{feature.title}</h4>
                 <p>{feature.description}</p>
-                <span className="feature-link">
+                <span className="feature-link" onClick={() => handleReadMore(feature)} role="button" tabIndex={0}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleReadMore(feature)}>
                   READ MORE <IconArrow size={14} color="#24b57a" />
                 </span>
               </div>

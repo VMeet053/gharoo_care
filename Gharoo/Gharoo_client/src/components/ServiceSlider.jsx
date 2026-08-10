@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './ServiceSlider.css'
 import Reveal from './Reveal'
 import { serviceSlider as sliderImages } from '../constants/images'
 import { useBreakpoint } from '../hooks/useBreakpoint'
 
+import { slugify } from '../utils/slug'
 const defaultServiceSlider = {
   eyebrow: 'OUR SERVICES',
   title: "Let's Check Our Best Repair Services In City",
@@ -21,8 +23,22 @@ const GAP_DESKTOP = 16
 const GAP_MOBILE = 0
 
 export default function ServiceSlider({ settings }) {
+  const navigate = useNavigate()
   const data = settings?.serviceSlider || defaultServiceSlider
   const services = data.services
+
+  const handleLearnMore = (service) => {
+    const href = service.link?.trim()
+    if (!href) {
+      navigate(`/slider/${encodeURIComponent(slugify(service.title) || '1')}`)
+      return
+    }
+    if (/^https?:\/\//i.test(href)) {
+      window.open(href, '_blank', 'noopener,noreferrer')
+    } else {
+      navigate(href.startsWith('/') ? href : `/${href}`)
+    }
+  }
 
   const [current, setCurrent] = useState(0)
   const [translateX, setTranslateX] = useState(0)
@@ -145,7 +161,10 @@ export default function ServiceSlider({ settings }) {
                     <div className="slide-card-icon">{s.icon}</div>
                     <h4>{s.title}</h4>
                     <p>{s.desc}</p>
-                    <span className="learn-more">Learn More ➜</span>
+                    <span className="learn-more" onClick={() => handleLearnMore(s)} role="button" tabIndex={0}
+                      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleLearnMore(s)}>
+                      Learn More ➜
+                    </span>
                   </div>
                 ))}
               </div>

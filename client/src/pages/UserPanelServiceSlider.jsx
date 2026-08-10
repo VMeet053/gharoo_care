@@ -91,7 +91,7 @@ export default function UserPanelServiceSlider() {
   };
 
   const addService = () => {
-    setServiceSlider({ ...serviceSlider, services: [...serviceSlider.services, { title: 'New Service', desc: 'Description', icon: '⚙️', image: '' }] });
+    setServiceSlider({ ...serviceSlider, services: [...serviceSlider.services, { title: 'New Service', desc: 'Description', icon: '⚙️', image: '', price: '', link: '/booking' }] });
   };
 
   const removeService = (index) => {
@@ -192,13 +192,23 @@ export default function UserPanelServiceSlider() {
                     onChange={(e) => handleServiceChange(index, 'icon', e.target.value)}
                   />
                 </div>
-                <div className="col-md-9">
+                <div className="col-md-6">
                   <label className="form-label">Title</label>
                   <input
                     type="text"
                     className="form-control"
                     value={service.title}
                     onChange={(e) => handleServiceChange(index, 'title', e.target.value)}
+                  />
+                </div>
+                <div className="col-md-3">
+                  <label className="form-label">Price (₹)</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={service.price || ''}
+                    onChange={(e) => handleServiceChange(index, 'price', e.target.value)}
+                    placeholder="e.g. 499"
                   />
                 </div>
                 <div className="col-12">
@@ -209,6 +219,17 @@ export default function UserPanelServiceSlider() {
                     value={service.desc}
                     onChange={(e) => handleServiceChange(index, 'desc', e.target.value)}
                   />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Learn More Link</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={service.link || ''}
+                    onChange={(e) => handleServiceChange(index, 'link', e.target.value)}
+                    placeholder="/booking or /services or https://..."
+                  />
+                  <small className="text-muted">Leave empty to auto-open booking form with this service selected.</small>
                 </div>
               </div>
             </div>

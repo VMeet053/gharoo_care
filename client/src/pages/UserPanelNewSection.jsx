@@ -4,6 +4,7 @@ export default function UserPanelNewSection() {
   const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(null);
   const [message, setMessage] = useState('');
 
   const fetchSettings = async () => {
@@ -56,8 +57,32 @@ export default function UserPanelNewSection() {
     setFeatures(newFeatures);
   };
 
+  const handleDetailImageUpload = async (e, index) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(index);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/upload-image', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!data.success) throw new Error('Upload failed');
+      handleFeatureChange(index, 'detailImage', data.url);
+      setMessage('Detail image uploaded successfully!');
+    } catch (err) {
+      console.error(err);
+      setMessage('Error uploading detail image');
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleKeyPointsChange = (index, value) => {
+    handleFeatureChange(index, 'keyPoints', value.split('\n').map((point) => point.trim()).filter(Boolean));
+  };
+
   const addFeature = () => {
-    setFeatures([...features, { title: 'New Feature', description: 'Description', icon: '' }]);
+    setFeatures([...features, { title: 'New Feature', description: 'Description', icon: '', detailImage: '', detailContent: '', keyPoints: [], link: '' }]);
   };
 
   const removeFeature = (index) => {
@@ -126,6 +151,43 @@ export default function UserPanelNewSection() {
                     rows="3"
                     value={feature.description}
                     onChange={(e) => handleFeatureChange(index, 'description', e.target.value)}
+                  />
+                </div>
+                <div className="col-md-12">
+                  <label className="form-label">Custom Read More Link (optional)</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={feature.link || ''}
+                    onChange={(e) => handleFeatureChange(index, 'link', e.target.value)}
+                    placeholder="Leave blank for this feature's detail page"
+                  />
+                  <small className="text-muted">Leave blank to open the automatically created detail page.</small>
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Detail Page Image</label>
+                  {feature.detailImage && <img src={feature.detailImage} alt={`${feature.title} detail`} className="img-fluid mb-2 d-block" style={{ maxHeight: '150px' }} />}
+                  <input type="file" className="form-control" accept="image/*" onChange={(e) => handleDetailImageUpload(e, index)} disabled={uploading === index} />
+                  {uploading === index && <small className="text-muted">Uploading...</small>}
+                </div>
+                <div className="col-md-6">
+                  <label className="form-label">Key Points (one per line)</label>
+                  <textarea
+                    className="form-control"
+                    rows="5"
+                    value={(feature.keyPoints || []).join('\n')}
+                    onChange={(e) => handleKeyPointsChange(index, e.target.value)}
+                    placeholder={'Fast response\nCertified technicians\nService warranty'}
+                  />
+                </div>
+                <div className="col-12">
+                  <label className="form-label">Detail Page Content</label>
+                  <textarea
+                    className="form-control"
+                    rows="6"
+                    value={feature.detailContent || ''}
+                    onChange={(e) => handleFeatureChange(index, 'detailContent', e.target.value)}
+                    placeholder="Write the complete content for this Read More page..."
                   />
                 </div>
               </div>

@@ -1,17 +1,32 @@
 import React from 'react'
+import { useNavigate } from 'react-router-dom'
 import './AboutSection.css'
 import { IconCheck, IconPlay, IconArrow } from './Icons'
 import Reveal from './Reveal'
 import { about as defaultAboutImages } from '../constants/images'
 
 export default function AboutSection({ settings }) {
+  const navigate = useNavigate()
   const aboutData = settings?.about || {}
   const features = aboutData?.features || []
-  
+
   // Get images with defaults
   const mainImage = aboutData.mainImage || defaultAboutImages.main
   const subImage = aboutData.subImage || defaultAboutImages.sub
   const experience = aboutData.experience || { number: '25+', line1: 'Years Experiences', line2: 'Maintenance Services' }
+
+  const handleDiscover = () => {
+    const href = aboutData.link?.trim()
+    if (href) {
+      if (/^https?:\/\//i.test(href)) {
+        window.open(href, '_blank', 'noopener,noreferrer')
+      } else {
+        navigate(href.startsWith('/') ? href : `/${href}`)
+      }
+    } else {
+      navigate('/about')
+    }
+  }
 
   return (
     <section className="about-section">
@@ -60,7 +75,7 @@ export default function AboutSection({ settings }) {
               <li><IconCheck size={18} /> Skilled Technicians — invest in quality protection for your device.</li>
             </ul>
             <div className="about-actions">
-              <button className="btn primary btn-shine">
+              <button className="btn primary btn-shine" onClick={handleDiscover}>
                 Discover More <IconArrow size={16} color="white" />
               </button>
               <div className="video-btn-wrapper">

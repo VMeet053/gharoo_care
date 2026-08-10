@@ -23,7 +23,11 @@ const heroSchema = new mongoose.Schema({
 const aboutFeatureSchema = new mongoose.Schema({
   icon: { type: String, required: true },
   title: { type: String, required: true },
-  desc: { type: String, required: true }
+  desc: { type: String, required: true },
+  detailImage: { type: String, default: '' },
+  detailContent: { type: String, default: '' },
+  keyPoints: { type: [String], default: [] },
+  link: { type: String, default: '' }
 });
 
 const aboutExperienceSchema = new mongoose.Schema({
@@ -52,7 +56,13 @@ const serviceSchema = new mongoose.Schema({
   title: { type: String, required: true },
   desc: { type: String, required: true },
   icon: { type: String, required: true },
-  image: { type: String, default: '' }
+  image: { type: String, default: '' },
+  detailImage: { type: String, default: '' },
+  detailContent: { type: String, default: '' },
+  keyPoints: { type: [String], default: [] },
+  price: { type: String, default: '' },
+  duration: { type: String, default: '' },
+  link: { type: String, default: '' }
 });
 
 const servicesHeaderSchema = new mongoose.Schema({
@@ -175,7 +185,11 @@ const brandMarqueeSchema = new mongoose.Schema({
 const newSectionFeatureSchema = new mongoose.Schema({
   title: String,
   description: String,
-  icon: { type: String, default: '' }
+  icon: { type: String, default: '' },
+  detailImage: { type: String, default: '' },
+  detailContent: { type: String, default: '' },
+  keyPoints: { type: [String], default: [] },
+  link: { type: String, default: '' }
 });
 
 const newSectionSchema = new mongoose.Schema({
@@ -192,7 +206,11 @@ const newSectionSchema = new mongoose.Schema({
 const whyChooseCardSchema = new mongoose.Schema({
   title: String,
   desc: String,
-  icon: String
+  icon: String,
+  detailImage: { type: String, default: '' },
+  detailContent: { type: String, default: '' },
+  keyPoints: { type: [String], default: [] },
+  link: { type: String, default: '' }
 });
 
 const whyChooseSchema = new mongoose.Schema({
@@ -215,7 +233,14 @@ const whyChooseSchema = new mongoose.Schema({
 const completedProjectSchema = new mongoose.Schema({
   title: String,
   subtitle: String,
-  image: String
+  image: String,
+  detailImage: { type: String, default: '' },
+  detailContent: { type: String, default: '' },
+  keyPoints: { type: [String], default: [] },
+  clientName: { type: String, default: '' },
+  completedDate: { type: String, default: '' },
+  location: { type: String, default: '' },
+  link: { type: String, default: '' }
 });
 
 const completedProjectsSchema = new mongoose.Schema({
@@ -231,7 +256,13 @@ const serviceSliderServiceSchema = new mongoose.Schema({
   title: String,
   desc: String,
   icon: String,
-  image: String
+  image: String,
+  detailImage: { type: String, default: '' },
+  detailContent: { type: String, default: '' },
+  keyPoints: { type: [String], default: [] },
+  price: { type: String, default: '' },
+  duration: { type: String, default: '' },
+  link: { type: String, default: '' }
 });
 
 const serviceSliderSchema = new mongoose.Schema({
@@ -263,9 +294,32 @@ const heroBannersSchema = new mongoose.Schema({
   }
 });
 
+const heroFloatingPlanCardSchema = new mongoose.Schema({
+  image: { type: String, default: '' },
+  price: { type: String, default: '' },
+  planName: { type: String, default: '' },
+  redirectUrl: { type: String, default: '/booking' },
+  altText: { type: String, default: 'Plan card' }
+});
+
+const heroSectionSchema = new mongoose.Schema({
+  backgroundImage: { type: String, default: '' },
+  eyebrow: { type: String, default: 'Gharoo Care' },
+  title: { type: String, default: 'AC Service & AMC Plans' },
+  subtitle: { type: String, default: 'Doorstep service • 24/7 support' },
+  floatingPlanCards: {
+    type: [heroFloatingPlanCardSchema],
+    default: [
+      { image: '', price: '₹1249', planName: 'AC AMC Plan - Basic', redirectUrl: '/booking', altText: 'AC AMC Basic plan ₹1249' },
+      { image: '', price: '₹499', planName: 'AC One Time Service', redirectUrl: '/booking', altText: 'AC One Time Service ₹499' }
+    ]
+  }
+});
+
 const panelSettingsSchema = new mongoose.Schema({
   hero: { type: heroSchema, default: () => ({}) },
   heroBanners: { type: heroBannersSchema, default: () => ({}) },
+  heroSection: { type: heroSectionSchema, default: () => ({}) },
   about: { type: aboutSchema, default: () => ({}) },
   services: { type: servicesSchema, default: () => ({}) },
   testimonials: { type: testimonialsSchema, default: () => ({}) },

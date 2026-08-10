@@ -1,12 +1,26 @@
 import { useState, useEffect } from 'react';
 
+const DEFAULT_HERO_SECTION = {
+  backgroundImage: '',
+  eyebrow: 'Gharoo Care',
+  title: 'AC Service & AMC Plans',
+  subtitle: 'Doorstep service • 24/7 support',
+  floatingPlanCards: [
+    { image: '', price: '₹1249', planName: 'AC AMC Plan - Basic', redirectUrl: '/booking', altText: 'AC AMC Basic plan ₹1249' },
+    { image: '', price: '₹499', planName: 'AC One Time Service', redirectUrl: '/booking', altText: 'AC One Time Service ₹499' }
+  ]
+};
+
 export default function UserPanelHero() {
   const [slides, setSlides] = useState([]);
   const [heroBanner, setHeroBanner] = useState({ image: '', redirectUrl: '/booking', altText: 'Gharoo Care banner' });
+  const [heroSection, setHeroSection] = useState(DEFAULT_HERO_SECTION);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState({ index: null, type: null });
   const [bannerUploading, setBannerUploading] = useState(false);
+  const [heroBgUploading, setHeroBgUploading] = useState(false);
+  const [planCardUploading, setPlanCardUploading] = useState(null);
   const [message, setMessage] = useState('');
 
   const fetchSettings = async () => {
@@ -16,6 +30,17 @@ export default function UserPanelHero() {
       if (data.success) {
         setSlides(data.data.hero.slides);
         setHeroBanner(data.data.heroBanner || { image: '', redirectUrl: '/booking', altText: 'Gharoo Care banner' });
+        const savedHeroSection = data.data.heroSection || DEFAULT_HERO_SECTION;
+        const cards = (savedHeroSection.floatingPlanCards && savedHeroSection.floatingPlanCards.length)
+          ? savedHeroSection.floatingPlanCards
+          : DEFAULT_HERO_SECTION.floatingPlanCards;
+        setHeroSection({
+          backgroundImage: savedHeroSection.backgroundImage || '',
+          eyebrow: savedHeroSection.eyebrow || DEFAULT_HERO_SECTION.eyebrow,
+          title: savedHeroSection.title || DEFAULT_HERO_SECTION.title,
+          subtitle: savedHeroSection.subtitle || DEFAULT_HERO_SECTION.subtitle,
+          floatingPlanCards: cards
+        });
       }
     } catch (err) {
       console.error(err);
@@ -52,6 +77,52 @@ export default function UserPanelHero() {
       setMessage('Error uploading image');
     } finally {
       setBannerUploading(false);
+    }
+  };
+
+  const handleHeroBgUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setHeroBgUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/upload-image', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        setHeroSection({ ...heroSection, backgroundImage: data.url });
+        setMessage('Hero background image uploaded!');
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage('Error uploading background image');
+    } finally {
+      setHeroBgUploading(false);
+    }
+  };
+
+  const handlePlanCardImageUpload = async (e, cardIdx) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setPlanCardUploading(cardIdx);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/upload-image', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        const newCards = [...heroSection.floatingPlanCards];
+        newCards[cardIdx] = { ...newCards[cardIdx], image: data.url };
+        setHeroSection({ ...heroSection, floatingPlanCards: newCards });
+        setMessage(`Plan card ${cardIdx + 1} image uploaded!`);
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage('Error uploading plan card image');
+    } finally {
+      setPlanCardUploading(null);
     }
   };
 
@@ -94,6 +165,35 @@ export default function UserPanelHero() {
     setHeroBanner({ ...heroBanner, [field]: value });
   };
 
+  const handleHeroSectionChange = (field, value) => {
+    setHeroSection({ ...heroSection, [field]: value });
+  };
+
+  const handlePlanCardChange = (idx, field, value) => {
+    const newCards = [...heroSection.floatingPlanCards];
+    newCards[idx] = { ...newCards[idx], [field]: value };
+    setHeroSection({ ...heroSection, floatingPlanCards: newCards });
+  };
+
+  const addPlanCard = () => {
+    if (heroSection.floatingPlanCards.length >= 4) return;
+    setHeroSection({
+      ...heroSection,
+      floatingPlanCards: [
+        ...heroSection.floatingPlanCards,
+        { image: '', price: '₹0', planName: 'New Plan', redirectUrl: '/booking', altText: 'New plan card' }
+      ]
+    });
+  };
+
+  const removePlanCard = (idx) => {
+    if (heroSection.floatingPlanCards.length <= 1) return;
+    setHeroSection({
+      ...heroSection,
+      floatingPlanCards: heroSection.floatingPlanCards.filter((_, i) => i !== idx)
+    });
+  };
+
   const addSlide = () => {
     const newSlides = [...slides, {
       eyebrow: 'New Slide',
@@ -119,7 +219,7 @@ export default function UserPanelHero() {
       const getResData = await getRes.json();
       if (!getResData.success) throw new Error('Failed to get settings');
       
-      const updatedSettings = { ...getResData.data, hero: { slides }, heroBanner };
+      const updatedSettings = { ...getResData.data, hero: { slides }, heroBanner, heroSection };
       
       const res = await fetch('/api/panel-settings', {
         method: 'PUT',
@@ -196,6 +296,156 @@ export default function UserPanelHero() {
                 onChange={(e) => handleBannerChange('altText', e.target.value)}
               />
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel mb-4">
+        <div className="panel-header">
+          <h2 className="h5 mb-0">Hero Section (Main Page)</h2>
+          <small className="text-muted">Background image + 2/4 floating plan cards in center</small>
+        </div>
+        <div className="panel-body">
+          <div className="row g-3">
+            <div className="col-md-4">
+              <label className="form-label">Eyebrow</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Gharoo Care"
+                value={heroSection.eyebrow}
+                onChange={(e) => handleHeroSectionChange('eyebrow', e.target.value)}
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Title</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="AC Service & AMC Plans"
+                value={heroSection.title}
+                onChange={(e) => handleHeroSectionChange('title', e.target.value)}
+              />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label">Subtitle</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Doorstep service • 24/7 support"
+                value={heroSection.subtitle}
+                onChange={(e) => handleHeroSectionChange('subtitle', e.target.value)}
+              />
+            </div>
+            <div className="col-12">
+              <label className="form-label">Hero Background Image</label>
+              {heroSection.backgroundImage && (
+                <a href={heroSection.backgroundImage} target="_blank" rel="noopener noreferrer">
+                  <img src={heroSection.backgroundImage} alt="Hero bg preview" className="img-fluid mb-2 d-block" style={{ maxHeight: '220px', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
+                </a>
+              )}
+              <input
+                type="file"
+                className="form-control"
+                accept="image/*"
+                onChange={handleHeroBgUpload}
+                disabled={heroBgUploading}
+              />
+              {heroBgUploading && <small className="text-muted">Uploading...</small>}
+            </div>
+          </div>
+
+          <hr className="my-4" />
+
+          <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <h6 className="mb-0">Floating Plan Cards (center)</h6>
+            <button
+              className="btn btn-outline-primary btn-sm"
+              onClick={addPlanCard}
+              disabled={heroSection.floatingPlanCards.length >= 4}
+            >
+              <i className="bi bi-plus" /> Add Card (max 4)
+            </button>
+          </div>
+
+          <div className="row g-3">
+            {heroSection.floatingPlanCards.map((card, idx) => (
+              <div className="col-md-6" key={idx}>
+                <div className="p-3 border rounded-3 position-relative bg-light">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-danger position-absolute top-0 end-0 m-2"
+                    onClick={() => removePlanCard(idx)}
+                    disabled={heroSection.floatingPlanCards.length <= 1}
+                    title="Remove card"
+                    style={{ zIndex: 2 }}
+                  >
+                    <i className="bi bi-trash" />
+                  </button>
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <span className="badge bg-success">Card {idx + 1}</span>
+                  </div>
+                  {card.image && (
+                    <a href={card.image} target="_blank" rel="noopener noreferrer">
+                      <img src={card.image} alt={`Plan card ${idx + 1}`} className="img-fluid mb-2 d-block w-100" style={{ maxHeight: '180px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                    </a>
+                  )}
+                  <div className="mb-2">
+                    <label className="form-label">Plan Image</label>
+                    <input
+                      type="file"
+                      className="form-control form-control-sm"
+                      accept="image/*"
+                      onChange={(e) => handlePlanCardImageUpload(e, idx)}
+                      disabled={planCardUploading === idx}
+                    />
+                    {planCardUploading === idx && <small className="text-muted">Uploading...</small>}
+                  </div>
+                  <div className="row g-2">
+                    <div className="col-md-4">
+                      <label className="form-label">Price</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="₹1249"
+                        value={card.price}
+                        onChange={(e) => handlePlanCardChange(idx, 'price', e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-8">
+                      <label className="form-label">Plan Name</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="AC AMC Plan"
+                        value={card.planName}
+                        onChange={(e) => handlePlanCardChange(idx, 'planName', e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-7">
+                      <label className="form-label">Redirect URL</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="/booking"
+                        value={card.redirectUrl}
+                        onChange={(e) => handlePlanCardChange(idx, 'redirectUrl', e.target.value)}
+                      />
+                    </div>
+                    <div className="col-md-5">
+                      <label className="form-label">Alt Text</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-sm"
+                        placeholder="Image alt text"
+                        value={card.altText}
+                        onChange={(e) => handlePlanCardChange(idx, 'altText', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

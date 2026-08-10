@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom'
 import './styles.css'
 import PageLoader from './components/PageLoader'
 
@@ -15,6 +15,7 @@ const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage'))
 const UserForm = lazy(() => import('./components/UserForm'))
 const PaymentPage = lazy(() => import('./components/PaymentPage'))
 const ServiceManRegistration = lazy(() => import('./pages/ServiceManRegistration'))
+const DetailPage = lazy(() => import('./components/DetailPage'))
 
 const SETTINGS_CACHE_KEY = 'gharoo-panel-settings-v2'
 
@@ -87,8 +88,18 @@ export default function App() {
           <Route path="/booking" element={<UserForm />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/service-man/register" element={<ServiceManRegistration />} />
+          <Route path="/service/:slug" element={<DetailRoute settings={settings} type="service" />} />
+          <Route path="/slider/:slug" element={<DetailRoute settings={settings} type="slider" />} />
+          <Route path="/feature/:slug" element={<DetailRoute settings={settings} type="feature" />} />
+          <Route path="/why/:slug" element={<DetailRoute settings={settings} type="why" />} />
+          <Route path="/project/:slug" element={<DetailRoute settings={settings} type="project" />} />
         </Routes>
       </Suspense>
     </Router>
   )
+}
+
+function DetailRoute({ settings, type }) {
+  const { slug } = useParams()
+  return <DetailPage settings={settings} type={type} slug={slug} />
 }

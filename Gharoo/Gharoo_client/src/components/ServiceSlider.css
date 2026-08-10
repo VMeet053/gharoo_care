@@ -164,6 +164,26 @@
   color: #24b57a;
   cursor: pointer;
   font-size: 0.82rem;
+  display: inline-block;
+  transition: gap 0.25s, letter-spacing 0.25s, transform 0.25s, color 0.25s;
+  outline: none;
+  user-select: none;
+}
+
+.learn-more:hover,
+.learn-more:focus-visible {
+  color: #1da76d;
+  letter-spacing: 0.03em;
+  transform: translateX(4px);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.learn-more:focus-visible {
+  box-shadow: 0 0 0 3px rgba(36, 181, 122, 0.25);
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin: -2px -6px;
 }
 
 @media (max-width: 1024px) {
