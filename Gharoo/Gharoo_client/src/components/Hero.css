@@ -100,7 +100,17 @@
 }
 
 .hero-v2-cards-2 {
-  max-width: 520px;
+  max-width: 820px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 20px;
+}
+
+.hero-v2-cards-2 .hero-v2-card {
+  flex: 1 1 300px;
+  max-width: 400px;
 }
 
 .hero-v2-cards-3 {
@@ -300,7 +310,8 @@
   }
 
   .hero-v2-cards-3 .hero-v2-card,
-  .hero-v2-cards-4 .hero-v2-card {
+  .hero-v2-cards-4 .hero-v2-card,
+  .hero-v2-cards-2 .hero-v2-card {
     flex: 1 1 100%;
     max-width: 100%;
   }
