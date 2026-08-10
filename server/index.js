@@ -99,10 +99,10 @@ const getDefaultSettings = () => ({
       { eyebrow: 'Convenient Pickup & Delivery', titleTop: 'Doorstep Service', titleHighlight: 'For Your Convenience', text: 'Schedule a pickup and we will return your device fully tested and working — hassle-free service at your door.', bg: '', side: '' }
     ]
   },
-  heroBanner: {
-    image: '',
-    redirectUrl: '/booking',
-    altText: 'Gharoo Care complete AC care AMC plan'
+  heroBanners: {
+    items: [
+      { image: '', redirectUrl: '/booking', altText: 'Gharoo Care complete AC care AMC plan' }
+    ]
   },
   about: {
     eyebrow: 'ABOUT US',
@@ -1142,12 +1142,19 @@ app.post('/api/reset-password', async (req, res) => {
 // Get panel settings
 app.get('/api/panel-settings', async (req, res) => {
   try {
+    let rawSettings;
     if (isMongoConnected) {
-      const settings = await PanelSettings.findOne();
-      res.json({ success: true, data: settings });
+      rawSettings = await PanelSettings.findOne();
     } else {
-      res.json({ success: true, data: inMemorySettings });
+      rawSettings = inMemorySettings;
     }
+    const defaults = getDefaultSettings();
+    const merged = {
+      ...defaults,
+      ...(rawSettings?.toObject ? rawSettings.toObject() : rawSettings || {}),
+      heroBanner: { ...defaults.heroBanner, ...((rawSettings?.toObject ? rawSettings.toObject() : rawSettings || {}).heroBanner || {}) }
+    };
+    res.json({ success: true, data: merged });
   } catch (err) {
     console.error('Get panel settings error:', err);
     res.status(500).json({ success: false, message: 'Server error' });

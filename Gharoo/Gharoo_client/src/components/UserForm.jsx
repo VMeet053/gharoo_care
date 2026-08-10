@@ -132,6 +132,46 @@ export default function UserForm() {
     }
   })()
 
+  const preselectedService = (() => {
+    try {
+      return JSON.parse(localStorage.getItem('selectedService')) || null
+    } catch {
+      return null
+    }
+  })()
+
+  const [services, setServices] = useState([])
+  const [servicesLoading, setServicesLoading] = useState(true)
+  const [selectedService, setSelectedService] = useState(
+    preselectedService || savedData.selectedService || null
+  )
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const res = await fetch('/api/service-prices')
+        const data = await res.json()
+        if (!cancelled) {
+          const list = Array.isArray(data) ? data : []
+          setServices(list)
+          if (list.length > 0 && !selectedService && !preselectedService) {
+            const first = list[0]
+            setSelectedService({ id: first.id, name: first.name, price: first.price })
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load services:', err)
+      } finally {
+        if (!cancelled) setServicesLoading(false)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   const [formData, setFormData] = useState({
     ...FIELD_DEFAULTS,
     ...Object.fromEntries(
@@ -335,6 +375,10 @@ export default function UserForm() {
 
   function handleSubmit(e) {
     e.preventDefault()
+    if (!selectedService) {
+      alert('Please select a service.')
+      return
+    }
     const hasPin = selectedLocation && formData.currentLocation.trim()
     if (!hasPin) {
       alert('Please add current location before payment. Use "Use Current Location" or tap on the map to drop a pin.')
@@ -351,24 +395,45 @@ export default function UserForm() {
     const dataToSave = {
       ...formData,
       fullAddress,
+      selectedService,
       latitude: selectedLocation?.lat ?? savedData.latitude ?? '',
       longitude: selectedLocation?.lon ?? savedData.longitude ?? ''
     }
     localStorage.setItem('userFormData', JSON.stringify(dataToSave))
+    if (selectedService) {
+      localStorage.setItem('selectedService', JSON.stringify(selectedService))
+    }
     navigate('/payment')
+  }
+
+  function handleServiceChange(e) {
+    const id = e.target.value
+    const svc = services.find((s) => s.id === id)
+    if (svc) {
+      setSelectedService({ id: svc.id, name: svc.name, price: svc.price })
+    }
   }
 
   return (
     <div className="form-container">
       <div className="form-card">
         <aside className="booking-summary">
-          <button type="button" className="form-back-btn" onClick={() => navigate('/pricing')}>
-          Back to Plans
-        </button>
-          <span className="booking-kicker">Selected Plan</span>
-          <h2>{selectedPlan?.name || 'Book Your Plan'}</h2>
-          <div className="booking-price">{selectedPlan?.price || 'Choose a plan'}</div>
+          <button type="button" className="form-back-btn" onClick={() => navigate(selectedPlan ? '/pricing' : '/')}>
+            {selectedPlan ? 'Back to Plans' : 'Back to Home'}
+          </button>
+          <span className="booking-kicker">
+            {selectedPlan ? 'Selected Plan' : 'Book Service'}
+          </span>
+          <h2>{selectedPlan?.name || selectedService?.name || 'Choose a service'}</h2>
+          <div className="booking-price">
+            {selectedPlan?.price || (selectedService ? `₹${selectedService.price}` : 'Select a service')}
+          </div>
           <p>Share your contact and service address. We will confirm the slot before payment.</p>
+          {selectedService?.description && (
+            <div className="booking-service-desc mb-3">
+              <small className="text-muted">{selectedService.description}</small>
+            </div>
+          )}
           <div className="booking-summary-list">
             <span>Priority technician assignment</span>
             <span>Doorstep pickup support</span>
@@ -383,6 +448,36 @@ export default function UserForm() {
           </div>
 
           <div className="booking-fields">
+            <div className="form-group service-selector-group">
+              <label>Select Service <span className="required">*</span></label>
+              {servicesLoading ? (
+                <div className="form-control text-muted py-2">Loading services...</div>
+              ) : services.length === 0 ? (
+                <div className="form-control text-muted py-2 text-warning">
+                  No services available. Please contact admin.
+                </div>
+              ) : (
+                <select
+                  className="form-control"
+                  required
+                  value={selectedService?.id || ''}
+                  onChange={handleServiceChange}
+                >
+                  <option value="" disabled>-- Choose a service --</option>
+                  {services.map((svc) => (
+                    <option key={svc.id} value={svc.id}>
+                      {svc.name} - ₹{svc.price}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {selectedService?.description && (
+                <small className="form-text text-muted mt-1 d-block">
+                  {selectedService.description}
+                </small>
+              )}
+            </div>
+
             <div className="form-group">
               <label>First Name <span className="required">*</span></label>
               <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required placeholder="Enter your first name" />

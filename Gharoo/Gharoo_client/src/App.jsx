@@ -16,7 +16,20 @@ const UserForm = lazy(() => import('./components/UserForm'))
 const PaymentPage = lazy(() => import('./components/PaymentPage'))
 const ServiceManRegistration = lazy(() => import('./pages/ServiceManRegistration'))
 
-const SETTINGS_CACHE_KEY = 'gharoo-panel-settings'
+const SETTINGS_CACHE_KEY = 'gharoo-panel-settings-v2'
+
+const normalizeSettings = (raw) => {
+  if (!raw || typeof raw !== 'object') return raw
+  return {
+    ...raw,
+    heroBanner: {
+      image: '',
+      redirectUrl: '/booking',
+      altText: 'Gharoo Care banner',
+      ...(raw.heroBanner && typeof raw.heroBanner === 'object' ? raw.heroBanner : {})
+    }
+  }
+}
 
 export default function App() {
   const [settings, setSettings] = useState(null)
@@ -27,7 +40,7 @@ export default function App() {
       const cached = sessionStorage.getItem(SETTINGS_CACHE_KEY)
       if (cached) {
         try {
-          setSettings(JSON.parse(cached))
+          setSettings(normalizeSettings(JSON.parse(cached)))
           setLoading(false)
         } catch {
           sessionStorage.removeItem(SETTINGS_CACHE_KEY)
@@ -37,7 +50,8 @@ export default function App() {
       const res = await fetch('/api/panel-settings', { signal })
       const data = await res.json()
       if (data.success) {
-        setSettings(data.data)
+        const normalized = normalizeSettings(data.data)
+        setSettings(normalized)
         sessionStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(data.data))
       }
     } catch (err) {

@@ -250,15 +250,22 @@ const serviceSliderSchema = new mongoose.Schema({
   }
 });
 
-const heroBannerSchema = new mongoose.Schema({
+const heroBannerItemSchema = new mongoose.Schema({
   image: { type: String, default: '' },
   redirectUrl: { type: String, default: '/booking' },
   altText: { type: String, default: 'Gharoo Care banner' }
 });
 
+const heroBannersSchema = new mongoose.Schema({
+  items: {
+    type: [heroBannerItemSchema],
+    default: [{ image: '', redirectUrl: '/booking', altText: 'Gharoo Care banner' }]
+  }
+});
+
 const panelSettingsSchema = new mongoose.Schema({
   hero: { type: heroSchema, default: () => ({}) },
-  heroBanner: { type: heroBannerSchema, default: () => ({}) },
+  heroBanners: { type: heroBannersSchema, default: () => ({}) },
   about: { type: aboutSchema, default: () => ({}) },
   services: { type: servicesSchema, default: () => ({}) },
   testimonials: { type: testimonialsSchema, default: () => ({}) },

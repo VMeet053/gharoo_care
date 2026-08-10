@@ -24,6 +24,7 @@ export default function PaymentPage() {
   const { showToast } = useToast()
   const userFormData = readLocalStorageJson('userFormData')
   const selectedPlan = readLocalStorageJson('selectedPlan')
+  const selectedService = readLocalStorageJson('selectedService') || userFormData?.selectedService
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!userFormData) {
@@ -31,22 +32,26 @@ export default function PaymentPage() {
     return null
   }
 
-  const planAmount = parsePlanAmount(selectedPlan?.price)
+  const isPremiumFlow = Boolean(selectedPlan)
+  const rawAmount = selectedPlan?.price || selectedService?.price || '0'
+  const planAmount = parsePlanAmount(rawAmount)
   const paymentAmount = planAmount.toFixed(2)
   const customerName = [userFormData.firstName, userFormData.lastName].filter(Boolean).join(' ')
-  const transactionNote = `Gharoo Care ${selectedPlan?.name || 'Premium'} Plan`
+  const itemName = selectedPlan?.name || selectedService?.name || 'Service'
+  const transactionNote = `Gharoo Care ${itemName}`
   const upiUri = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent(UPI_NAME)}&am=${paymentAmount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(upiUri)}`
 
   const handlePayment = async () => {
-    if (!selectedPlan || !planAmount) {
-      showToast('Please select a plan before payment.', 'warning', 'Plan required')
+    if (!planAmount) {
+      showToast('Please select a service or plan before payment.', 'warning', 'Service required')
       return
     }
     if (!userFormData.currentLocation) {
       showToast('Please go back and add current location.', 'warning', 'Current location required')
       return
     }
+    const serviceName = selectedService?.name || (selectedPlan ? `Plan: ${selectedPlan.name}` : 'Home Repair')
 
     setIsSubmitting(true)
     try {
@@ -59,19 +64,19 @@ export default function PaymentPage() {
         currentLocation: userFormData.currentLocation || '',
         city: userFormData.city,
         area: userFormData.area,
-        service: 'Home Repair',
+        service: serviceName,
         status: 'New',
-        isPremium: true,
-        premiumPlan: selectedPlan.name,
-        premiumPrice: selectedPlan.price
+        isPremium: isPremiumFlow,
+        premiumPlan: selectedPlan?.name || '',
+        premiumPrice: selectedPlan?.price || ''
       }
 
       const premiumUserData = {
         name: customerName,
         email: userFormData.email,
         phone: userFormData.contactNumber,
-        plan: selectedPlan.name,
-        price: selectedPlan.price,
+        plan: isPremiumFlow ? selectedPlan.name : selectedService?.name || 'Service',
+        price: rawAmount,
         city: userFormData.city,
         address: userFormData.fullAddress,
         status: 'Payment Pending',
@@ -94,6 +99,7 @@ export default function PaymentPage() {
         showToast('Payment submitted. Admin approval pending.', 'success', 'Payment sent')
         localStorage.removeItem('userFormData')
         localStorage.removeItem('selectedPlan')
+        localStorage.removeItem('selectedService')
         setTimeout(() => navigate('/'), 900)
       } else {
         showToast(data.message || 'Something went wrong. Please try again.', 'error', 'Payment failed')
@@ -116,22 +122,26 @@ export default function PaymentPage() {
           <p><strong>Name:</strong> {customerName}</p>
           <p><strong>Email:</strong> {userFormData.email}</p>
           <p><strong>Contact:</strong> {userFormData.contactNumber}</p>
+          <p><strong>Service:</strong> {selectedService?.name || (selectedPlan ? `Premium Plan: ${selectedPlan.name}` : 'Home Repair')}</p>
+          {selectedPlan && (
+            <p><strong>Premium Plan:</strong> {selectedPlan.name}</p>
+          )}
           <p><strong>Address:</strong> {userFormData.fullAddress}</p>
           <p><strong>Current Location:</strong> {userFormData.currentLocation ? <a href={userFormData.currentLocation} target="_blank" rel="noreferrer">Open map</a> : 'Required'}</p>
-          <p><strong>Plan:</strong> {selectedPlan?.name || '-'}</p>
-          <p><strong>Amount:</strong> Rs. {planAmount.toLocaleString('en-IN')}</p>
+          <p><strong>{isPremiumFlow ? 'Plan Amount' : 'Service Charge'}:</strong> Rs. {planAmount.toLocaleString('en-IN')}</p>
         </div>
 
         <div className="upi-payment-panel">
           <div className="upi-payment-copy">
             <h3>Scan & Pay with GPay / UPI</h3>
+            <p><strong>{itemName}</strong></p>
             <p>Payee: <strong>{UPI_NAME}</strong></p>
             <p>UPI ID: <strong>{UPI_ID}</strong></p>
             <p>Amount: <strong>Rs. {planAmount.toLocaleString('en-IN')}</strong></p>
           </div>
           <div className="qr-box">
             <img src={qrUrl} alt={`UPI QR for Rs. ${planAmount}`} />
-            <span>QR includes selected plan amount</span>
+            <span>QR includes {isPremiumFlow ? 'plan' : 'service'} amount</span>
           </div>
         </div>
 

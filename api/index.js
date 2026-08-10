@@ -661,12 +661,19 @@ app.put('/api/service-man/profile-pic', upload.single('profilePic'), async (req,
 // Get panel settings
 app.get('/api/panel-settings', async (req, res) => {
   try {
+    let rawSettings;
     if (isMongoConnected) {
-      const settings = await PanelSettings.findOne();
-      res.json({ success: true, data: settings });
+      rawSettings = await PanelSettings.findOne();
     } else {
-      res.json({ success: true, data: inMemorySettings });
+      rawSettings = inMemorySettings;
     }
+    const defaults = getDefaultSettings();
+    const merged = {
+      ...defaults,
+      ...(rawSettings?.toObject ? rawSettings.toObject() : rawSettings || {}),
+      heroBanner: { ...defaults.heroBanner, ...((rawSettings?.toObject ? rawSettings.toObject() : rawSettings || {}).heroBanner || {}) }
+    };
+    res.json({ success: true, data: merged });
   } catch (err) {
     console.error('Get panel settings error:', err);
     res.status(500).json({ success: false, message: 'Server error' });
