@@ -61,6 +61,11 @@ const getDefaultSettings = () => ({
       { eyebrow: 'Convenient Pickup & Delivery', titleTop: 'Doorstep Service', titleHighlight: 'For Your Convenience', text: 'Schedule a pickup and we will return your device fully tested and working — hassle-free service at your door.', bg: '', side: '' }
     ]
   },
+  heroBanner: {
+    image: '',
+    redirectUrl: '/booking',
+    altText: 'Gharoo Care complete AC care AMC plan'
+  },
   about: {
     eyebrow: 'ABOUT US',
     title: 'Welcome To Repair & Installing Company',

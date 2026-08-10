@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 
 export default function UserPanelHero() {
   const [slides, setSlides] = useState([]);
+  const [heroBanner, setHeroBanner] = useState({ image: '', redirectUrl: '/booking', altText: 'Gharoo Care banner' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState({ index: null, type: null });
+  const [bannerUploading, setBannerUploading] = useState(false);
   const [message, setMessage] = useState('');
 
   const fetchSettings = async () => {
@@ -13,6 +15,7 @@ export default function UserPanelHero() {
       const data = await res.json();
       if (data.success) {
         setSlides(data.data.hero.slides);
+        setHeroBanner(data.data.heroBanner || { image: '', redirectUrl: '/booking', altText: 'Gharoo Care banner' });
       }
     } catch (err) {
       console.error(err);
@@ -24,6 +27,33 @@ export default function UserPanelHero() {
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  const handleBannerImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setBannerUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setHeroBanner({ ...heroBanner, image: data.url });
+        setMessage('Banner image uploaded successfully!');
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage('Error uploading image');
+    } finally {
+      setBannerUploading(false);
+    }
+  };
 
   const handleImageUpload = async (e, index, type) => {
     const file = e.target.files[0];
@@ -60,6 +90,10 @@ export default function UserPanelHero() {
     setSlides(newSlides);
   };
 
+  const handleBannerChange = (field, value) => {
+    setHeroBanner({ ...heroBanner, [field]: value });
+  };
+
   const addSlide = () => {
     const newSlides = [...slides, {
       eyebrow: 'New Slide',
@@ -85,7 +119,7 @@ export default function UserPanelHero() {
       const getResData = await getRes.json();
       if (!getResData.success) throw new Error('Failed to get settings');
       
-      const updatedSettings = { ...getResData.data, hero: { slides } };
+      const updatedSettings = { ...getResData.data, hero: { slides }, heroBanner };
       
       const res = await fetch('/api/panel-settings', {
         method: 'PUT',
@@ -121,7 +155,50 @@ export default function UserPanelHero() {
           </button>
         </div>
       </div>
-      {message && <div className={`alert ${message.includes('saved') ? 'alert-success' : 'alert-danger'}`}>{message}</div>}
+      {message && <div className={`alert ${message.includes('saved') || message.includes('uploaded') ? 'alert-success' : 'alert-danger'}`}>{message}</div>}
+
+      <section className="panel mb-4">
+        <div className="panel-header">
+          <h2 className="h5 mb-0">Hero Banner</h2>
+        </div>
+        <div className="panel-body">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <label className="form-label">Banner Image</label>
+              {heroBanner.image && <img src={heroBanner.image} alt="Hero Banner" className="img-fluid mb-2" style={{ maxHeight: '200px' }} />}
+              <input
+                type="file"
+                className="form-control"
+                accept="image/*"
+                onChange={handleBannerImageUpload}
+                disabled={bannerUploading}
+              />
+              {bannerUploading && <small className="text-muted">Uploading...</small>}
+            </div>
+            <div className="col-md-6">
+              <label className="form-label">Redirect URL</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="/booking or https://example.com"
+                value={heroBanner.redirectUrl}
+                onChange={(e) => handleBannerChange('redirectUrl', e.target.value)}
+              />
+              <small className="text-muted d-block mt-1">Internal path (e.g. /booking) or full URL (https://...)</small>
+            </div>
+            <div className="col-12">
+              <label className="form-label">Alt Text</label>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Banner alt text"
+                value={heroBanner.altText}
+                onChange={(e) => handleBannerChange('altText', e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="panel">
         <div className="panel-header">
@@ -143,10 +220,10 @@ export default function UserPanelHero() {
                 <div className="col-md-6">
                   <label className="form-label">Background Image</label>
                   {slide.bg && <img src={slide.bg} alt="Slide background" className="img-fluid mb-2" style={{ maxHeight: '150px' }} />}
-                  <input 
-                    type="file" 
-                    className="form-control" 
-                    accept="image/*" 
+                  <input
+                    type="file"
+                    className="form-control"
+                    accept="image/*"
                     onChange={(e) => handleImageUpload(e, index, 'bg')}
                     disabled={uploading.index === index && uploading.type === 'bg'}
                   />
@@ -154,10 +231,10 @@ export default function UserPanelHero() {
                 <div className="col-md-6">
                   <label className="form-label">Side Image</label>
                   {slide.side && <img src={slide.side} alt="Slide side" className="img-fluid mb-2" style={{ maxHeight: '150px' }} />}
-                  <input 
-                    type="file" 
-                    className="form-control" 
-                    accept="image/*" 
+                  <input
+                    type="file"
+                    className="form-control"
+                    accept="image/*"
                     onChange={(e) => handleImageUpload(e, index, 'side')}
                     disabled={uploading.index === index && uploading.type === 'side'}
                   />
