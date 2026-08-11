@@ -41,8 +41,8 @@ export default function Footer({ settings }) {
             <ul>
               <li><Link to="/">Home</Link></li>
               <li><Link to="/about">About Us</Link></li>
-              <li><Link to="/services">Our Services</Link></li>
-              <li><Link to="/projects">Projects</Link></li>
+              {/* <li><Link to="/services">Our Services</Link></li>
+              <li><Link to="/projects">Projects</Link></li> */}
               <li><Link to="/pricing">Pricing</Link></li>
               <li><Link to="/contact">Contact</Link></li>
             </ul>
@@ -61,7 +61,7 @@ export default function Footer({ settings }) {
             <h4>Contact Info</h4>
             <div className="footer-contact-item">
               <IconPhone size={18} color="#24b57a" />
-              <a href="tel:+91 9974389486">+91 9974389486</a>
+              <a href="tel:+918000480047">+91 918000480047</a>
             </div>
             <div className="footer-contact-item">
               <IconMail size={18} color="#24b57a" />
@@ -69,7 +69,7 @@ export default function Footer({ settings }) {
             </div>
             <div className="footer-contact-item">
               <IconMapPin size={18} color="#24b57a" />
-              <span> 244 avadh viceroy sarthana jakat naka surat 395006</span>
+              <span> c202 many residency vraj chowk sarthana jakat naka surat 395006</span>
             </div>
           </div>
         </div>
