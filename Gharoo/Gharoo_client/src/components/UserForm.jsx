@@ -448,6 +448,7 @@ export default function UserForm() {
           </div>
 
           <div className="booking-fields">
+            {!selectedPlan && (
             <div className="form-group service-selector-group">
               <label>Select Service <span className="required">*</span></label>
               {servicesLoading ? (
@@ -477,6 +478,8 @@ export default function UserForm() {
                 </small>
               )}
             </div>
+
+            )}
 
             <div className="form-group">
               <label>First Name <span className="required">*</span></label>
