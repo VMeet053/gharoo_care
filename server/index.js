@@ -73,12 +73,17 @@ async function uploadToCloudinary(fileBuffer, mimetype, folder = 'gharoocare') {
     return { success: false, message: 'Cloudinary not configured' };
   }
   try {
-    const b64 = Buffer.from(fileBuffer).toString('base64');
-    const dataURI = `data:${mimetype};base64,${b64}`;
-    const result = await cloudinary.uploader.upload(dataURI, {
-      folder,
-      timeout: 60000,
-      resource_type: 'auto'
+    // Stream the original buffer. Base64 adds about 33% to the request size and
+    // can make a serverless function time out for otherwise valid uploads.
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream({
+        folder,
+        resource_type: 'image'
+      }, (error, uploadResult) => {
+        if (error) reject(error);
+        else resolve(uploadResult);
+      });
+      stream.end(fileBuffer);
     });
     return { success: true, url: result.secure_url, public_id: result.public_id };
   } catch (cErr) {
