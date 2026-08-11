@@ -33,11 +33,14 @@ if (cloudinaryConfigured) {
   console.warn('⚠️  Cloudinary env vars missing. Using disk upload fallback.');
 }
 
-// Local uploads directory
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const isVercelRuntime = !!process.env.VERCEL;
+const TMP_UPLOADS_DIR = isVercelRuntime ? path.join('/tmp', 'gharoo_uploads') : null;
+
+// Local uploads directory — on Vercel only /tmp is writable (but ephemeral)
+const UPLOADS_DIR = isVercelRuntime ? TMP_UPLOADS_DIR : path.join(__dirname, 'uploads');
 try {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-  console.log('💾 Uploads directory ready:', UPLOADS_DIR);
+  console.log('💾 Uploads directory ready:', UPLOADS_DIR, isVercelRuntime ? '(Vercel /tmp - ephemeral)' : '');
 } catch (e) {
   console.warn('Could not create uploads dir:', e.message);
 }
@@ -63,6 +66,34 @@ function saveBufferToDisk(fileBuffer, originalName) {
   fs.writeFileSync(fullPath, fileBuffer);
   return `/uploads/${safeName}`;
 }
+
+// Shared Cloudinary upload helper — never throws, returns { success, url, public_id, message }
+async function uploadToCloudinary(fileBuffer, mimetype, folder = 'gharoocare') {
+  if (!cloudinaryConfigured) {
+    return { success: false, message: 'Cloudinary not configured' };
+  }
+  try {
+    const b64 = Buffer.from(fileBuffer).toString('base64');
+    const dataURI = `data:${mimetype};base64,${b64}`;
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder,
+      timeout: 60000,
+      resource_type: 'auto'
+    });
+    return { success: true, url: result.secure_url, public_id: result.public_id };
+  } catch (cErr) {
+    console.error('[Cloudinary] upload failed:', cErr.message, cErr.http_code || '');
+    return {
+      success: false,
+      message: cErr.message || 'Cloudinary upload failed',
+      http_code: cErr.http_code || 502
+    };
+  }
+}
+
+const CLOUDINARY_SETUP_MSG =
+  'Image upload requires Cloudinary on Vercel. Add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET to Vercel Project → Settings → Environment Variables, then redeploy.';
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -306,22 +337,17 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running smoothly!', mongoConnected: isMongoConnected });
 });
 
-// Image upload — Cloudinary first, fallback to disk
+// Image upload — Cloudinary first, fallback to disk (local only)
 app.post('/api/upload-image', (req, res) => {
   upload.single('image')(req, res, async (multerErr) => {
-    // Explicit Multer error handling (size limit, filter, etc.)
     if (multerErr) {
-      console.error('Multer upload error:', multerErr.message);
-      const statusCode =
-        multerErr.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+      console.error('[upload-image] Multer error:', multerErr.message);
+      const statusCode = multerErr.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
       const userMessage =
         multerErr.code === 'LIMIT_FILE_SIZE'
           ? `File too large. Maximum allowed size is ${(MAX_FILE_BYTES / 1024 / 1024).toFixed(0)}MB.`
           : multerErr.message;
-      return res.status(statusCode).json({
-        success: false,
-        message: userMessage
-      });
+      return res.status(statusCode).json({ success: false, message: userMessage });
     }
 
     try {
@@ -337,48 +363,59 @@ app.post('/api/upload-image', (req, res) => {
         return res.status(400).json({ success: false, message: 'Empty upload buffer.' });
       }
 
-      // Try Cloudinary if configured
+      // 1) Try Cloudinary (always on Vercel; recommended for all environments)
       if (cloudinaryConfigured) {
-        try {
-          const b64 = Buffer.from(buffer).toString('base64');
-          const dataURI = `data:${mimetype};base64,${b64}`;
-          const result = await cloudinary.uploader.upload(dataURI, {
-            folder: 'gharoocare',
-            timeout: 60000,
-            resource_type: 'auto'
-          });
-          console.log('☁️  Cloudinary upload OK ->', result.secure_url, `(${(size/1024).toFixed(0)}KB)`);
+        const result = await uploadToCloudinary(buffer, mimetype, 'gharoocare');
+        if (result.success) {
+          console.log('☁️  [upload-image] Cloudinary OK ->', result.url, `(${(size / 1024).toFixed(0)}KB)`);
           return res.json({
             success: true,
-            url: result.secure_url,
+            url: result.url,
             public_id: result.public_id,
             provider: 'cloudinary'
           });
-        } catch (cErr) {
-          console.error('Cloudinary upload failed:', cErr.message);
-          if (process.env.VERCEL) {
-            return res.status(cErr.http_code || 502).json({
-              success: false,
-              message: 'Cloudinary upload failed: ' + cErr.message
-            });
-          }
         }
+        // Cloudinary was configured but the call failed (e.g. bad credentials, network)
+        if (isVercelRuntime) {
+          return res.status(result.http_code || 502).json({
+            success: false,
+            message: `Cloudinary upload failed: ${result.message}. Verify CLOUDINARY_* env vars in Vercel Project Settings.`
+          });
+        }
+        // Local dev — log and fall through to disk
+        console.warn('[upload-image] Cloudinary failed locally, falling back to disk.');
+      } else if (isVercelRuntime) {
+        // No Cloudinary on Vercel = no reliable upload target (/tmp is ephemeral & not served)
+        return res.status(500).json({
+          success: false,
+          message: CLOUDINARY_SETUP_MSG
+        });
       }
 
-      // Fallback: save to local disk
-      const publicPath = saveBufferToDisk(buffer, originalname);
-      console.log('💾 Disk fallback OK ->', publicPath, `(${(size/1024).toFixed(0)}KB)`);
-      return res.json({
-        success: true,
-        url: publicPath,
-        provider: 'disk'
-      });
+      // 2) Fallback: save to local disk (local dev only — NOT reliable on Vercel)
+      try {
+        const publicPath = saveBufferToDisk(buffer, originalname);
+        console.log('💾 [upload-image] Disk fallback OK ->', publicPath, `(${(size / 1024).toFixed(0)}KB)`);
+        return res.json({
+          success: true,
+          url: publicPath,
+          provider: 'disk'
+        });
+      } catch (diskErr) {
+        console.error('[upload-image] Disk fallback failed:', diskErr.message);
+        if (isVercelRuntime) {
+          return res.status(500).json({ success: false, message: CLOUDINARY_SETUP_MSG });
+        }
+        throw diskErr;
+      }
 
     } catch (err) {
-      console.error('Image upload fatal error:', err);
+      console.error('[upload-image] Fatal error:', err);
       return res.status(500).json({
         success: false,
-        message: err.message || 'Failed to upload image'
+        message: isVercelRuntime && !cloudinaryConfigured
+          ? CLOUDINARY_SETUP_MSG
+          : (err.message || 'Failed to upload image')
       });
     }
   });
@@ -517,23 +554,25 @@ app.post('/api/users', upload.fields([{ name: 'frontIdProofImage', maxCount: 1 }
   try {
     const { firstName, lastName, email, phone, role, team, service, notes, password, idProofType, idProofNumber, houseNumber, address, currentLocation, city, state, pinCode } = req.body;
 
-    // Function to upload image to Cloudinary
-    const uploadToCloudinary = async (file) => {
+    const uploadOne = async (file) => {
       if (!file) return null;
-      const b64 = Buffer.from(file.buffer).toString('base64');
-      const dataURI = `data:${file.mimetype};base64,${b64}`;
-      const result = await cloudinary.uploader.upload(dataURI, { folder: 'gharoocare/id-proofs' });
-      return result.secure_url;
+      if (cloudinaryConfigured) {
+        const r = await uploadToCloudinary(file.buffer, file.mimetype, 'gharoocare/id-proofs');
+        if (r.success) return r.url;
+        if (isVercelRuntime) throw new Error(`ID proof Cloudinary upload failed: ${r.message}`);
+      }
+      if (isVercelRuntime) throw new Error(CLOUDINARY_SETUP_MSG);
+      return saveBufferToDisk(file.buffer, file.originalname);
     };
 
     let frontIdProofImageUrl = null;
     let backIdProofImageUrl = null;
 
     if (req.files?.frontIdProofImage?.[0]) {
-      frontIdProofImageUrl = await uploadToCloudinary(req.files.frontIdProofImage[0]);
+      frontIdProofImageUrl = await uploadOne(req.files.frontIdProofImage[0]);
     }
     if (req.files?.backIdProofImage?.[0]) {
-      backIdProofImageUrl = await uploadToCloudinary(req.files.backIdProofImage[0]);
+      backIdProofImageUrl = await uploadOne(req.files.backIdProofImage[0]);
     }
 
     if (isMongoConnected) {
@@ -666,23 +705,25 @@ app.post('/api/service-man/register', upload.fields([{ name: 'frontIdProofImage'
       return getNextEmployeeIdFromList(inMemoryUsers.filter((user) => user.role === 'Service Man'));
     };
 
-    // Function to upload image to Cloudinary
-    const uploadToCloudinary = async (file) => {
+    const uploadOne = async (file) => {
       if (!file) return null;
-      const b64 = Buffer.from(file.buffer).toString('base64');
-      const dataURI = `data:${file.mimetype};base64,${b64}`;
-      const result = await cloudinary.uploader.upload(dataURI, { folder: 'gharoocare/id-proofs' });
-      return result.secure_url;
+      if (cloudinaryConfigured) {
+        const r = await uploadToCloudinary(file.buffer, file.mimetype, 'gharoocare/id-proofs');
+        if (r.success) return r.url;
+        if (isVercelRuntime) throw new Error(`ID proof Cloudinary upload failed: ${r.message}`);
+      }
+      if (isVercelRuntime) throw new Error(CLOUDINARY_SETUP_MSG);
+      return saveBufferToDisk(file.buffer, file.originalname);
     };
 
     let frontIdProofImageUrl = null;
     let backIdProofImageUrl = null;
 
     if (req.files?.frontIdProofImage?.[0]) {
-      frontIdProofImageUrl = await uploadToCloudinary(req.files.frontIdProofImage[0]);
+      frontIdProofImageUrl = await uploadOne(req.files.frontIdProofImage[0]);
     }
     if (req.files?.backIdProofImage?.[0]) {
-      backIdProofImageUrl = await uploadToCloudinary(req.files.backIdProofImage[0]);
+      backIdProofImageUrl = await uploadOne(req.files.backIdProofImage[0]);
     }
 
     if (isMongoConnected) {
@@ -824,9 +865,24 @@ app.put('/api/service-man/profile-pic', upload.single('profilePic'), async (req,
       return res.status(400).json({ success: false, message: 'User id and profile image are required' });
     }
 
-    const b64 = Buffer.from(req.file.buffer).toString('base64');
-    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
-    const result = await cloudinary.uploader.upload(dataURI, { folder: 'gharoocare/profile-pics' });
+    let profilePicUrl = null;
+    if (cloudinaryConfigured) {
+      const r = await uploadToCloudinary(req.file.buffer, req.file.mimetype, 'gharoocare/profile-pics');
+      if (r.success) {
+        profilePicUrl = r.url;
+      } else if (isVercelRuntime) {
+        return res.status(r.http_code || 502).json({
+          success: false,
+          message: `Profile pic Cloudinary upload failed: ${r.message}`
+        });
+      }
+    } else if (isVercelRuntime) {
+      return res.status(500).json({ success: false, message: CLOUDINARY_SETUP_MSG });
+    }
+
+    if (!profilePicUrl) {
+      profilePicUrl = saveBufferToDisk(req.file.buffer, req.file.originalname);
+    }
 
     if (isMongoConnected) {
       if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -834,24 +890,27 @@ app.put('/api/service-man/profile-pic', upload.single('profilePic'), async (req,
       }
       const user = await User.findOneAndUpdate(
         { _id: userId, role: 'Service Man' },
-        { profilePic: result.secure_url },
+        { profilePic: profilePicUrl },
         { new: true }
       ).select('-password');
       if (!user) {
         return res.status(404).json({ success: false, message: 'Profile not found' });
       }
-      return res.json({ success: true, profilePic: result.secure_url, user });
+      return res.json({ success: true, profilePic: profilePicUrl, user });
     }
 
     const user = inMemoryUsers.find(u => String(u.id) === String(userId) || String(u._id) === String(userId));
     if (!user || user.role !== 'Service Man') {
       return res.status(404).json({ success: false, message: 'Profile not found' });
     }
-    user.profilePic = result.secure_url;
-    res.json({ success: true, profilePic: result.secure_url, user });
+    user.profilePic = profilePicUrl;
+    res.json({ success: true, profilePic: profilePicUrl, user });
   } catch (err) {
     console.error('Service man profile pic error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    const msg = isVercelRuntime && !cloudinaryConfigured
+      ? CLOUDINARY_SETUP_MSG
+      : (err.message || 'Server error');
+    res.status(500).json({ success: false, message: msg });
   }
 });
 
