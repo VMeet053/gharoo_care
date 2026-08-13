@@ -65,10 +65,6 @@ export default function NewSection({ settings }) {
               <div className="feature-copy">
                 <h4>{feature.title}</h4>
                 <p>{feature.description}</p>
-                <span className="feature-link" onClick={() => handleReadMore(feature)} role="button" tabIndex={0}
-                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleReadMore(feature)}>
-                  READ MORE <IconArrow size={14} color="#24b57a" />
-                </span>
               </div>
               <div className="feature-card-glow" />
             </div>
