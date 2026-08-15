@@ -216,7 +216,7 @@ export async function fetchAddressSuggestions(query, options = {}) {
     try {
       const mapsApi = await loadGoogleMaps()
       const service = new mapsApi.places.AutocompleteService()
-      const input = options.localityOnly ? `${text}, Gujarat, India` : text
+      const input = options.localityOnly ? `${text}, Surat, Gujarat, India` : text
       const predictions = await new Promise((resolve) => {
         service.getPlacePredictions(
           {
@@ -233,12 +233,13 @@ export async function fetchAddressSuggestions(query, options = {}) {
           }
         )
       })
-      return predictions.slice(0, 8).map((prediction) => ({
+      const mapped = predictions.slice(0, 8).map((prediction) => ({
         id: prediction.place_id,
         label: prediction.description,
         source: 'google',
         placeId: prediction.place_id
       }))
+      return normalizeLocalitySuggestions(mapped, text)
     } catch (err) {
       console.warn('Google autocomplete failed, falling back to Geoapify:', err)
     }
