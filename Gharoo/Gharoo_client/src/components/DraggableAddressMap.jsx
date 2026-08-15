@@ -210,13 +210,31 @@ function GoogleMapEmbed({ expanded = false, location }) {
 }
 export async function fetchAddressSuggestions(query, options = {}) {
   const text = (query || '').trim()
+  const signal = options?.signal
   if (text.length < 3) return []
+
+  if (typeof window !== 'undefined') {
+    try {
+      const url = new URL('/api/localities', window.location.origin)
+      url.searchParams.set('q', text)
+      const response = await fetch(url.toString(), { signal })
+      if (response.ok) {
+        const payload = await response.json()
+        const suggestions = Array.isArray(payload?.suggestions) ? payload.suggestions : []
+        if (suggestions.length > 0) {
+          return normalizeLocalitySuggestions(suggestions, text)
+        }
+      }
+    } catch (err) {
+      console.warn('Backend locality API failed, falling back to provider search:', err)
+    }
+  }
 
   if (GOOGLE_MAPS_API_KEY) {
     try {
       const mapsApi = await loadGoogleMaps()
       const service = new mapsApi.places.AutocompleteService()
-      const input = options.localityOnly ? `${text}, Surat, Gujarat, India` : text
+      const input = options.localityOnly ? `${text}, India` : text
       const predictions = await new Promise((resolve) => {
         service.getPlacePredictions(
           {
@@ -377,7 +395,52 @@ export default function DraggableAddressMap({
   const [expanded, setExpanded] = useState(false)
   const [mapsApi, setMapsApi] = useState(null)
   const [mapError, setMapError] = useState('')
+  const [localLocating, setLocalLocating] = useState(false)
   const hasGoogleKey = useHasGoogleKey()
+
+  const isLocating = typeof locating === 'boolean' ? locating : localLocating
+
+  async function handleUseCurrent() {
+    if (typeof onUseCurrent === 'function') {
+      try {
+        await onUseCurrent()
+      } catch (err) {
+        setMapError('Use current location failed: ' + (err?.message || err))
+      }
+      return
+    }
+
+    if (!navigator.geolocation) {
+      setMapError('Geolocation not supported by this browser')
+      return
+    }
+
+    setLocalLocating(true)
+    setMapError('')
+    try {
+      const pos = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000 })
+      })
+      const lat = pos.coords.latitude
+      const lon = pos.coords.longitude
+      // notify parent/map to move pin
+      if (typeof onSelect === 'function') onSelect({ lat, lon })
+      // attempt reverse geocode to get address info (best-effort)
+      try {
+        const reversed = await fetchReverseAddress(lat, lon)
+        // parent may listen to onSelect and fetch details; if not, we log for debugging
+        // you can extend to call a provided callback with reversed data
+        if (!reversed) console.debug('Reverse geocode returned no result')
+      } catch (err) {
+        console.debug('Reverse geocode attempt failed', err)
+      }
+      setExpanded(false)
+    } catch (err) {
+      setMapError('Unable to get current location: ' + (err?.message || err))
+    } finally {
+      setLocalLocating(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -432,8 +495,8 @@ export default function DraggableAddressMap({
           <button type="button" className="map-expand-btn" onClick={() => setExpanded(true)}>
             Expand Map
           </button>
-          <button type="button" className="location-btn" onClick={onUseCurrent} disabled={locating}>
-            {locating ? 'Detecting...' : 'Use Current Location'}
+          <button type="button" className="location-btn" onClick={handleUseCurrent} disabled={isLocating}>
+            {isLocating ? 'Detecting...' : 'Use Current Location'}
           </button>
         </div>
       </div>
@@ -469,8 +532,8 @@ export default function DraggableAddressMap({
               )}
             </div>
             <div className="map-modal-footer">
-              <button type="button" className="location-btn" onClick={onUseCurrent} disabled={locating}>
-                {locating ? 'Detecting Current Location...' : '📍 Use My Current Location'}
+              <button type="button" className="location-btn" onClick={handleUseCurrent} disabled={isLocating}>
+                {isLocating ? 'Detecting Current Location...' : '📍 Use My Current Location'}
               </button>
               <div className="map-hint">
                 💡 After moving the pin, the address fields below will update automatically with the closest matched

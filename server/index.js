@@ -102,6 +102,89 @@ const CLOUDINARY_SETUP_MSG =
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_PLACES_API_KEY || '';
+
+function getAddressComponent(components = [], types = []) {
+  const match = components.find((component) => types.some((type) => component.types.includes(type)));
+  return match?.long_name || '';
+}
+
+function isNoisyLocalityText(text = '') {
+  const normalized = String(text || '').trim().toLowerCase();
+  if (!normalized) return true;
+  return /(road|street|lane|cross|society|colony|building|plot|tower|villa|apartment|market|chowk|phase|complex|mall|park|garden|estate|residence)/i.test(normalized);
+}
+
+async function fetchGoogleLocalitySuggestions(query) {
+  const text = String(query || '').trim();
+  if (text.length < 3 || !GOOGLE_PLACES_API_KEY) return [];
+
+  const autocompleteResponse = await fetch(
+    `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&components=country:in&types=geocode&key=${GOOGLE_PLACES_API_KEY}`
+  );
+
+  if (!autocompleteResponse.ok) {
+    throw new Error(`Google autocomplete failed with status ${autocompleteResponse.status}`);
+  }
+
+  const autocompleteJson = await autocompleteResponse.json();
+  const predictions = (autocompleteJson.predictions || []).filter((prediction) => {
+    const description = prediction?.description || '';
+    return description && !isNoisyLocalityText(description)
+  });
+
+  if (!predictions.length) return [];
+
+  const detailResults = await Promise.all(
+    predictions.slice(0, 8).map(async (prediction) => {
+      const detailsResponse = await fetch(
+        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(prediction.place_id)}&fields=address_components,formatted_address,geometry,name,place_id&key=${GOOGLE_PLACES_API_KEY}`
+      );
+
+      if (!detailsResponse.ok) return null;
+      const detailsJson = await detailsResponse.json();
+      const result = detailsJson.result;
+      if (!result || !result.geometry?.location) return null;
+
+      const components = result.address_components || [];
+      const area = getAddressComponent(components, ['sublocality_level_1', 'sublocality', 'neighborhood']) ||
+        getAddressComponent(components, ['administrative_area_level_3', 'administrative_area_level_2']) ||
+        prediction?.structured_formatting?.main_text ||
+        '';
+      const city = getAddressComponent(components, ['locality', 'postal_town']) ||
+        getAddressComponent(components, ['administrative_area_level_3']) ||
+        area ||
+        '';
+      const state = getAddressComponent(components, ['administrative_area_level_1']) || '';
+      const pinCode = getAddressComponent(components, ['postal_code']) || '';
+      const lat = Number(result.geometry.location.lat);
+      const lon = Number(result.geometry.location.lng);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+      return {
+        id: prediction.place_id || `${lat},${lon}`,
+        label: result.formatted_address || prediction.description,
+        area: area || city,
+        city,
+        state,
+        pinCode,
+        placeId: prediction.place_id || null,
+        lat,
+        lon,
+        source: 'google'
+      };
+    })
+  );
+
+  const seen = new Set();
+  return detailResults.filter(Boolean).filter((item) => {
+    const key = `${item.city}|${item.area}|${item.pinCode}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 8);
+}
 
 // Request logging
 app.use((req, res, next) => {
@@ -340,6 +423,22 @@ app.use(async (req, res, next) => {
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running smoothly!', mongoConnected: isMongoConnected });
+});
+
+app.get('/api/localities', async (req, res) => {
+  const query = String(req.query.q || '').trim();
+
+  if (!query) {
+    return res.status(400).json({ success: false, message: 'Query is required', suggestions: [] });
+  }
+
+  try {
+    const suggestions = await fetchGoogleLocalitySuggestions(query);
+    return res.json({ success: true, query, suggestions });
+  } catch (error) {
+    console.error('Locality autocomplete failed:', error);
+    return res.status(500).json({ success: false, message: 'Locality search unavailable', suggestions: [] });
+  }
 });
 
 // Image upload — Cloudinary first, fallback to disk (local only)

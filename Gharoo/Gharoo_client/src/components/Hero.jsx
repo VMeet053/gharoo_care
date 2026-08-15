@@ -114,6 +114,6 @@ export default function Hero({ settings }) {
           })}
         </div>
       </div>
-.e    </section>
+    </section>
   )
 }
