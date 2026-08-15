@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useGeolocation } from 'react-use'
 import {
   GEOAPIFY_API_KEY,
   fetchGeoapifyAddressSuggestions,
@@ -398,7 +397,6 @@ export default function DraggableAddressMap({
   const [mapError, setMapError] = useState('')
   const [localLocating, setLocalLocating] = useState(false)
   const hasGoogleKey = useHasGoogleKey()
-  const geolocation = useGeolocation({ enableHighAccuracy: true })
 
   const isLocating = typeof locating === 'boolean' ? locating : localLocating
 
@@ -415,13 +413,14 @@ export default function DraggableAddressMap({
     if (geolocation && Number.isFinite(geolocation.latitude) && Number.isFinite(geolocation.longitude)) {
       const lat = geolocation.latitude
       const lon = geolocation.longitude
-      if (typeof onSelect === 'function') onSelect({ lat, lon })
+      let reversed = null
       try {
-        const reversed = await fetchReverseAddress(lat, lon)
+        reversed = await fetchReverseAddress(lat, lon)
         if (!reversed) console.debug('Reverse geocode returned no result')
       } catch (err) {
         console.debug('Reverse geocode attempt failed', err)
       }
+      if (typeof onSelect === 'function') onSelect({ lat, lon, address: reversed })
       setExpanded(false)
       return
     }
@@ -439,17 +438,16 @@ export default function DraggableAddressMap({
       })
       const lat = pos.coords.latitude
       const lon = pos.coords.longitude
-      // notify parent/map to move pin
-      if (typeof onSelect === 'function') onSelect({ lat, lon })
       // attempt reverse geocode to get address info (best-effort)
+      let reversed = null
       try {
-        const reversed = await fetchReverseAddress(lat, lon)
-        // parent may listen to onSelect and fetch details; if not, we log for debugging
-        // you can extend to call a provided callback with reversed data
+        reversed = await fetchReverseAddress(lat, lon)
         if (!reversed) console.debug('Reverse geocode returned no result')
       } catch (err) {
         console.debug('Reverse geocode attempt failed', err)
       }
+      // notify parent/map to move pin and provide address details (plaza/society)
+      if (typeof onSelect === 'function') onSelect({ lat, lon, address: reversed })
       setExpanded(false)
     } catch (err) {
       setMapError('Unable to get current location: ' + (err?.message || err))
