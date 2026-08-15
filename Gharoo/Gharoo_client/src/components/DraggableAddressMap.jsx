@@ -4,6 +4,7 @@ import {
   fetchGeoapifyAddressSuggestions,
   fetchGeoapifyReverseAddress
 } from '../utils/geoapify'
+import { normalizeLocalitySuggestions } from '../utils/localitySearch'
 
 const DEFAULT_LOCATION = { lat: 21.1702, lon: 72.8311 }
 const GOOGLE_MAPS_API_KEY = (import.meta.env && import.meta.env.VITE_GOOGLE_MAPS_API_KEY) || ''
@@ -245,7 +246,7 @@ export async function fetchAddressSuggestions(query, options = {}) {
 
   try {
     const geoapifySuggestions = await fetchGeoapifyAddressSuggestions(text)
-    return geoapifySuggestions.map((suggestion) => ({
+    const normalized = geoapifySuggestions.map((suggestion) => ({
       id: suggestion.id,
       label: suggestion.label,
       source: 'geoapify',
@@ -259,6 +260,8 @@ export async function fetchAddressSuggestions(query, options = {}) {
       flatHouse: suggestion.flatHouse,
       address: suggestion.address
     }))
+
+    return normalizeLocalitySuggestions(normalized, text)
   } catch (err) {
     console.warn('Geoapify autocomplete failed:', err)
     return []
