@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { useGeolocation } from 'react-use'
 import {
   GEOAPIFY_API_KEY,
   fetchGeoapifyAddressSuggestions,
@@ -397,6 +398,7 @@ export default function DraggableAddressMap({
   const [mapError, setMapError] = useState('')
   const [localLocating, setLocalLocating] = useState(false)
   const hasGoogleKey = useHasGoogleKey()
+  const geolocation = useGeolocation({ enableHighAccuracy: true })
 
   const isLocating = typeof locating === 'boolean' ? locating : localLocating
 
@@ -407,6 +409,20 @@ export default function DraggableAddressMap({
       } catch (err) {
         setMapError('Use current location failed: ' + (err?.message || err))
       }
+      return
+    }
+    // prefer hook-provided location (if available) to avoid prompting twice
+    if (geolocation && Number.isFinite(geolocation.latitude) && Number.isFinite(geolocation.longitude)) {
+      const lat = geolocation.latitude
+      const lon = geolocation.longitude
+      if (typeof onSelect === 'function') onSelect({ lat, lon })
+      try {
+        const reversed = await fetchReverseAddress(lat, lon)
+        if (!reversed) console.debug('Reverse geocode returned no result')
+      } catch (err) {
+        console.debug('Reverse geocode attempt failed', err)
+      }
+      setExpanded(false)
       return
     }
 
