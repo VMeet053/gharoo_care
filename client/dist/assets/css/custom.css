@@ -1,0 +1,199 @@
+
+/* Custom Animations for adminHMD */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Animate table rows with delay */
+.animate-fade-in:nth-child(1) { animation-delay: 0.05s; }
+.animate-fade-in:nth-child(2) { animation-delay: 0.1s; }
+.animate-fade-in:nth-child(3) { animation-delay: 0.15s; }
+.animate-fade-in:nth-child(4) { animation-delay: 0.2s; }
+.animate-fade-in:nth-child(5) { animation-delay: 0.25s; }
+.animate-fade-in:nth-child(6) { animation-delay: 0.3s; }
+.animate-fade-in:nth-child(7) { animation-delay: 0.35s; }
+.animate-fade-in:nth-child(8) { animation-delay: 0.4s; }
+.animate-fade-in:nth-child(9) { animation-delay: 0.45s; }
+.animate-fade-in:nth-child(10) { animation-delay: 0.5s; }
+
+/* Button hover animations */
+.btn {
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Badge animations */
+.badge {
+  transition: all 0.3s ease;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+}
+
+/* Card and panel animations */
+.panel {
+  transition: all 0.3s ease;
+}
+
+.panel:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+/* Sidebar link animations */
+.nav-link {
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  transform: translateX(3px);
+}
+
+/* Electronics Tech Theme */
+:root {
+  --primary-electronics: #2563eb; /* Blue */
+  --secondary-electronics: #0ea5e9; /* Sky Blue */
+  --accent-electronics: #10b981; /* Green */
+  --background-electronics: #f8fafc; /* Light Slate */
+  --surface-electronics: #ffffff; /* White */
+  --text-electronics: #1e293b; /* Dark Slate */
+  --muted-electronics: #64748b; /* Slate */
+}
+
+/* Body and Background */
+body {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  color: var(--text-electronics);
+}
+
+/* Admin Main Container */
+.admin-main {
+  background: transparent;
+}
+
+/* Panel Styling */
+.panel {
+  background: var(--surface-electronics);
+  border: 1px solid rgba(37, 99, 235, 0.1);
+  border-radius: 1rem;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.08);
+}
+
+/* Sidebar Styling */
+.admin-sidebar {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+}
+
+/* Sidebar Brand */
+.auth-brand .brand-icon,
+.brand-icon {
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+  color: white;
+}
+
+/* Button Primary Styling */
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+  border: none;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);
+  border: none;
+}
+
+/* Metric Cards */
+.metric-primary {
+  border-left: 4px solid #2563eb;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+}
+
+.metric-success {
+  border-left: 4px solid #10b981;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.metric-warning {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.metric-danger {
+  border-left: 4px solid #ef4444;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+
+/* Form Controls */
+.form-control,
+.form-select {
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 0.75rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary-electronics);
+  box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.25);
+}
+
+/* Status Badges */
+.text-bg-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+}
+
+.text-bg-success {
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+}
+
+.text-bg-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+.text-bg-danger {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+}
+
+.text-bg-info {
+  background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%);
+}
+
+/* Page Heading */
+.page-icon {
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+  color: white;
+}
+
+/* Table Styling */
+.table thead {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.table thead th {
+  color: var(--primary-electronics);
+}
+
+/* Auth Page Styling */
+.auth-body {
+  background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+}
+
+.auth-card {
+  background: white;
+  box-shadow: 0 15px 40px rgba(37, 99, 235, 0.15);
+}

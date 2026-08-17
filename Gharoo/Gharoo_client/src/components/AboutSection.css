@@ -1,0 +1,27 @@
+.pulse-badge {
+  animation: floatY 4s ease-in-out infinite;
+}
+
+.about-feature-item {
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.about-feature-item:hover {
+  transform: translateX(6px);
+  box-shadow: 0 8px 24px rgba(36, 181, 122, 0.12);
+}
+
+.collage-main,
+.collage-sub {
+  transition: box-shadow 0.4s;
+}
+
+.image-collage:hover .collage-main {
+  box-shadow: 0 40px 90px rgba(15, 23, 42, 0.18);
+}
+
+@media (max-width: 1000px) {
+  .about-left {
+    margin-bottom: 20px;
+  }
+}

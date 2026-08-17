@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+*/node_modules
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Build Caches
+*.log
+
+# Corrupted old git
+.git-old
