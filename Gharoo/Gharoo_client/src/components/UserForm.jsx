@@ -343,8 +343,13 @@ export default function UserForm() {
     const nonce = lastPinNonceRef.current + 1
     lastPinNonceRef.current = nonce
     setLocating(true)
-    try {
-      updatePinnedAddressHandler(location, nonce)
+    try {      // If address details are already provided (e.g., from live location), use them directly
+      if (location.address) {
+        applyResolvedSuggestion(location.address, location.lat, location.lon)
+        setLocating(false)
+        return
+      }
+      // Otherwise, do reverse geocoding      updatePinnedAddressHandler(location, nonce)
     } finally {
       setTimeout(() => {
         if (nonce === lastPinNonceRef.current) setLocating(false)

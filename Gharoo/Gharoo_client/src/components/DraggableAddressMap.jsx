@@ -459,9 +459,33 @@ export default function DraggableAddressMap({
       
       setCurrentLocation(locationData)
 
-      // Also use it for the map
-      if (typeof onSelect === 'function') {
-        onSelect({ lat, lon: lng })
+      // Do reverse geocoding to get address details (area, city, state, etc.)
+      try {
+        console.log('🔄 Fetching address details from coordinates...')
+        const addressDetails = await fetchReverseAddress(lat, lng)
+        
+        if (addressDetails) {
+          console.log('✅ Address Details Retrieved:')
+          console.table({
+            'Flat/House': addressDetails.flatHouse,
+            'Area/Locality': addressDetails.area,
+            'City': addressDetails.city,
+            'State': addressDetails.state,
+            'Pincode': addressDetails.pinCode,
+            'Address': addressDetails.address
+          })
+        }
+        
+        // Update map pin and call parent callback with full address
+        if (typeof onSelect === 'function') {
+          onSelect({ lat, lon: lng, address: addressDetails })
+        }
+      } catch (err) {
+        console.warn('⚠️ Address reverse geocoding failed:', err?.message || err)
+        // Still update location even if reverse geocoding fails
+        if (typeof onSelect === 'function') {
+          onSelect({ lat, lon: lng })
+        }
       }
     } catch (err) {
       const errorMsg = err?.message || String(err)
