@@ -481,21 +481,6 @@ export default function DraggableAddressMap({
       }
       return
     }
-    // prefer hook-provided location (if available) to avoid prompting twice
-    if (geolocation && Number.isFinite(geolocation.latitude) && Number.isFinite(geolocation.longitude)) {
-      const lat = geolocation.latitude
-      const lon = geolocation.longitude
-      let reversed = null
-      try {
-        reversed = await fetchReverseAddress(lat, lon)
-        if (!reversed) console.debug('Reverse geocode returned no result')
-      } catch (err) {
-        console.debug('Reverse geocode attempt failed', err)
-      }
-      if (typeof onSelect === 'function') onSelect({ lat, lon, address: reversed })
-      setExpanded(false)
-      return
-    }
 
     if (!navigator.geolocation) {
       setMapError('Geolocation not supported by this browser')
