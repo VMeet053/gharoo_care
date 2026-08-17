@@ -396,17 +396,12 @@ export default function DraggableAddressMap({
   const [mapsApi, setMapsApi] = useState(null)
   const [mapError, setMapError] = useState('')
   const [localLocating, setLocalLocating] = useState(false)
-<<<<<<< HEAD
-=======
   const [currentLocation, setCurrentLocation] = useState(null)
   const [locationTracking, setLocationTracking] = useState(false)
->>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
   const hasGoogleKey = useHasGoogleKey()
 
   const isLocating = typeof locating === 'boolean' ? locating : localLocating
 
-<<<<<<< HEAD
-=======
   // Get current location with live tracking (logs to console)
   async function getLiveLocation() {
     if (!navigator.geolocation) {
@@ -501,7 +496,6 @@ export default function DraggableAddressMap({
     }
   }
 
->>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
   async function handleUseCurrent() {
     if (typeof onUseCurrent === 'function') {
       try {
@@ -511,25 +505,6 @@ export default function DraggableAddressMap({
       }
       return
     }
-<<<<<<< HEAD
-    // prefer hook-provided location (if available) to avoid prompting twice
-    if (geolocation && Number.isFinite(geolocation.latitude) && Number.isFinite(geolocation.longitude)) {
-      const lat = geolocation.latitude
-      const lon = geolocation.longitude
-      let reversed = null
-      try {
-        reversed = await fetchReverseAddress(lat, lon)
-        if (!reversed) console.debug('Reverse geocode returned no result')
-      } catch (err) {
-        console.debug('Reverse geocode attempt failed', err)
-      }
-      if (typeof onSelect === 'function') onSelect({ lat, lon, address: reversed })
-      setExpanded(false)
-      return
-    }
-=======
->>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
-
     if (!navigator.geolocation) {
       setMapError('Geolocation not supported by this browser')
       return
@@ -590,8 +565,6 @@ export default function DraggableAddressMap({
 
   return (
     <div className="google-map-card">
-<<<<<<< HEAD
-=======
       {/* Live Location Display */}
       {currentLocation && (
         <div className="live-location-info" style={{
@@ -615,7 +588,6 @@ export default function DraggableAddressMap({
         </div>
       )}
       
->>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
       <div className="google-map-frame">
         {mapsApi ? (
           <GoogleMapCanvas expanded={expanded} location={location} onSelect={onSelect} mapsApi={mapsApi} />
@@ -640,8 +612,6 @@ export default function DraggableAddressMap({
           <button type="button" className="map-expand-btn" onClick={() => setExpanded(true)}>
             Expand Map
           </button>
-<<<<<<< HEAD
-=======
           <button 
             type="button" 
             className="location-btn" 
@@ -652,7 +622,6 @@ export default function DraggableAddressMap({
           >
             {locationTracking ? 'Tracking Location...' : '🌍 Get Live Location'}
           </button>
->>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
           <button type="button" className="location-btn" onClick={handleUseCurrent} disabled={isLocating}>
             {isLocating ? 'Detecting...' : 'Use Current Location'}
           </button>
@@ -690,8 +659,6 @@ export default function DraggableAddressMap({
               )}
             </div>
             <div className="map-modal-footer">
-<<<<<<< HEAD
-=======
               <button 
                 type="button" 
                 className="location-btn" 
@@ -702,7 +669,6 @@ export default function DraggableAddressMap({
               >
                 {locationTracking ? '🌍 Tracking...' : '🌍 Get Live Location'}
               </button>
->>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
               <button type="button" className="location-btn" onClick={handleUseCurrent} disabled={isLocating}>
                 {isLocating ? 'Detecting Current Location...' : '📍 Use My Current Location'}
               </button>

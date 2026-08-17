@@ -1,8 +1,5 @@
 {
   "framework": "vite",
-<<<<<<< HEAD
-  "outputDirectory": "dist"
-=======
   "outputDirectory": "dist",
   "headers": [
     {
@@ -21,5 +18,4 @@
       "destination": "/index.html"
     }
   ]
->>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
 }
