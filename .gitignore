@@ -7,6 +7,10 @@ node_modules
 .env.local
 .env.*.local
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
 # IDE
 .idea
 .vscode

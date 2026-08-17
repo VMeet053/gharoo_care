@@ -1,4 +1,25 @@
 {
   "framework": "vite",
+<<<<<<< HEAD
   "outputDirectory": "dist"
+=======
+  "outputDirectory": "dist",
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+>>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
 }

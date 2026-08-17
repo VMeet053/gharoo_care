@@ -396,10 +396,112 @@ export default function DraggableAddressMap({
   const [mapsApi, setMapsApi] = useState(null)
   const [mapError, setMapError] = useState('')
   const [localLocating, setLocalLocating] = useState(false)
+<<<<<<< HEAD
+=======
+  const [currentLocation, setCurrentLocation] = useState(null)
+  const [locationTracking, setLocationTracking] = useState(false)
+>>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
   const hasGoogleKey = useHasGoogleKey()
 
   const isLocating = typeof locating === 'boolean' ? locating : localLocating
 
+<<<<<<< HEAD
+=======
+  // Get current location with live tracking (logs to console)
+  async function getLiveLocation() {
+    if (!navigator.geolocation) {
+      setMapError('Geolocation not supported by this browser')
+      console.error('❌ Geolocation API not supported')
+      return
+    }
+
+    setLocationTracking(true)
+    setMapError('')
+    
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { 
+          enableHighAccuracy: true, 
+          timeout: 15000,
+          maximumAge: 0 
+        })
+      })
+
+      const lat = position.coords.latitude
+      const lng = position.coords.longitude
+      const accuracy = position.coords.accuracy
+      const altitude = position.coords.altitude
+      const heading = position.coords.heading
+      const speed = position.coords.speed
+
+      // Create location object
+      const locationData = {
+        id: `location_${Date.now()}`,
+        latitude: lat,
+        longitude: lng,
+        lat,
+        lng,
+        accuracy,
+        altitude,
+        heading,
+        speed,
+        timestamp: new Date().toISOString(),
+        formattedTime: new Date().toLocaleString()
+      }
+
+      // Log to console
+      console.log('✅ Current Location Fetched:')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log(`📍 Latitude:  ${lat}`)
+      console.log(`📍 Longitude: ${lng}`)
+      console.log(`🎯 Accuracy:  ${accuracy.toFixed(2)} meters`)
+      if (altitude !== null) console.log(`📏 Altitude:  ${altitude.toFixed(2)} meters`)
+      if (heading !== null) console.log(`🧭 Heading:   ${heading.toFixed(2)}°`)
+      if (speed !== null) console.log(`⚡ Speed:     ${speed.toFixed(2)} m/s`)
+      console.log(`⏰ Time:      ${locationData.formattedTime}`)
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.table(locationData)
+      
+      setCurrentLocation(locationData)
+
+      // Do reverse geocoding to get address details (area, city, state, etc.)
+      try {
+        console.log('🔄 Fetching address details from coordinates...')
+        const addressDetails = await fetchReverseAddress(lat, lng)
+        
+        if (addressDetails) {
+          console.log('✅ Address Details Retrieved:')
+          console.table({
+            'Flat/House': addressDetails.flatHouse,
+            'Area/Locality': addressDetails.area,
+            'City': addressDetails.city,
+            'State': addressDetails.state,
+            'Pincode': addressDetails.pinCode,
+            'Address': addressDetails.address
+          })
+        }
+        
+        // Update map pin and call parent callback with full address
+        if (typeof onSelect === 'function') {
+          onSelect({ lat, lon: lng, address: addressDetails })
+        }
+      } catch (err) {
+        console.warn('⚠️ Address reverse geocoding failed:', err?.message || err)
+        // Still update location even if reverse geocoding fails
+        if (typeof onSelect === 'function') {
+          onSelect({ lat, lon: lng })
+        }
+      }
+    } catch (err) {
+      const errorMsg = err?.message || String(err)
+      console.error('❌ Geolocation Error:', errorMsg)
+      setMapError('Unable to get current location: ' + errorMsg)
+    } finally {
+      setLocationTracking(false)
+    }
+  }
+
+>>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
   async function handleUseCurrent() {
     if (typeof onUseCurrent === 'function') {
       try {
@@ -409,6 +511,7 @@ export default function DraggableAddressMap({
       }
       return
     }
+<<<<<<< HEAD
     // prefer hook-provided location (if available) to avoid prompting twice
     if (geolocation && Number.isFinite(geolocation.latitude) && Number.isFinite(geolocation.longitude)) {
       const lat = geolocation.latitude
@@ -424,6 +527,8 @@ export default function DraggableAddressMap({
       setExpanded(false)
       return
     }
+=======
+>>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
 
     if (!navigator.geolocation) {
       setMapError('Geolocation not supported by this browser')
@@ -485,6 +590,32 @@ export default function DraggableAddressMap({
 
   return (
     <div className="google-map-card">
+<<<<<<< HEAD
+=======
+      {/* Live Location Display */}
+      {currentLocation && (
+        <div className="live-location-info" style={{
+          padding: '12px 16px',
+          marginBottom: '12px',
+          backgroundColor: '#e8f5e9',
+          borderLeft: '4px solid #4caf50',
+          borderRadius: '4px',
+          fontSize: '13px',
+          fontFamily: 'monospace'
+        }}>
+          <div style={{ fontWeight: 'bold', color: '#2e7d32', marginBottom: '8px' }}>
+            📍 Live Location Tracked
+          </div>
+          <div>Latitude: <strong>{currentLocation.latitude.toFixed(6)}</strong></div>
+          <div>Longitude: <strong>{currentLocation.longitude.toFixed(6)}</strong></div>
+          <div>Accuracy: <strong>{currentLocation.accuracy?.toFixed(2)}m</strong></div>
+          <div style={{ fontSize: '11px', color: '#555', marginTop: '6px' }}>
+            Time: {currentLocation.formattedTime}
+          </div>
+        </div>
+      )}
+      
+>>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
       <div className="google-map-frame">
         {mapsApi ? (
           <GoogleMapCanvas expanded={expanded} location={location} onSelect={onSelect} mapsApi={mapsApi} />
@@ -509,6 +640,19 @@ export default function DraggableAddressMap({
           <button type="button" className="map-expand-btn" onClick={() => setExpanded(true)}>
             Expand Map
           </button>
+<<<<<<< HEAD
+=======
+          <button 
+            type="button" 
+            className="location-btn" 
+            onClick={getLiveLocation} 
+            disabled={locationTracking}
+            title="Get current location and log to console"
+            style={{ backgroundColor: locationTracking ? '#ccc' : '#2196F3' }}
+          >
+            {locationTracking ? 'Tracking Location...' : '🌍 Get Live Location'}
+          </button>
+>>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
           <button type="button" className="location-btn" onClick={handleUseCurrent} disabled={isLocating}>
             {isLocating ? 'Detecting...' : 'Use Current Location'}
           </button>
@@ -546,6 +690,19 @@ export default function DraggableAddressMap({
               )}
             </div>
             <div className="map-modal-footer">
+<<<<<<< HEAD
+=======
+              <button 
+                type="button" 
+                className="location-btn" 
+                onClick={getLiveLocation} 
+                disabled={locationTracking}
+                title="Get current location with live tracker"
+                style={{ backgroundColor: locationTracking ? '#ccc' : '#2196F3', marginRight: '8px' }}
+              >
+                {locationTracking ? '🌍 Tracking...' : '🌍 Get Live Location'}
+              </button>
+>>>>>>> 5e226ec4bb0a2dd70d82f64bf1727be974108c13
               <button type="button" className="location-btn" onClick={handleUseCurrent} disabled={isLocating}>
                 {isLocating ? 'Detecting Current Location...' : '📍 Use My Current Location'}
               </button>
