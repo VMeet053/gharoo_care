@@ -1,5 +1,8 @@
-export const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || 'ea84882880264cf3848317e50c5b6bd4'
-export const OPEN_CAGE_API_KEY = import.meta.env.VITE_OPEN_CAGE_API_KEY || ''
+// Resolve public Vite settings once so a deployment without injected variables cannot crash on load.
+const clientEnv = import.meta.env || {}
+
+export const GEOAPIFY_API_KEY = clientEnv.VITE_GEOAPIFY_API_KEY || 'ea84882880264cf3848317e50c5b6bd4'
+export const OPEN_CAGE_API_KEY = clientEnv.VITE_OPEN_CAGE_API_KEY || ''
 
 const PLACE_CATEGORIES = [
   'building',
@@ -23,8 +26,9 @@ function normalizeFeature(feature, source) {
     properties.district ||
     properties.state_district ||
     properties.county ||
+    city ||
     ''
-  const flatHouse = [properties.housenumber, properties.street].filter(Boolean).join(', ')
+  const flatHouse = [properties.name, properties.housenumber, properties.street].filter(Boolean).join(', ')
 
   return {
     id: `${source}-${properties.place_id || properties.osm_id || properties.formatted || properties.name}`,

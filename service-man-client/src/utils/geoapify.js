@@ -1,4 +1,7 @@
-export const GEOAPIFY_API_KEY = import.meta.env.VITE_GEOAPIFY_API_KEY || 'ea84882880264cf3848317e50c5b6bd4';
+// Resolve public Vite settings once so a deployment without injected variables cannot crash on load.
+const clientEnv = import.meta.env || {};
+
+export const GEOAPIFY_API_KEY = clientEnv.VITE_GEOAPIFY_API_KEY || 'ea84882880264cf3848317e50c5b6bd4';
 
 const PLACE_CATEGORIES = [
   'building',

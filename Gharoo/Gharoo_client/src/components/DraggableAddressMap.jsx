@@ -6,7 +6,6 @@ import {
 } from '../utils/geoapify'
 import { normalizeLocalitySuggestions } from '../utils/localitySearch'
 
-const DEFAULT_LOCATION = { lat: 21.1702, lon: 72.8311 }
 const GOOGLE_MAPS_API_KEY = (import.meta.env && import.meta.env.VITE_GOOGLE_MAPS_API_KEY) || ''
 
 let googleMapsPromise
@@ -65,8 +64,8 @@ function normalizeGoogleAddress(result, fallbackLocation) {
   const state = getAddressPart(components, ['administrative_area_level_1'])
   const pinCode = getAddressPart(components, ['postal_code'])
   const latLng = result?.geometry?.location
-  const lat = typeof latLng?.lat === 'function' ? latLng.lat() : (fallbackLocation?.lat ?? DEFAULT_LOCATION.lat)
-  const lon = typeof latLng?.lng === 'function' ? latLng.lng() : (fallbackLocation?.lon ?? DEFAULT_LOCATION.lon)
+  const lat = typeof latLng?.lat === 'function' ? latLng.lat() : fallbackLocation?.lat
+  const lon = typeof latLng?.lng === 'function' ? latLng.lng() : fallbackLocation?.lon
 
   return {
     id: result?.place_id || `${lat},${lon}`,
@@ -99,10 +98,11 @@ function normalizeGeoapify(feature, source) {
     properties.state_district ||
     properties.county ||
     feature.area ||
+    city ||
     ''
   const state = properties.state || feature.state || ''
   const pinCode = properties.postcode || feature.pinCode || ''
-  const flatHouse = [properties.housenumber, properties.street].filter(Boolean).join(', ') || feature.flatHouse || ''
+  const flatHouse = [properties.name, properties.housenumber, properties.street].filter(Boolean).join(', ') || feature.flatHouse || ''
   const formatted =
     properties.formatted || properties.address_line1 || properties.name || feature.label || feature.address || ''
 
@@ -128,7 +128,7 @@ function GoogleMapCanvas({ expanded = false, location, onSelect, mapsApi }) {
   const containerRef = useRef(null)
   const mapRef = useRef(null)
   const markerRef = useRef(null)
-  const center = location || DEFAULT_LOCATION
+  const center = location
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !mapsApi) return
@@ -174,7 +174,7 @@ function GoogleMapCanvas({ expanded = false, location, onSelect, mapsApi }) {
 
   useEffect(() => {
     if (!mapRef.current || !markerRef.current) return
-    const nextCenter = location || DEFAULT_LOCATION
+    const nextCenter = location
     const nextLatLng = { lat: nextCenter.lat, lng: nextCenter.lon }
     markerRef.current.setPosition(nextLatLng)
     mapRef.current.setCenter(nextLatLng)
@@ -185,7 +185,7 @@ function GoogleMapCanvas({ expanded = false, location, onSelect, mapsApi }) {
     setTimeout(() => {
       if (!mapRef.current || !mapsApi) return
       mapsApi.event.trigger(mapRef.current, 'resize')
-      const nextCenter = location || DEFAULT_LOCATION
+      const nextCenter = location
       mapRef.current.setCenter({ lat: nextCenter.lat, lng: nextCenter.lon })
     }, 140)
   }, [expanded, mapsApi])
@@ -194,9 +194,10 @@ function GoogleMapCanvas({ expanded = false, location, onSelect, mapsApi }) {
 }
 
 function GoogleMapEmbed({ expanded = false, location }) {
-  const center = location || DEFAULT_LOCATION
-  const query = `${center.lat},${center.lon}`
-  const src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=${location ? 17 : 12}&output=embed`
+  const query = location ? `${location.lat},${location.lon}` : ''
+  const src = location
+    ? `https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=17&output=embed`
+    : 'about:blank'
 
   return (
     <iframe
@@ -396,7 +397,6 @@ export default function DraggableAddressMap({
   const [mapsApi, setMapsApi] = useState(null)
   const [mapError, setMapError] = useState('')
   const [localLocating, setLocalLocating] = useState(false)
-  const [currentLocation, setCurrentLocation] = useState(null)
   const [locationTracking, setLocationTracking] = useState(false)
   const hasGoogleKey = useHasGoogleKey()
 
@@ -414,6 +414,14 @@ export default function DraggableAddressMap({
     setMapError('')
     
     try {
+      // Address auto-fill is owned by the booking form so the GPS result
+      // stays in this browser; no third-party tracker server receives it.
+      if (typeof onUseCurrent === 'function') {
+        await onUseCurrent()
+        setExpanded(false)
+        return
+      }
+
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, { 
           enableHighAccuracy: true, 
@@ -457,8 +465,6 @@ export default function DraggableAddressMap({
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━')
       console.table(locationData)
       
-      setCurrentLocation(locationData)
-
       // Do reverse geocoding to get address details (area, city, state, etc.)
       try {
         console.log('🔄 Fetching address details from coordinates...')
@@ -497,14 +503,7 @@ export default function DraggableAddressMap({
   }
 
   async function handleUseCurrent() {
-    if (typeof onUseCurrent === 'function') {
-      try {
-        await onUseCurrent()
-      } catch (err) {
-        setMapError('Use current location failed: ' + (err?.message || err))
-      }
-      return
-    }
+    if (typeof onUseCurrent === 'function') return getLiveLocation()
     if (!navigator.geolocation) {
       setMapError('Geolocation not supported by this browser')
       return
@@ -557,39 +556,19 @@ export default function DraggableAddressMap({
   }, [hasGoogleKey])
 
   function openGoogleMapsInNewTab() {
-    const lat = location?.lat ?? DEFAULT_LOCATION.lat
-    const lon = location?.lon ?? DEFAULT_LOCATION.lon
+    if (!location) {
+      setMapError('Use Current Location before opening Google Maps.')
+      return
+    }
+    const { lat, lon } = location
     const url = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
   return (
     <div className="google-map-card">
-      {/* Live Location Display */}
-      {currentLocation && (
-        <div className="live-location-info" style={{
-          padding: '12px 16px',
-          marginBottom: '12px',
-          backgroundColor: '#e8f5e9',
-          borderLeft: '4px solid #4caf50',
-          borderRadius: '4px',
-          fontSize: '13px',
-          fontFamily: 'monospace'
-        }}>
-          <div style={{ fontWeight: 'bold', color: '#2e7d32', marginBottom: '8px' }}>
-            📍 Live Location Tracked
-          </div>
-          <div>Latitude: <strong>{currentLocation.latitude.toFixed(6)}</strong></div>
-          <div>Longitude: <strong>{currentLocation.longitude.toFixed(6)}</strong></div>
-          <div>Accuracy: <strong>{currentLocation.accuracy?.toFixed(2)}m</strong></div>
-          <div style={{ fontSize: '11px', color: '#555', marginTop: '6px' }}>
-            Time: {currentLocation.formattedTime}
-          </div>
-        </div>
-      )}
-      
       <div className="google-map-frame">
-        {mapsApi ? (
+        {location && mapsApi ? (
           <GoogleMapCanvas expanded={expanded} location={location} onSelect={onSelect} mapsApi={mapsApi} />
         ) : (
           <GoogleMapEmbed expanded={expanded} location={location} />
@@ -605,6 +584,7 @@ export default function DraggableAddressMap({
             type="button"
             className="map-expand-btn secondary"
             onClick={openGoogleMapsInNewTab}
+            disabled={!location}
             title="Open in Google Maps"
           >
             Open in Google Maps
@@ -652,7 +632,7 @@ export default function DraggableAddressMap({
               </div>
             </div>
             <div className="google-map-frame expanded">
-              {mapsApi ? (
+              {location && mapsApi ? (
                 <GoogleMapCanvas expanded location={location} onSelect={onSelect} mapsApi={mapsApi} />
               ) : (
                 <GoogleMapEmbed expanded location={location} />

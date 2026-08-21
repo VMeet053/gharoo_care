@@ -38,6 +38,14 @@ function toFiniteNumber(value) {
   return Number.isFinite(number) ? number : null
 }
 
+function getExactLocationLabel(suggestion) {
+  return coalesce(suggestion?.address, suggestion?.label, suggestion?.flatHouse, suggestion?.area)
+}
+
+function getMapMatchedArea(suggestion) {
+  return coalesce(suggestion?.address, suggestion?.label, suggestion?.area)
+}
+
 function getCurrentPosition(options) {
   return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(resolve, reject, options)
@@ -45,7 +53,9 @@ function getCurrentPosition(options) {
 }
 
 function getAccurateCurrentPosition() {
-  const highAccuracyOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+  // Keep listening briefly and use the best GPS fix, rather than accepting
+  // the first low-accuracy position returned by the device.
+  const highAccuracyOptions = { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
 
   return new Promise((resolve, reject) => {
     let settled = false
@@ -73,7 +83,7 @@ function getAccurateCurrentPosition() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         bestPosition = position
-        if ((position.coords.accuracy || Infinity) <= 80) finish(position)
+        if ((position.coords.accuracy || Infinity) <= 25) finish(position)
       },
       fail,
       highAccuracyOptions
@@ -87,7 +97,7 @@ function getAccurateCurrentPosition() {
         ) {
           bestPosition = position
         }
-        if ((position.coords.accuracy || Infinity) <= 50) finish(position)
+        if ((position.coords.accuracy || Infinity) <= 25) finish(position)
       },
       fail,
       highAccuracyOptions
@@ -95,7 +105,8 @@ function getAccurateCurrentPosition() {
 
     window.setTimeout(() => {
       if (bestPosition) finish(bestPosition)
-    }, 6500)
+      else fail({ code: 3 })
+    }, 15000)
   }).catch(() => getCurrentPosition(highAccuracyOptions))
 }
 
@@ -172,23 +183,19 @@ export default function UserForm() {
     }
   }, [])
 
+  // A new booking must never inherit a previous customer's address or pin.
+  // Contact details may be restored, but the delivery location always starts empty.
   const [formData, setFormData] = useState({
     ...FIELD_DEFAULTS,
-    ...Object.fromEntries(
-      Object.entries(FIELD_DEFAULTS).map(([k]) => [k, savedData[k] ?? FIELD_DEFAULTS[k]])
-    )
+    firstName: savedData.firstName ?? '',
+    email: savedData.email ?? '',
+    contactNumber: savedData.contactNumber ?? '',
+    altContact: savedData.altContact ?? ''
   })
 
-  const [selectedLocation, setSelectedLocation] = useState(() => {
-    const savedLatitude = toFiniteNumber(savedData.latitude)
-    const savedLongitude = toFiniteNumber(savedData.longitude)
-    if (savedLatitude != null && savedLongitude != null) {
-      return { lat: savedLatitude, lon: savedLongitude }
-    }
-    return null
-  })
+  const [selectedLocation, setSelectedLocation] = useState(null)
 
-  const [localityQuery, setLocalityQuery] = useState(savedData.area || '')
+  const [localityQuery, setLocalityQuery] = useState('')
   const [localitySuggestions, setLocalitySuggestions] = useState([])
   const [localityLoading, setLocalityLoading] = useState(false)
   const [locating, setLocating] = useState(false)
@@ -238,24 +245,28 @@ export default function UserForm() {
     }, 380)
   }
 
-  async function applyResolvedSuggestion(suggestion, latitude, longitude) {
+  async function applyResolvedSuggestion(suggestion, latitude, longitude, options = {}) {
     if (skipLocalityFetch.current) skipLocalityFetch.current = false
 
     const hasCoords = Number.isFinite(latitude) && Number.isFinite(longitude)
-    const mapLink = hasCoords ? createMapLink(latitude, longitude) : formData.currentLocation
+    const preferExactLocation = options.preferExactLocation === true
 
     setFormData((prev) => {
-      const nextArea = coalesce(suggestion?.area, prev.area)
-      const nextCity = coalesce(suggestion?.city, prev.city)
-      const nextState = coalesce(suggestion?.state, prev.state)
-      const nextPin = coalesce(suggestion?.pinCode, prev.pincode)
-      const nextFlatHouse = coalesce(suggestion?.flatHouse, prev.flatHouse)
+      const mapLink = hasCoords ? createMapLink(latitude, longitude) : prev.currentLocation
+      const nextArea = preferExactLocation ? getMapMatchedArea(suggestion) : coalesce(suggestion?.area, prev.area)
+      const nextCity = preferExactLocation ? coalesce(suggestion?.city) : coalesce(suggestion?.city, prev.city)
+      const nextState = preferExactLocation ? coalesce(suggestion?.state) : coalesce(suggestion?.state, prev.state)
+      const nextPin = preferExactLocation ? coalesce(suggestion?.pinCode) : coalesce(suggestion?.pinCode, prev.pincode)
+      const nextFlatHouse = preferExactLocation
+        ? coalesce(suggestion?.flatHouse)
+        : coalesce(suggestion?.flatHouse, prev.flatHouse)
 
       setLocalityQuery((prevQuery) => {
-        const queryLabel = suggestion?.area || suggestion?.label
+        const queryLabel = preferExactLocation
+          ? getExactLocationLabel(suggestion)
+          : coalesce(suggestion?.area, suggestion?.label, nextArea)
         if (!prevQuery && !queryLabel) return prevQuery
-        const best = coalesce(queryLabel, prevQuery)
-        return best
+        return preferExactLocation ? queryLabel : coalesce(queryLabel, prevQuery)
       })
 
       return {
@@ -314,7 +325,8 @@ export default function UserForm() {
   }
 
   function updatePinnedAddressHandler(location, nonce) {
-    applyResolvedSuggestion(null, location.lat, location.lon)
+    setLocalityQuery('')
+    applyResolvedSuggestion(null, location.lat, location.lon, { preferExactLocation: true })
     setReverseResolving(true)
 
     if (reverseIdRef.current) {
@@ -326,7 +338,7 @@ export default function UserForm() {
         const suggestion = await fetchReverseAddress(location.lat, location.lon)
         if (nonce !== lastPinNonceRef.current) return
         if (suggestion) {
-          applyResolvedSuggestion(suggestion, location.lat, location.lon)
+          applyResolvedSuggestion(suggestion, location.lat, location.lon, { preferExactLocation: true })
         }
       } catch (err) {
         console.warn('Reverse geocode failed for pin failed:', err)
@@ -346,7 +358,8 @@ export default function UserForm() {
     try {
       // Use resolved address details from live location when available.
       if (location.address) {
-        applyResolvedSuggestion(location.address, location.lat, location.lon)
+        setLocalityQuery('')
+        applyResolvedSuggestion(location.address, location.lat, location.lon, { preferExactLocation: true })
         setLocating(false)
         return
       }
@@ -367,15 +380,46 @@ export default function UserForm() {
     const nonce = lastPinNonceRef.current + 1
     lastPinNonceRef.current = nonce
     setLocating(true)
+    setReverseResolving(true)
 
     try {
       const position = await getAccurateCurrentPosition()
-      const { latitude, longitude } = position.coords
+      const { latitude, longitude, accuracy } = position.coords
       if (nonce !== lastPinNonceRef.current) return
-      updatePinnedAddressHandler({ lat: latitude, lon: longitude }, nonce)
+
+      // Never show an address from an earlier booking against a new GPS pin.
+      // The map moves immediately; fields are filled only with the address
+      // returned for these exact coordinates.
+      setSelectedLocation({ lat: latitude, lon: longitude })
+      setLocalityQuery('')
+      setLocalitySuggestions([])
+      setShowLocalitySuggestions(false)
+      setFormData((prev) => ({
+        ...prev,
+        flatHouse: '',
+        area: '',
+        city: '',
+        state: '',
+        pincode: '',
+        currentLocation: createMapLink(latitude, longitude)
+      }))
+
+      const address = await fetchReverseAddress(latitude, longitude)
+      if (nonce !== lastPinNonceRef.current) return
+      if (address) {
+        await applyResolvedSuggestion(address, latitude, longitude, { preferExactLocation: true })
+      }
+      return { lat: latitude, lon: longitude, accuracy, timestamp: position.timestamp, address }
     } catch (error) {
-      if (nonce === lastPinNonceRef.current) setLocating(false)
-      alert(getLocationErrorMessage(error))
+      if (nonce === lastPinNonceRef.current) {
+        console.warn('Current-location address lookup failed:', error)
+        alert(getLocationErrorMessage(error))
+      }
+    } finally {
+      if (nonce === lastPinNonceRef.current) {
+        setReverseResolving(false)
+        setLocating(false)
+      }
     }
   }
 
