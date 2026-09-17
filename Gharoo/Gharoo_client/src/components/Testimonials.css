@@ -1,0 +1,115 @@
+.testimonials {
+  position: relative;
+  overflow: hidden;
+  padding: 100px 24px;
+  background: #111827;
+  color: white;
+}
+
+.testimonials-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(36, 181, 122, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.testimonials-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.section-label.light {
+  color: #24b57a;
+}
+
+.testimonials-header h2 {
+  margin: 0;
+  font-size: clamp(2rem, 2.5vw, 2.75rem);
+  font-weight: 800;
+}
+
+.test-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.test-grid .aos {
+  display: block;
+}
+
+.test-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 36px 28px;
+  border-radius: 20px;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.4s, background 0.4s;
+}
+
+.test-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(36, 181, 122, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.test-stars {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.test-stars svg {
+  transition: transform 0.3s;
+}
+
+.test-card:hover .test-stars svg:nth-child(odd) {
+  animation: iconBounce 0.5s ease;
+}
+
+.test-quote {
+  margin: 0 0 28px;
+  line-height: 1.85;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+}
+
+.test-author {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.test-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #24b57a;
+  transition: transform 0.35s, box-shadow 0.35s;
+}
+
+.test-card:hover .test-avatar {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 4px rgba(36, 181, 122, 0.3);
+}
+
+.test-author strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+
+.test-author span {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 1000px) {
+  .test-grid {
+    grid-template-columns: 1fr;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+}

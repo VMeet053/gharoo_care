@@ -1,0 +1,30 @@
+{
+  "name": "gharoo-care",
+  "version": "1.0.0",
+  "description": "Gharoo Care - Full Stack Repair Service Application",
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:clients": "node scripts/dev-clients.js",
+    "start:clients": "npm run build && npm run dev:clients",
+    "build": "npm run build:server && npm run build:user && npm run build:admin && npm run build:service-man",
+    "build:server": "npm ci --prefix server --omit=dev --no-audit --no-fund",
+    "build:user": "npm ci --prefix Gharoo/Gharoo_client --no-audit --no-fund && npm run build --prefix Gharoo/Gharoo_client",
+    "build:admin": "npm ci --prefix client --no-audit --no-fund && npm run build --prefix client",
+    "build:service-man": "npm ci --prefix service-man-client --no-audit --no-fund && npm run build --prefix service-man-client",
+    "dev:user": "npm run dev --prefix Gharoo/Gharoo_client",
+    "dev:admin": "npm run dev --prefix client",
+    "dev:service": "npm run dev --prefix service-man-client",
+    "dev:all": "concurrently \"npm run dev:user\" \"npm run dev:admin\" \"npm run dev:service\" \"npm run dev:server\"",
+    "vercel-build": "npm run build",
+    "start": "cd server && node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "dependencies": {
+    "nodemailer": "^9.0.1"
+  }
+}

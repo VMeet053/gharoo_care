@@ -1,0 +1,1 @@
+.pulse-badge{animation:floatY 4s ease-in-out infinite}.about-feature-item{transition:transform .3s,box-shadow .3s}.about-feature-item:hover{transform:translate(6px);box-shadow:0 8px 24px #24b57a1f}.collage-main,.collage-sub{transition:box-shadow .4s}.image-collage:hover .collage-main{box-shadow:0 40px 90px #0f172a2e}@media (max-width: 1000px){.about-left{margin-bottom:20px}}

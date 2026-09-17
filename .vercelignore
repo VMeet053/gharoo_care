@@ -1,0 +1,17 @@
+# Logs
+*.log
+server.log
+client.log
+gharoo-server.log
+gharoo-client.log
+
+# Node modules (we install them during build)
+**/node_modules
+
+# Editor directories
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db

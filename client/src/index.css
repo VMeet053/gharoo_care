@@ -1,0 +1,72 @@
+/* Reset Vite defaults so admin template styles apply correctly */
+body {
+  margin: 0;
+}
+
+#root {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  text-align: initial;
+  border: none;
+  min-height: 100svh;
+}
+
+.profile-cover-gradient {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+}
+
+.auth-features {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  justify-content: center;
+  background: var(--admin-surface-alt, #f8fafc);
+}
+
+.auth-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--admin-muted, #64748b);
+}
+
+.auth-feature-item i {
+  color: var(--admin-primary, #2563eb);
+  font-size: 1rem;
+}
+
+.error-icon-wrap {
+  font-size: 4rem;
+  color: var(--admin-primary, #2563eb);
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.blank-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  font-size: 2rem;
+}
+
+.product-icon {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  flex-shrink: 0;
+}

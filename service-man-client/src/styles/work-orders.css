@@ -1,0 +1,28 @@
+/* Service Man Work Orders Styles */
+
+.sm-orders-filter-card {
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  padding: 20px;
+}
+
+.sm-orders-item-card {
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s;
+  margin-bottom: 16px;
+}
+
+.sm-orders-item-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.sm-orders-detail-section {
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  margin-bottom: 20px;
+}
