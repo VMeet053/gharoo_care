@@ -67,7 +67,7 @@ export default function Header({ settings }) {
         <div className="brand">
           <Link to="/" onClick={closeMenu}>
             <h1 className="logo">
-              <img src="/gharoo-logo.png" alt="Gharoo Care Logo" loading="eager" decoding="async" fetchpriority="high" style={{ height: '60px', display: 'block', objectFit: 'contain' }} />
+              <img src="/gharoo-logo.png" alt="Gharoo Care Logo" loading="eager" decoding="async" fetchpriority="high" style={{ height: '100px', display: 'block', objectFit: 'contain' }} />
             </h1>
           </Link>
         </div>
