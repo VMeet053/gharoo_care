@@ -319,6 +319,7 @@
   border: 1px solid #dbe4ee;
   border-radius: 8px;
   background: #f8fafc;
+  display: none;
 }
 
 .location-summary {

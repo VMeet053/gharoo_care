@@ -129,6 +129,7 @@ const FIELD_DEFAULTS = {
   state: '',
   pincode: '',
   currentLocation: '',
+  googleMapsLink: '',
   addressType: 'Home'
 }
 
@@ -290,7 +291,8 @@ export default function UserForm() {
         city: nextCity,
         state: nextState,
         pincode: nextPin,
-        currentLocation: mapLink || prev.currentLocation
+        currentLocation: mapLink || prev.currentLocation,
+        googleMapsLink: mapLink || prev.googleMapsLink
       }
     })
 
@@ -399,7 +401,8 @@ export default function UserForm() {
       city: '',
       state: '',
       pincode: '',
-      currentLocation: ''
+      currentLocation: '',
+      googleMapsLink: ''
     }))
   }
 
@@ -436,7 +439,8 @@ export default function UserForm() {
         city: '',
         state: '',
         pincode: '',
-        currentLocation: createMapLink(latitude, longitude)
+        currentLocation: createMapLink(latitude, longitude),
+        googleMapsLink: createMapLink(latitude, longitude)
       }))
 
       const address = await fetchReverseAddress(latitude, longitude)
@@ -466,11 +470,7 @@ export default function UserForm() {
       alert('Please select a service.')
       return
     }
-    const hasPin = selectedLocation && formData.currentLocation.trim()
-    if (!hasPin) {
-      alert('Please add current location before payment. Use "Use Current Location" or tap on the map to drop a pin.')
-      return
-    }
+    const googleMapsLink = formData.googleMapsLink?.trim() || formData.currentLocation?.trim()
     const fullAddressParts = [
       formData.flatHouse?.trim(),
       formData.area?.trim(),
@@ -481,6 +481,8 @@ export default function UserForm() {
     const fullAddress = fullAddressParts.join(', ')
     const dataToSave = {
       ...formData,
+      currentLocation: googleMapsLink,
+      googleMapsLink,
       fullAddress,
       selectedService,
       latitude: selectedLocation?.lat ?? '',
@@ -668,6 +670,18 @@ export default function UserForm() {
                 maxLength={6}
                 pattern="[0-9]{6}"
               />
+            </div>
+
+            <div className="form-group address-link-group">
+              <label>Google Maps Link <span className="optional">(Optional)</span></label>
+              <input
+                type="url"
+                name="googleMapsLink"
+                value={formData.googleMapsLink}
+                onChange={handleChange}
+                placeholder="Paste your Google Maps sharing link"
+              />
+              <small className="form-text text-muted">You can paste a Google Maps sharing link, or use the map above.</small>
             </div>
 
             <div className="form-group">

@@ -8,7 +8,7 @@
   display: flex;
   align-items: stretch;
   justify-content: stretch;
-  padding: 24px 20px 56px;
+  padding: 26px 0 72px;
 }
 
 .hero-v2-bg {
@@ -33,14 +33,14 @@
 
 .hero-v2-inner {
   width: 100%;
-  max-width: 1240px;
+  max-width: 1380px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0;
-  padding-top: 20px;
+  padding: 20px 24px 0;
 }
 
 .hero-v2-copy {
@@ -93,17 +93,16 @@
 }
 
 .hero-v2-cards-2 {
-  max-width: 1080px;
+  width: 100%;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: stretch;
   justify-content: center;
-  gap: 28px;
+  gap: 42px;
 }
 
 .hero-v2-cards-2 .hero-v2-card {
-  flex: 1 1 440px;
-  max-width: 520px;
+  flex: 1 1 500px;
 }
 
 .hero-v2-cards-3 {
@@ -158,11 +157,11 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  border-radius: 22px;
+  border-radius: 26px;
   overflow: hidden;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.96);
   box-shadow:
-    0 22px 55px rgba(0, 0, 0, 0.32),
+    0 26px 60px rgba(0, 0, 0, 0.28),
     0 0 0 1px rgba(255, 255, 255, 0.08) inset;
 }
 
@@ -170,7 +169,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  min-height: 300px;
+  min-height: 330px;
   background: linear-gradient(135deg, #e0f2fe, #ecfdf5);
   overflow: hidden;
 }
@@ -206,7 +205,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  min-height: 300px;
+  min-height: 330px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -221,7 +220,7 @@
 }
 
 .hero-v2-card-price-placeholder {
-  font-size: clamp(2rem, 4vw, 2.6rem);
+  font-size: clamp(2.3rem, 4vw, 3.2rem);
   font-weight: 900;
   color: #166534;
   text-shadow: 0 4px 18px rgba(22, 101, 52, 0.18);
@@ -229,7 +228,7 @@
 }
 
 .hero-v2-card-placeholder-label {
-  font-size: 0.98rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #047857;
 }
@@ -252,6 +251,7 @@
   padding: 14px 16px 16px;
   background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
   border-top: 1px solid rgba(36, 181, 122, 0.18);
+  display: none;
 }
 
 .hero-v2-card-price {
@@ -269,7 +269,12 @@
 @media (max-width: 1024px) {
   .hero-v2 {
     min-height: 82vh;
-    padding: 16px 16px 48px;
+    padding: 18px 0 56px;
+  }
+
+  .hero-v2-inner {
+    padding-left: 18px;
+    padding-right: 18px;
   }
 }
 
@@ -277,12 +282,14 @@
   .hero-v2 {
     min-height: auto;
     max-height: none;
-    padding: 14px 14px 40px;
+    padding: 14px 0 40px;
   }
 
   .hero-v2-inner {
     gap: 0;
     padding-top: 14px;
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
   .hero-v2-cards {

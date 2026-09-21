@@ -38,6 +38,7 @@ export default function PaymentPage() {
   const planAmount = parsePlanAmount(rawAmount)
   const paymentAmount = planAmount.toFixed(2)
   const customerName = [userFormData.firstName, userFormData.lastName].filter(Boolean).join(' ')
+  const locationLink = userFormData.googleMapsLink || userFormData.currentLocation || ''
   const itemName = selectedPlan?.name || selectedService?.name || 'Service'
   const transactionNote = `Gharoo Care ${itemName}`
   const upiUri = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent(UPI_NAME)}&am=${paymentAmount}&cu=INR&tn=${encodeURIComponent(transactionNote)}`
@@ -46,10 +47,6 @@ export default function PaymentPage() {
   const handlePayment = async () => {
     if (!planAmount) {
       showToast('Please select a service or plan before payment.', 'warning', 'Service required')
-      return
-    }
-    if (!userFormData.currentLocation) {
-      showToast('Please go back and add current location.', 'warning', 'Current location required')
       return
     }
     const serviceName = selectedService?.name || (selectedPlan ? `Plan: ${selectedPlan.name}` : 'Home Repair')
@@ -62,7 +59,8 @@ export default function PaymentPage() {
         email: userFormData.email,
         houseNumber: userFormData.flatHouse || '',
         address: userFormData.fullAddress || '',
-        currentLocation: userFormData.currentLocation || '',
+        currentLocation: locationLink,
+        googleMapsLink: locationLink,
         city: userFormData.city,
         area: userFormData.area,
         service: serviceName,
@@ -128,7 +126,7 @@ export default function PaymentPage() {
             <p><strong>Premium Plan:</strong> {selectedPlan.name}</p>
           )}
           <p><strong>Address:</strong> {userFormData.fullAddress}</p>
-          <p><strong>Current Location:</strong> {userFormData.currentLocation ? <a href={userFormData.currentLocation} target="_blank" rel="noreferrer">Open map</a> : 'Required'}</p>
+          <p><strong>Google Maps Location:</strong> {locationLink ? <a href={locationLink} target="_blank" rel="noreferrer">Open map</a> : 'Not provided'}</p>
           <p><strong>{isPremiumFlow ? 'Plan Amount' : 'Service Charge'}:</strong> Rs. {planAmount.toLocaleString('en-IN')}</p>
         </div>
 

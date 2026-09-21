@@ -2,6 +2,7 @@
   padding: 100px 24px;
   background: #fff;
   overflow: hidden;
+  display: none;
 }
 
 .completed-projects-header {
