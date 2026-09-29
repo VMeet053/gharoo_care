@@ -262,7 +262,7 @@ body {
 }
 
 .video-btn-wrapper {
-  display: inline-flex;
+  display: none;
   gap: 12px;
   align-items: center;
   color: var(--primary);

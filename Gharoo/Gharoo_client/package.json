@@ -7,9 +7,9 @@
     "node": "20.x"
   },
   "scripts": {
-    "dev": "vite",
-    "dev:watch": "vite build --watch",
-    "build": "vite build",
+    "dev": "node init && vite",
+    "dev:watch": "node init && vite build --watch",
+    "build": "node init && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
