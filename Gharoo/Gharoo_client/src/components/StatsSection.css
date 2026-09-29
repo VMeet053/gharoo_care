@@ -1,0 +1,42 @@
+.stats-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-bg-pattern {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(36, 181, 122, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 50%, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.stats-grid {
+  position: relative;
+  z-index: 1;
+}
+
+.stat-card {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.35s;
+}
+
+.stat-card:hover {
+  transform: translateY(-6px) scale(1.02);
+}
+
+.stat-icon {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.stat-card:hover .stat-icon {
+  transform: scale(1.15) rotate(-5deg);
+}
+
+.stat-value {
+  transition: color 0.3s;
+}
+
+.stat-card:hover .stat-value {
+  color: #3dd68c;
+}
